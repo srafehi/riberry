@@ -54,11 +54,11 @@ jobs:
             . venv/bin/activate
             pytest ./tests
 
-#      - run:
-#          name: (node) run tests
-#          command: |
-#            cd riberry-web
-#            CI=true yarn test
+      - run:
+          name: (node) run tests
+          command: |
+            cd riberry-web
+            CI=true yarn test
 
       - store_artifacts:
           path: test-reports
