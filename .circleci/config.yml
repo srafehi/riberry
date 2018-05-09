@@ -27,10 +27,10 @@ jobs:
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
-#      - run:
-#          name: (node) install dependences
-#          command: |
-#            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+      - run:
+          name: (node) install dependences
+          command: |
+            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
 #            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
 #            sudo apt-get update && sudo apt-get install yarn
 #            cd ./riberry-web
