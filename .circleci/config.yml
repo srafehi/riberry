@@ -32,19 +32,19 @@ jobs:
   frontend:
     docker:
       - image: circleci/node:8.11.1
-    working_directory: ~/repo/riberry-web
+    working_directory: ~/repo
     steps:
       - checkout
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-{{ checksum "./riberry-web/package.json" }}
           - v1-dependencies-
-      - run: yarn install
+      - run: cd ./riberry-web && yarn install
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
-      - run: yarn test
+          key: v1-dependencies-{{ checksum "./riberry-web/package.json" }}
+      - run: cd ./riberry-web && yarn test
 workflows:
   version: 2
   frontend_backend:
