@@ -42,7 +42,7 @@ jobs:
       - run: cd ./riberry-web && yarn install
       - save_cache:
           paths:
-            - node_modules
+            - ./riberry-web/node_modules
           key: v1-dependencies-{{ checksum "./riberry-web/package.json" }}
       - run: cd ./riberry-web && yarn test
 workflows:
