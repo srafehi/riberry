@@ -1,11 +1,14 @@
-import pendulum
 import datetime
+import re
+from typing import AnyStr, Dict
+
+import jwt
+import pendulum
 from sqlalchemy import Column, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, validates
 
 from ..base import Base, id_builder
 from ..config import config
-import re
 
 
 class User(Base):
@@ -53,3 +56,23 @@ class UserDetails(Base):
         if not email or not re.match(r'[^@]+@[^@]+\.[^@]+', email or ''):
             raise ValueError(f'UserDetails.email :: Invalid email received ({repr(email)})')
         return email
+
+
+class AuthToken:
+
+    @staticmethod
+    def create(user: User, expiry_delta: datetime.timedelta=datetime.timedelta(hours=24)) -> AnyStr:
+        iat: pendulum.DateTime = pendulum.now('utc')
+        exp: pendulum.DateTime = iat + expiry_delta
+
+        return jwt.encode({
+            'iat': iat.int_timestamp,
+            'exp': exp.int_timestamp,
+            'name': user.username,
+            'role': None
+        }, config.secrets['jwt_secret'], algorithm='HS256')
+
+    @staticmethod
+    def verify(token: AnyStr) -> Dict:
+        return jwt.decode(token, config.secrets['jwt_secret'], algorithms=['HS256'])
+

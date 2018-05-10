@@ -1,22 +1,9 @@
-from riberry.model import init, conn, auth, base
-from sqlalchemy.exc import IntegrityError
 import pytest
+from sqlalchemy.exc import IntegrityError
 
-
-@pytest.fixture(autouse=True)
-def init_model():
-    init(url='sqlite://')
-    yield
-    base.Base.metadata.drop_all(conn.raw_engine)
-
-
-@pytest.fixture
-def dummy_user():
-    user = auth.User(username='johndoe', password='password')
-    user.details = auth.UserDetails(first_name='John', last_name='Doe')
-    conn.add(user)
-    conn.commit()
-    return user
+from riberry.model import auth, conn
+# noinspection PyUnresolvedReferences
+from tests.unit.riberry.fixtures import dummy_user, init_model
 
 
 class TestUser:

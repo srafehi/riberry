@@ -5,5 +5,7 @@ pendulum
 sqlalchemy
 celery
 pyyaml
+pyjwt
+
 pytest
 pytest-cov
