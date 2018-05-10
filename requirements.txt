@@ -1,2 +1,8 @@
 flask
+flask-restplus
+croniter
+pendulum
+sqlalchemy
 pytest
+celery
+pyyaml
