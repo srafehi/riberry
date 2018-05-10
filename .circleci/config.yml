@@ -32,25 +32,19 @@ jobs:
   frontend:
     docker:
       - image: circleci/node:8.11.1
-    working_directory: ~/repo
+    working_directory: ~/repo/riberry-web
     steps:
       - checkout
-      - run:
-          name: install dependences
-          command: |
-            sudo apt-get install apt-transport-https
-            curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
-            sudo apt-get update
-            sudo apt-get install yarn
-            yarn global add create-react-app
-            cd ./riberry-web
-            yarn
-      - run:
-          name: run tests
-          command: |
-            cd riberry-web
-            CI=true yarn test
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "package.json" }}
+          - v1-dependencies-
+      - run: yarn install
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+      - run: yarn test
 workflows:
   version: 2
   frontend_backend:
