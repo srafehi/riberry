@@ -3,6 +3,7 @@ flask-restplus
 croniter
 pendulum
 sqlalchemy
-pytest
 celery
 pyyaml
+pytest
+pytest-cov

@@ -28,7 +28,7 @@ jobs:
           name: run tests
           command: |
             . venv/bin/activate
-            pytest ./tests
+            pytest --cov=riberry ./tests
   frontend:
     docker:
       - image: circleci/node:8.11.1
