@@ -13,49 +13,71 @@ def init_model():
 @pytest.fixture
 def dummy_user():
     user = auth.User(username='johndoe', password='password')
+    user.details = auth.UserDetails(first_name='John', last_name='Doe')
     conn.add(user)
     conn.commit()
+    return user
 
 
-def test_user_enforce_unique_username():
-    user_a = auth.User(username='johndoe', password='password')
-    user_b = auth.User(username='johndoe', password='password')
-    conn.add(user_a)
-    conn.add(user_b)
+class TestUser:
 
-    with pytest.raises(IntegrityError):
+    def test_enforce_unique_username(self):
+        user_a = auth.User(username='johndoe', password='password')
+        user_b = auth.User(username='johndoe', password='password')
+        conn.add(user_a)
+        conn.add(user_b)
+
+        with pytest.raises(IntegrityError):
+            conn.commit()
+
+    def test_reject_blank_usernames(self):
+        with pytest.raises(ValueError):
+            auth.User(username=None)
+
+    def test_reject_short_usernames(self):
+        with pytest.raises(ValueError):
+            auth.User(username='ab')
+
+    @pytest.mark.usefixtures('dummy_user')
+    def test_repr(self):
+        user = auth.User.authenticate(username='johndoe', password='password')
+        assert 'username=\'johndoe\'' in repr(user)
+
+    @pytest.mark.usefixtures('dummy_user')
+    def test_valid_password(self):
+        user = auth.User.authenticate(username='johndoe', password='password')
+        assert user.username == 'johndoe'
+
+    @pytest.mark.usefixtures('dummy_user')
+    def test_invalid_username(self):
+        with pytest.raises(Exception):
+            auth.User.authenticate(username='invalid', password='password')
+
+    @pytest.mark.usefixtures('dummy_user')
+    def test_invalid_password(self):
+        with pytest.raises(Exception):
+            auth.User.authenticate(username='johndoe', password='invalid')
+
+
+class TestUserDetails:
+
+    @pytest.mark.usefixtures('dummy_user')
+    def test_full_name(self, dummy_user: auth.User):
+        assert dummy_user.details.full_name == f'{dummy_user.details.first_name} {dummy_user.details.last_name}'
+
+    @pytest.mark.usefixtures('dummy_user')
+    def test_invalid_email_no_period(self, dummy_user: auth.User):
+        with pytest.raises(ValueError):
+            dummy_user.details.email = 'invalid@email'
+
+    @pytest.mark.usefixtures('dummy_user')
+    def test_invalid_email_no_ampersand(self, dummy_user: auth.User):
+        with pytest.raises(ValueError):
+            dummy_user.details.email = 'invalid-world'
+
+    @pytest.mark.usefixtures('dummy_user')
+    def test_valid_email(self, dummy_user: auth.User):
+        dummy_user.details.email = 'hello@world.com'
         conn.commit()
 
-
-def test_user_reject_blank_usernames():
-    with pytest.raises(ValueError):
-        auth.User(username=None)
-
-
-def test_user_reject_short_usernames():
-    with pytest.raises(ValueError):
-        auth.User(username='ab')
-
-
-@pytest.mark.usefixtures('dummy_user')
-def test_user_repr():
-    user = auth.User.authenticate(username='johndoe', password='password')
-    assert 'username=\'johndoe\'' in repr(user)
-
-
-@pytest.mark.usefixtures('dummy_user')
-def test_user_valid_password():
-    user = auth.User.authenticate(username='johndoe', password='password')
-    assert user.username == 'johndoe'
-
-
-@pytest.mark.usefixtures('dummy_user')
-def test_user_invalid_username():
-    with pytest.raises(Exception):
-        auth.User.authenticate(username='invalid', password='password')
-
-
-@pytest.mark.usefixtures('dummy_user')
-def test_user_invalid_password():
-    with pytest.raises(Exception):
-        auth.User.authenticate(username='johndoe', password='invalid')
+        assert dummy_user.details.email == 'hello@world.com'
