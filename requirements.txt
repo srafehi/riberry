@@ -4,5 +4,5 @@ croniter
 pendulum
 sqlalchemy
 pytest
-celery
+celery==4.2.0rc3
 pyyaml
