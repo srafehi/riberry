@@ -4,35 +4,40 @@
 #
 version: 2
 jobs:
-  build:
+  backend:
     docker:
-      # specify the version you desire here
-      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
       - image: circleci/python:3.6.1
-
-      # Specify service dependencies here if necessary
-      # CircleCI maintains a library of pre-built images
-      # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/postgres:9.4
-
     working_directory: ~/repo
-
     steps:
       - checkout
-
-      # Download and cache dependencies
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "requirements.txt" }}
-          # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
-
       - run:
-          name: (node) install dependences
+          name: install dependencies
           command: |
-            sudo apt-get install apt-transport-https
-            curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
-            sudo apt-get install -y nodejs
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r requirements.txt
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            pytest ./tests
+  frontend:
+    docker:
+      - image: circleci/node:8.11.1
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: install dependences
+          command: |
             curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
             echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
             sudo apt-get update
@@ -40,31 +45,14 @@ jobs:
             yarn global add create-react-app
             cd ./riberry-web
             yarn
-
       - run:
-          name: (python) install dependencies
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-
-      - run:
-          name: (python) run tests
-          command: |
-            . venv/bin/activate
-            pytest ./tests
-
-      - run:
-          name: (node) run tests
+          name: run tests
           command: |
             cd riberry-web
             CI=true yarn test
-
-      - store_artifacts:
-          path: test-reports
-          destination: test-reports
+workflows:
+  version: 2
+  frontend_backend:
+    jobs:
+      - frontend
+      - backend
