@@ -17,6 +17,12 @@ def dummy_user():
 
 
 @pytest.mark.usefixtures('dummy_user')
+def test_user_repr():
+    user = auth.User.authenticate(username='johndoe', password='password')
+    assert 'username=\'johndoe\'' in repr(user)
+
+
+@pytest.mark.usefixtures('dummy_user')
 def test_user_valid_password():
     user = auth.User.authenticate(username='johndoe', password='password')
     assert user.username == 'johndoe'
