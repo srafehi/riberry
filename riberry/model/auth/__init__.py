@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
 from ..base import Base, id_builder
 from ..config import config
@@ -10,8 +10,8 @@ class User(Base):
     __reprattrs__ = ['username']
 
     id = id_builder.build()
-    username = Column('username', String(32), unique=True)
-    password = Column('password', String(32), unique=True)
+    username = Column('username', String(32), nullable=False, unique=True)
+    password = Column('password', String(128))
     details: 'UserDetails' = relationship('UserDetails', uselist=False, back_populates='user')
 
     @classmethod
@@ -19,6 +19,12 @@ class User(Base):
         if not config.authentication_provider.authenticate(username=username, password=password):
             raise Exception('Unauthorized')
         return cls.query().filter_by(username=username).first()
+
+    @validates('username')
+    def validate_username(self, key, username):
+        if not username or len(username) < 3:
+            raise ValueError('Usernames must be 3+ characters long')
+        return username
 
 
 class UserDetails(Base):
