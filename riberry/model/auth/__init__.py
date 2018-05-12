@@ -45,7 +45,7 @@ class UserDetails(base.Base):
     department = Column(String(64))
     email = Column(String(128))
     mobile = Column(String(24))
-    updated: datetime = Column(DateTime, default=lambda: pendulum.now(tz='utc'))
+    updated: datetime = Column(DateTime, default=base.utc_now)
 
     @property
     def full_name(self):
@@ -62,7 +62,7 @@ class AuthToken:
 
     @staticmethod
     def create(user: User, expiry_delta: datetime.timedelta=datetime.timedelta(hours=24)) -> AnyStr:
-        iat: pendulum.DateTime = pendulum.now('utc')
+        iat: pendulum.DateTime = base.utc_now()
         exp: pendulum.DateTime = iat + expiry_delta
 
         return jwt.encode({

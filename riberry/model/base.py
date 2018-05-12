@@ -1,3 +1,4 @@
+import pendulum
 from sqlalchemy import Column, Sequence, Integer
 from sqlalchemy.ext.declarative import declarative_base
 from riberry import model
@@ -26,3 +27,7 @@ class _IdBuilder:
 
 Base = declarative_base(cls=_BaseMixin)
 id_builder = _IdBuilder(id_type=Integer)
+
+
+def utc_now():
+    return pendulum.now(tz=pendulum.UTC)
