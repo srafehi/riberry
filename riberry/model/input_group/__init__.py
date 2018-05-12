@@ -21,6 +21,7 @@ class InputGroupDefinition(base.Base):
     # columns
     id = base.id_builder.build()
     application_id = Column(base.id_builder.type, ForeignKey('application.id'), nullable=False)
+    document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
     name: str = Column(String(64), nullable=False)
     version: int = Column(Integer, nullable=False, default=1)
     description: str = Column(String(48))
@@ -33,6 +34,7 @@ class InputGroupDefinition(base.Base):
         'InputFileDefinition', back_populates='input_group_definition')
     instance_associations: List['ApplicationInstanceInputGroup'] = relationship(
         'ApplicationInstanceInputGroup', back_populates='input_group_definition')
+    document: 'model.misc.Document' = relationship('Document')
 
     # proxies
     application_instances: List['application.ApplicationInstance'] = association_proxy(

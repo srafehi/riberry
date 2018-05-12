@@ -16,6 +16,7 @@ class Application(base.Base):
 
     # columns
     id = base.id_builder.build()
+    document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
     name: str = Column(String(64), nullable=False, unique=True)
     description: str = Column(String(128))
     type: str = Column(String(64), nullable=False)
@@ -27,6 +28,7 @@ class Application(base.Base):
         'ApplicationInstance', back_populates='application')
     input_groups: List['model.input_group.InputGroupDefinition'] = relationship(
         'InputGroupDefinition', back_populates='application')
+    document: 'model.misc.Document' = relationship('Document')
 
 
 class ApplicationInstance(base.Base):

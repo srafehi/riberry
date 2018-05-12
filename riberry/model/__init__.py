@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session, session
 
-from . import admin, application, auth, execution, input_group, job, base
+from . import admin, application, auth, execution, input_group, job, misc, base
 
 
 class __ModelProxy:
