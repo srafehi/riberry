@@ -17,6 +17,7 @@ class Application(base.Base):
     # columns
     id = base.id_builder.build()
     name: str = Column(String(64), nullable=False, unique=True)
+    description: str = Column(String(128))
     type: str = Column(String(64), nullable=False)
     module: str = Column(String(256), nullable=False, unique=True)
     enabled: bool = Column(Boolean, default=True)
