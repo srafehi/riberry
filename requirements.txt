@@ -3,6 +3,9 @@ flask-restplus
 croniter
 pendulum
 sqlalchemy
-pytest
 celery==4.2.0rc3
 pyyaml
+pyjwt
+
+pytest
+pytest-cov

@@ -1,4 +1,16 @@
 ##########################
+# GENERAL                #
+##########################
+
+
+# IDEs
+.idea
+
+# Misc
+.DS_Store
+
+
+##########################
 # PYTHON                 #
 ##########################
 
@@ -49,6 +61,7 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
+.pytest_cache
 
 # Translations
 *.mo

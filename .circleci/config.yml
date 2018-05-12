@@ -1,7 +1,3 @@
-# Python CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-python/ for more details
-#
 version: 2
 jobs:
   backend:
@@ -12,23 +8,14 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "requirements.txt" }}
-          - v1-dependencies-
-      - run:
-          name: install dependencies
-          command: |
-            python3 -m venv venv
-            . venv/bin/activate
-            pip install -r requirements.txt
+          - py-dependencies-{{ checksum "requirements.txt" }}
+      - run: python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
-      - run:
-          name: run tests
-          command: |
-            . venv/bin/activate
-            pytest ./tests
+          key: py-dependencies-{{ checksum "requirements.txt" }}
+      - run: . venv/bin/activate && pytest --cov=riberry ./tests
+
   frontend:
     docker:
       - image: circleci/node:8.11.1
@@ -37,14 +24,14 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "./riberry-web/package.json" }}
-          - v1-dependencies-
+          - nd-dependencies-{{ checksum "./riberry-web/package.json" }}
       - run: cd ./riberry-web && yarn install
       - save_cache:
           paths:
-            - node_modules
-          key: v1-dependencies-{{ checksum "./riberry-web/package.json" }}
+            - ./riberry-web/node_modules
+          key: nd-dependencies-{{ checksum "./riberry-web/package.json" }}
       - run: cd ./riberry-web && yarn test
+
 workflows:
   version: 2
   frontend_backend:
