@@ -77,14 +77,6 @@ class InputFileDefinition(base.Base):
     input_group_definition: 'InputGroupDefinition' = relationship(
         'InputGroupDefinition', back_populates='input_file_definitions')
 
-    @property
-    def content_type(self) -> Optional[AnyStr]:
-        return mimetypes.guess_type(self.filename)[0]
-
-    @property
-    def content_encoding(self) -> Optional[AnyStr]:
-        return mimetypes.guess_type(self.filename)[1]
-
 
 class InputValueDefinition(base.Base):
     __tablename__ = 'input_value_definition'
