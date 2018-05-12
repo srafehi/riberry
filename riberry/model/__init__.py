@@ -1,13 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session, session
 
-from . import admin, auth, execution, job, base
+from . import admin, application, auth, execution, input_group, job, base
 
 
 class __ModelProxy:
     raw_session = None
     raw_engine = None
-    
+
     def __getattr__(self, item):
         return getattr(self.raw_session, item)
 
