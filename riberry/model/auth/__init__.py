@@ -7,15 +7,15 @@ import pendulum
 from sqlalchemy import Column, String, ForeignKey, DateTime
 from sqlalchemy.orm import relationship, validates
 
-from riberry.model import base
-from riberry.model.config import config
+from ..base import Base, id_builder
+from ..config import config
 
 
-class User(base.Base):
+class User(Base):
     __tablename__ = 'users'
     __reprattrs__ = ['username']
 
-    id = base.id_builder.build()
+    id = id_builder.build()
     username = Column('username', String(32), nullable=False, unique=True)
     password = Column('password', String(128))
     details: 'UserDetails' = relationship('UserDetails', uselist=False, back_populates='user')
@@ -33,11 +33,11 @@ class User(base.Base):
         return username
 
 
-class UserDetails(base.Base):
+class UserDetails(Base):
     __tablename__ = 'user_details'
 
-    id = base.id_builder.build()
-    user_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
+    id = id_builder.build()
+    user_id = Column(id_builder.type, ForeignKey('users.id'), nullable=False)
     user = relationship('User', back_populates='details')
 
     first_name = Column(String(32), nullable=False)
