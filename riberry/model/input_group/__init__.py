@@ -23,6 +23,7 @@ class InputGroupDefinition(base.Base):
     application_id = Column(base.id_builder.type, ForeignKey('application.id'), nullable=False)
     document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
     name: str = Column(String(64), nullable=False)
+    internal_name: str = Column(String(256), nullable=False, unique=True)
     version: int = Column(Integer, nullable=False, default=1)
     description: str = Column(String(48))
 
@@ -68,8 +69,8 @@ class InputFileDefinition(base.Base):
     input_group_id = Column(base.id_builder.type, ForeignKey('input_group_definition.id'))
 
     name: str = Column(String(64), nullable=False)
+    internal_name: str = Column(String(256), nullable=False)
     description: str = Column(String(48))
-    parameter: str = Column(String(64), nullable=False)
     type: str = Column(String(64), nullable=False)
     required: bool = Column(Boolean, nullable=False, default=True)
 
@@ -87,8 +88,8 @@ class InputValueDefinition(base.Base):
     input_group_id = Column(base.id_builder.type, ForeignKey('input_group_definition.id'))
 
     name: str = Column(String(64), nullable=False)
+    internal_name: str = Column(String(256), nullable=False)
     description: str = Column(String(48))
-    parameter: str = Column(String(64), nullable=False)
     type: str = Column(String(64), nullable=False)
     required: bool = Column(Boolean, nullable=False, default=True)
     raw_default_value = Column('default_value', Binary)

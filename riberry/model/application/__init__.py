@@ -18,9 +18,9 @@ class Application(base.Base):
     id = base.id_builder.build()
     document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
     name: str = Column(String(64), nullable=False, unique=True)
+    internal_name: str = Column(String(256), nullable=False, unique=True)
     description: str = Column(String(128))
     type: str = Column(String(64), nullable=False)
-    module: str = Column(String(256), nullable=False, unique=True)
     enabled: bool = Column(Boolean, default=True)
 
     # associations
@@ -39,6 +39,7 @@ class ApplicationInstance(base.Base):
     id = base.id_builder.build()
     application_id = Column(base.id_builder.type, ForeignKey(column='application.id'), nullable=False)
     name: str = Column(String(64), nullable=False, unique=True)
+    internal_name: str = Column(String(256), nullable=False, unique=True)
     enabled: bool = Column(Boolean, default=True)
 
     # associations
