@@ -69,7 +69,7 @@ class AuthToken:
             'iat': iat.int_timestamp,
             'exp': exp.int_timestamp,
             'name': user.username,
-            'role': None
+            'group': None
         }, config.secrets['jwt_secret'], algorithm='HS256')
 
     @staticmethod

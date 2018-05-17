@@ -16,7 +16,7 @@ class Job(base.Base):
 
     # columns
     id = base.id_builder.build()
-    instance_id = Column(base.id_builder.type, ForeignKey('application_instance.id'), nullable=False)
+    instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     name: str = Column(String(64), nullable=False, unique=True)
     created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
@@ -26,15 +26,15 @@ class Job(base.Base):
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='jobs')
     executions: List['JobExecution'] = relationship('JobExecution', back_populates='job')
     schedules: List['JobSchedule'] = relationship('JobSchedule', back_populates='job')
-    input_group: 'model.input_group.InputGroupInstance' = relationship(
-        'InputGroupInstance', uselist=False, back_populates='job')
+    input: 'model.interface.JobInput' = relationship(
+        'JobInput', uselist=False, back_populates='job')
 
     def execute(self):
         model.conn.add(instance=JobExecution(job=self))
 
 
 class JobSchedule(base.Base):
-    __tablename__ = 'job_schedule'
+    __tablename__ = 'sched_job'
 
     # columns
     id = base.id_builder.build()
@@ -86,11 +86,13 @@ class JobExecution(base.Base):
     task_id: str = Column(String(36), unique=True)
     status: str = Column(String(24), default='RECEIVED')
     created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
+    started: datetime = Column(DateTime)
+    completed: datetime = Column(DateTime)
     updated: datetime = Column(DateTime, default=base.utc_now, nullable=False)
 
     # associations
     streams: List['JobExecutionStream'] = relationship('JobExecutionStream', back_populates='job_execution')
-    artefacts: List['JobExecutionArtefact'] = relationship('JobExecutionArtefact', back_populates='job_execution')
+    artifacts: List['JobExecutionArtifact'] = relationship('JobExecutionArtifact', back_populates='job_execution')
 
 
 class JobExecutionStream(base.Base):
@@ -104,12 +106,14 @@ class JobExecutionStream(base.Base):
     name: str = Column(String(64))
     status: str = Column(String(24), default='QUEUED')
     created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
+    started: datetime = Column(DateTime)
+    completed: datetime = Column(DateTime)
     updated: datetime = Column(DateTime, default=base.utc_now, nullable=False)
 
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='streams')
     steps: List['JobExecutionStreamStep'] = relationship('JobExecutionStreamStep', back_populates='stream')
-    artefacts: List['JobExecutionArtefact'] = relationship('JobExecutionArtefact', back_populates='stream')
+    artifacts: List['JobExecutionArtifact'] = relationship('JobExecutionArtifact', back_populates='stream')
 
 
 class JobExecutionStreamStep(base.Base):
@@ -122,15 +126,17 @@ class JobExecutionStreamStep(base.Base):
     task_id: str = Column(String(36), unique=True)
     name: str = Column(String(64))
     status: str = Column(String(24), default='RECEIVED')
-    created: datetime = Column(DateTime, default=base.utc_now)
-    updated: datetime = Column(DateTime)
+    created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
+    started: datetime = Column(DateTime)
+    completed: datetime = Column(DateTime)
+    updated: datetime = Column(DateTime, default=base.utc_now, nullable=False)
 
     # associations
     stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='steps')
 
 
-class JobExecutionArtefact(base.Base):
-    __tablename__ = 'job_artefact'
+class JobExecutionArtifact(base.Base):
+    __tablename__ = 'job_artifact'
     __reprattrs__ = ['name', 'filename']
 
     # columns
@@ -142,11 +148,10 @@ class JobExecutionArtefact(base.Base):
     filename: str = Column(String(512), nullable=False)
     created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
     size: int = Column(Integer, nullable=False)
-    binary: bytes = deferred(Column(Binary))
 
     # associations
-    job_execution: 'JobExecution' = relationship('JobExecution', back_populates='artefacts')
-    stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='artefacts')
+    job_execution: 'JobExecution' = relationship('JobExecution', back_populates='artifacts')
+    stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='artifacts')
 
     @property
     def content_type(self):
@@ -155,3 +160,11 @@ class JobExecutionArtefact(base.Base):
     @property
     def content_encoding(self):
         return mimetypes.guess_type(self.filename)[1]
+
+
+class JobExecutionArtifactBinary(base.Base):
+    __tablename__ = 'job_artifact_binary'
+
+    # columns
+    id = base.id_builder.build()
+    binary: bytes = deferred(Column(Binary, nullable=True))

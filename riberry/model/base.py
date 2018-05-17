@@ -30,4 +30,4 @@ id_builder = _IdBuilder(id_type=Integer)
 
 
 def utc_now():
-    return pendulum.now(tz=pendulum.UTC)
+    return pendulum.DateTime.utcnow()
