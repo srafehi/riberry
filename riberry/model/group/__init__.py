@@ -1,9 +1,10 @@
 import enum
 from typing import List
 
-from sqlalchemy import String, Column, Enum, ForeignKey
+from sqlalchemy import String, Column, Enum, ForeignKey, sql
 from sqlalchemy.orm import relationship
 
+from riberry import model
 from riberry.model import base
 
 
@@ -36,4 +37,15 @@ class ResourceGroupAssociation(base.Base):
 
     # associations
     group: 'Group' = relationship('Group', back_populates='resource_associations')
+
+    @classmethod
+    def make_relationship(cls, resource_id, resource_type):
+        return relationship(
+            'ResourceGroupAssociation',
+            primaryjoin=lambda: sql.and_(
+                resource_id == model.group.ResourceGroupAssociation.resource_id,
+                model.group.ResourceGroupAssociation.resource_type == resource_type
+            ),
+            foreign_keys=lambda: model.group.ResourceGroupAssociation.resource_id
+        )
 

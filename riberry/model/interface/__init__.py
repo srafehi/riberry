@@ -2,10 +2,10 @@ import csv
 import io
 import json
 import mimetypes
-from typing import List, Dict, Optional, AnyStr
+from typing import List, Dict
 
 import yaml
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary
+from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, Time
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, deferred
@@ -66,9 +66,14 @@ class ApplicationInstanceInterface(base.Base):
     schedules: List['ApplicationInstanceInterfaceSchedule'] = relationship(
         'ApplicationInstanceInterfaceSchedule', back_populates='instance_interface')
     inputs: List['JobInput'] = relationship('JobInput', back_populates='instance_interface')
+    group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
+        resource_id=id,
+        resource_type=model.group.ResourceType.application_instance_interface
+    )
 
     # proxies
     jobs: List['model.job.Job'] = association_proxy('inputs', 'job')
+    groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
 
 
 class ApplicationInstanceInterfaceSchedule(base.Base):
@@ -77,6 +82,8 @@ class ApplicationInstanceInterfaceSchedule(base.Base):
     # columns
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance_interface.id'), nullable=False)
+    start = Column(Time, nullable=False)
+    end = Column(Time, nullable=False)
 
     # associations
     instance_interface: 'ApplicationInstanceInterface' = relationship(
