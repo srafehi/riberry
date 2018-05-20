@@ -95,7 +95,7 @@ class InputFileDefinition(base.Base):
 
     # columns
     id = base.id_builder.build()
-    input_group_id = Column(base.id_builder.type, ForeignKey('app_interface.id'))
+    application_interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'))
 
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
@@ -113,7 +113,7 @@ class InputValueDefinition(base.Base):
 
     # columns
     id = base.id_builder.build()
-    input_group_id = Column(base.id_builder.type, ForeignKey('app_interface.id'))
+    application_interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'))
 
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
