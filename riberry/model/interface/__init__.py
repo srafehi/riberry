@@ -124,7 +124,18 @@ class InputValueDefinition(base.Base):
 
     # associations
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='input_value_definitions')
-    allowed_values: List['InputValueEnum'] = relationship('InputValueEnum', back_populates='definition')
+    allowed_value_enumerations: List['InputValueEnum'] = relationship('InputValueEnum', back_populates='definition')
+
+    # proxies
+    allowed_binaries: List[bytes] = association_proxy(
+        'allowed_value_enumerations',
+        'value',
+        creator=lambda value: InputValueEnum(value=value)
+    )
+
+    @property
+    def allowed_values(self):
+        return [yaml.load(v.decode()) for v in self.allowed_binaries]
 
     @hybrid_property
     def default_value(self):
@@ -145,7 +156,7 @@ class InputValueEnum(base.Base):
     value = Column(Binary, nullable=False)
 
     # associations
-    definition: 'InputValueDefinition' = relationship('InputValueDefinition', back_populates='allowed_values')
+    definition: 'InputValueDefinition' = relationship('InputValueDefinition', back_populates='allowed_value_enumerations')
 
 
 class InputValueInstance(base.Base):
