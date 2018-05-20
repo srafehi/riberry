@@ -1,12 +1,14 @@
 import datetime
 import re
-from typing import AnyStr, Dict
+from typing import AnyStr, Dict, List
 
 import jwt
 import pendulum
 from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, validates
 
+from riberry import model
 from riberry.model import base
 from riberry.model.config import config
 
@@ -19,6 +21,15 @@ class User(base.Base):
     username = Column('username', String(32), nullable=False, unique=True)
     password = Column('password', String(128))
     details: 'UserDetails' = relationship('UserDetails', uselist=False, back_populates='user')
+
+    # associations
+    group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
+        resource_id=id,
+        resource_type=model.group.ResourceType.user
+    )
+
+    # proxies
+    groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
 
     @classmethod
     def authenticate(cls, username, password):
