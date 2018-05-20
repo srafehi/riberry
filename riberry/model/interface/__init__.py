@@ -65,14 +65,13 @@ class ApplicationInstanceInterface(base.Base):
         'ApplicationInterface', back_populates='instance_interfaces', lazy='joined')
     schedules: List['ApplicationInstanceInterfaceSchedule'] = relationship(
         'ApplicationInstanceInterfaceSchedule', back_populates='instance_interface')
-    inputs: List['JobInput'] = relationship('JobInput', back_populates='instance_interface')
+    jobs: List['Job'] = relationship('Job', back_populates='instance_interface')
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
         resource_type=model.group.ResourceType.application_instance_interface
     )
 
     # proxies
-    jobs: List['model.job.Job'] = association_proxy('inputs', 'job')
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
 
 
@@ -149,80 +148,17 @@ class InputValueEnum(base.Base):
     definition: 'InputValueDefinition' = relationship('InputValueDefinition', back_populates='allowed_values')
 
 
-class JobInput(base.Base):
-    __tablename__ = 'job_input'
-
-    # columns
-    id = base.id_builder.build()
-    instance_interface_id = Column(base.id_builder.type, ForeignKey('app_instance_interface.id'), nullable=False)
-    job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
-
-    # associations
-    values: List['InputValueInstance'] = relationship('InputValueInstance', back_populates='job_input')
-    files: List['InputFileInstance'] = relationship('InputFileInstance', back_populates='job_input')
-    instance_interface: 'ApplicationInstanceInterface' = relationship('ApplicationInstanceInterface')
-    job: 'model.job.Job' = relationship('Job', back_populates='input')
-
-    # proxies
-    interface: 'ApplicationInterface' = association_proxy('instance_interface', 'interface')
-
-    def inputs_dict(self):
-        value_map_definitions: Dict[str, 'InputValueDefinition'] = {
-            input_def.name: input_def for input_def in self.interface.input_value_definitions}
-        file_map_definitions: Dict[str, 'InputFileDefinition'] = {
-            input_def.name: input_def for input_def in self.interface.input_file_definitions}
-
-        value_ins_definitions: Dict[str, 'InputValueInstance'] = {
-            input_ins.definition.name: input_ins for input_ins in self.values}
-        file_ins_definitions: Dict[str, 'InputFileInstance'] = {
-            input_ins.definition.name: input_ins for input_ins in self.files}
-
-        output = {}
-        for name, definition in value_map_definitions.items():
-            instance = value_ins_definitions.get(name)
-            raw_value: bytes = instance.raw_value if instance else None
-            if not raw_value:
-                if definition.required:
-                    raise ValueError(f'Mandatory input '
-                                     f'{repr(definition.name)}/{repr(definition.parameter)} not provided for {self}')
-                raw_value = definition.default_binary
-            output[definition.internal_name] = self._deserialize_value(raw_value, definition.type)
-
-        for name, definition in file_map_definitions.items():
-            instance = file_ins_definitions.get(name)
-            binary: bytes = instance.binary if instance else None
-            if not binary:
-                if definition.required:
-                    raise ValueError(f'Mandatory input file '
-                                     f'{repr(definition.name)}/{repr(definition.parameter)} not provided for {self}')
-            output[definition.internal_name] = self._deserialize_value(binary, definition.type)
-
-        return output
-
-    @staticmethod
-    def _deserialize_value(value, value_type):
-        if value_type in ('int', 'bool', 'str', 'integer', 'boolean', 'string',
-                          'text', 'number',
-                          'float', 'json', 'yaml'):
-            return yaml.load(value)
-        if value_type == 'csv':
-            reader = csv.DictReader(io.StringIO(value.decode()))
-            return list(reader)
-
-        return value.decode()
-
-
 class InputValueInstance(base.Base):
     __tablename__ = 'input_value_instance'
 
     # columns
     id = base.id_builder.build()
     definition_id = Column(base.id_builder.type, ForeignKey('input_value_definition.id'), nullable=False)
-    job_input_id = Column(base.id_builder.type, ForeignKey('job_input.id'), nullable=False)
+    job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
     raw_value: bytes = Column('value', Binary)
 
     # associations
-    job_input: 'JobInput' = relationship('JobInput', back_populates='values')
+    job: 'model.job.Job' = relationship('Job', back_populates='values')
     definition: 'InputValueDefinition' = relationship('InputValueDefinition')
 
     @hybrid_property
@@ -242,12 +178,12 @@ class InputFileInstance(base.Base):
     id = base.id_builder.build()
     filename: str = Column(String(512), nullable=False)
     definition_id = Column(base.id_builder.type, ForeignKey('input_file_definition.id'), nullable=False)
-    job_input_id = Column(base.id_builder.type, ForeignKey('job_input.id'), nullable=False)
+    job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
     size: int = Column(Integer, nullable=False)
     binary: bytes = deferred(Column(Binary))
 
     # associations
-    job_input: 'JobInput' = relationship('JobInput', back_populates='files')
+    job: 'model.job.Job' = relationship('Job', back_populates='files')
     definition: 'InputFileDefinition' = relationship('InputFileDefinition')
 
     @property

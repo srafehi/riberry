@@ -5,6 +5,7 @@ from typing import List
 import pendulum
 from croniter import croniter
 from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary
+from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, deferred
 from riberry import model
 from riberry.model import base
@@ -16,18 +17,22 @@ class Job(base.Base):
 
     # columns
     id = base.id_builder.build()
-    instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
+    instance_interface_id = Column(base.id_builder.type, ForeignKey('app_instance_interface.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     name: str = Column(String(64), nullable=False, unique=True)
     created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
 
     # associations
     creator: 'model.auth.User' = relationship('User')
-    instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='jobs')
+    instance_interface: 'model.interface.ApplicationInstanceInterface' = \
+        relationship('ApplicationInstanceInterface', back_populates='jobs')
     executions: List['JobExecution'] = relationship('JobExecution', back_populates='job')
     schedules: List['JobSchedule'] = relationship('JobSchedule', back_populates='job')
-    input: 'model.interface.JobInput' = relationship(
-        'JobInput', uselist=False, back_populates='job')
+    values: List['model.interface.InputValueInstance'] = relationship('InputValueInstance', back_populates='job')
+    files: List['model.interface.InputFileInstance'] = relationship('InputFileInstance', back_populates='job')
+
+    # proxies
+    instance: 'model.interface.ApplicationInstanceInterface' = association_proxy('instance_interface', 'instance')
 
     def execute(self):
         model.conn.add(instance=JobExecution(job=self))

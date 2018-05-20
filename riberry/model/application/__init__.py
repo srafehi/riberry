@@ -48,7 +48,6 @@ class ApplicationInstance(base.Base):
         'ApplicationInstanceSchedule', back_populates='instance')
     instance_interfaces: List['model.interface.ApplicationInstanceInterface'] = relationship(
         'ApplicationInstanceInterface', back_populates='instance')
-    jobs: List['model.job.Job'] = relationship('Job', back_populates='instance')
 
     # proxies
     interfaces: List['model.interface.ApplicationInterface'] = association_proxy(
