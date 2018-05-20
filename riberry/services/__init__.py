@@ -7,4 +7,6 @@ def fetch_relationship(model_object, attribute, action):
 
     if isinstance(resource, list):
         return policy.context.filter(resources=resource, action=action)
-    return policy.context.authorize(resource=resource, action=action)
+    if policy.context.authorize(resource=resource, action=action, on_deny=None) is not False:
+        return resource
+    return None
