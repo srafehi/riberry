@@ -33,7 +33,7 @@ class Application(base.Base):
 
 class ApplicationInstance(base.Base):
     __tablename__ = 'app_instance'
-    __reprattrs__ = ['name', 'enabled']
+    __reprattrs__ = ['name', 'internal_name']
 
     # columns
     id = base.id_builder.build()
