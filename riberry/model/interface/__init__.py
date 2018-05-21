@@ -1,8 +1,6 @@
-import csv
-import io
 import json
 import mimetypes
-from typing import List, Dict
+from typing import List
 
 import yaml
 from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, Time
@@ -18,18 +16,21 @@ from riberry.model import base
 class ApplicationInterface(base.Base):
     __tablename__ = 'app_interface'
     __reprattrs__ = ['name', 'version']
+    __table_args__ = (
+        UniqueConstraint('internal_name', 'version', name='uc_name_version'),
+    )
 
     # columns
     id = base.id_builder.build()
     application_id = Column(base.id_builder.type, ForeignKey('application.id'), nullable=False)
     document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
     name: str = Column(String(64), nullable=False)
-    internal_name: str = Column(String(256), nullable=False, unique=True)
+    internal_name: str = Column(String(256), nullable=False)
     version: int = Column(Integer, nullable=False, default=1)
     description: str = Column(String(48))
 
     # associations
-    application: 'application.Application' = relationship('Application', back_populates='interfaces')
+    application: 'model.application.Application' = relationship('Application', back_populates='interfaces')
     input_value_definitions: List['InputValueDefinition'] = relationship(
         'InputValueDefinition', back_populates='interface')
     input_file_definitions: List['InputFileDefinition'] = relationship(
