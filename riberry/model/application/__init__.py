@@ -30,6 +30,17 @@ class Application(base.Base):
         'ApplicationInterface', back_populates='application')
     document: 'model.misc.Document' = relationship('Document')
 
+    instance_interfaces = relationship(
+        'ApplicationInstanceInterface',
+        secondary=lambda: ApplicationInstance.__table__,
+        primaryjoin=lambda: Application.id == ApplicationInstance.application_id,
+        secondaryjoin=lambda: ApplicationInstance.id == model.interface.ApplicationInstanceInterface.instance_id
+    )
+
+    # proxies
+    # instance_interfaces: 'model.interface.ApplicationInstanceInterface' = association_proxy(
+    #     'instances', 'instance_interfaces', target_collection=dict)
+
 
 class ApplicationInstance(base.Base):
     __tablename__ = 'app_instance'
