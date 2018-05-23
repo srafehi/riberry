@@ -2,7 +2,6 @@ import json
 import mimetypes
 from typing import List
 
-import yaml
 from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, Time
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -136,15 +135,15 @@ class InputValueDefinition(base.Base):
 
     @property
     def allowed_values(self):
-        return [yaml.load(v.decode()) for v in self.allowed_binaries]
+        return [json.loads(v.decode()) for v in self.allowed_binaries]
 
     @hybrid_property
     def default_value(self):
-        return yaml.load(self.default_binary.decode()) if self.default_binary else None
+        return json.loads(self.default_binary.decode()) if self.default_binary else None
 
     @default_value.setter
     def default_value(self, value):
-        self.default_binary = yaml.dump(value).encode()
+        self.default_binary = json.dumps(value).encode()
 
 
 class InputValueEnum(base.Base):

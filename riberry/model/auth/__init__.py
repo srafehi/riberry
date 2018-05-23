@@ -19,7 +19,7 @@ class User(base.Base):
 
     id = base.id_builder.build()
     username = Column('username', String(32), nullable=False, unique=True)
-    password = Column('password', String(128))
+    password = Column('password', String(512))
     details: 'UserDetails' = relationship('UserDetails', uselist=False, back_populates='user')
 
     # associations
@@ -79,8 +79,7 @@ class AuthToken:
         return jwt.encode({
             'iat': iat.int_timestamp,
             'exp': exp.int_timestamp,
-            'name': user.username,
-            'group': None
+            'subject': user.username
         }, config.secrets['jwt_secret'], algorithm='HS256')
 
     @staticmethod
