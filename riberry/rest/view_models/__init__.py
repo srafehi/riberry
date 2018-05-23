@@ -179,7 +179,8 @@ class ApplicationInstanceInterface(ViewModel):
         return [
             Expansion('schedules', ApplicationInstanceInterfaceSchedule, uselist=True),
             Expansion('interface', ApplicationInterface, uselist=False),
-            Expansion('instance', ApplicationInstance, uselist=False)
+            Expansion('instance', ApplicationInstance, uselist=False),
+            Expansion('jobs', Job, uselist=True)
         ]
 
     def to_dict(self):
@@ -287,16 +288,82 @@ class User(ViewModel):
         }
 
 
+class InputValueInstance(ViewModel):
+
+    model: model.interface.InputValueInstance
+
+    @staticmethod
+    def expansions() -> List[Expansion]:
+        return [
+            Expansion('definition', InputValueDefinition, uselist=False)
+        ]
+
+    def to_dict(self):
+        return {
+            'name': self.model.definition.name,
+            'value': self.model.value,
+            **self._resolve_expansions()
+        }
+
+
+class InputFileInstance(ViewModel):
+
+    model: model.interface.InputFileInstance
+
+    @staticmethod
+    def expansions() -> List[Expansion]:
+        return [
+            Expansion('definition', InputFileDefinition, uselist=False)
+        ]
+
+    def to_dict(self):
+        return {
+            'name': self.model.definition.name,
+            'filename': self.model.filename,
+            'size': self.model.size,
+            **self._resolve_expansions()
+        }
+
+
+
 class Job(ViewModel):
 
     model: model.job.Job
 
     @staticmethod
     def expansions() -> List[Expansion]:
-        return []
+        return [
+            Expansion('creator', User, uselist=False),
+            Expansion('executions', JobExecution, uselist=True),
+            Expansion('values', InputValueInstance, uselist=True, alias='inputValues'),
+            Expansion('files', InputFileInstance, uselist=True, alias='inputFiles'),
+        ]
 
     def to_dict(self):
         return {
             'id': self.model.id,
-            'name': self.model.name
+            'name': self.model.name,
+            'created': self.model.created.isoformat(),
+            **self._resolve_expansions()
+        }
+
+
+class JobExecution(ViewModel):
+
+    model: model.job.JobExecution
+
+    @staticmethod
+    def expansions() -> List[Expansion]:
+        return [
+            Expansion('job', Job, uselist=False)
+        ]
+
+    def to_dict(self):
+        return {
+            'id': self.model.id,
+            'created': self.model.created.isoformat(),
+            'started': self.model.started.isoformat() if self.model.started else None,
+            'updated': self.model.updated.isoformat(),
+            'completed': self.model.completed.isoformat() if self.model.started else None,
+            **self._resolve_expansions()
         }
