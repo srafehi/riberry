@@ -11,7 +11,7 @@ class TestAuthToken:
     def test_username(self, dummy_user: auth.User):
         token = auth.AuthToken.create(dummy_user)
         payload = auth.AuthToken.verify(token)
-        assert payload['name'] == dummy_user.username
+        assert payload['subject'] == dummy_user.username
 
     def test_expiry_delta(self, dummy_user: auth.User):
         expiry_delta = timedelta(hours=1)

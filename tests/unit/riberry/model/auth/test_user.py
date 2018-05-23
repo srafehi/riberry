@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from riberry.model import auth, conn
+from riberry.plugins.default.auth import hash_password
 # noinspection PyUnresolvedReferences
 from tests.unit.riberry.fixtures import dummy_user, init_model
 
@@ -9,8 +10,8 @@ from tests.unit.riberry.fixtures import dummy_user, init_model
 class TestUser:
 
     def test_enforce_unique_username(self):
-        user_a = auth.User(username='johndoe', password='password')
-        user_b = auth.User(username='johndoe', password='password')
+        user_a = auth.User(username='johndoe', password=hash_password(b'password').decode())
+        user_b = auth.User(username='johndoe', password=hash_password(b'password').decode())
         conn.add(user_a)
         conn.add(user_b)
 
