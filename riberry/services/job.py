@@ -102,3 +102,24 @@ def create_job(instance_interface_id, name, input_values, input_files):
     model.conn.commit()
 
     return job
+
+
+@policy.context.post_authorize(action='view')
+def job_by_id(job_id):
+    return model.job.Job.query().filter_by(id=job_id).one()
+
+
+@policy.context.post_filter(action='view')
+def job_executions_by_id(job_id):
+    return model.job.JobExecution.query().filter_by(job_id=job_id).all()
+
+
+def create_job_execution(job_id):
+    job = job_by_id(job_id=job_id)
+    execution = model.job.JobExecution(job=job)
+
+    policy.context.authorize(execution, action='create')
+    model.conn.add(execution)
+    model.conn.commit()
+
+    return execution

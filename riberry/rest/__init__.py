@@ -258,6 +258,7 @@ api.add_namespace(views.application_instance.api)
 api.add_namespace(views.instance_interface.api)
 api.add_namespace(views.application_interface.api)
 api.add_namespace(views.auth.api)
+api.add_namespace(views.job.api)
 
 
 # region Authorization

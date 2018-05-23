@@ -15,3 +15,18 @@ def create_job(instance_interface_id, name, input_values, input_files):
 def jobs_by_instance_interface_id(instance_interface_id, options=None):
     jobs = services.job.jobs_by_instance_interface_id(instance_interface_id=instance_interface_id)
     return [view_models.Job(model=job, options=options).to_dict() for job in jobs]
+
+
+def job_by_id(job_id, options):
+    job = services.job.job_by_id(job_id=job_id)
+    return view_models.Job(model=job, options=options).to_dict()
+
+
+def job_executions_by_id(job_id, options):
+    job_executions = services.job.job_executions_by_id(job_id=job_id)
+    return [view_models.JobExecution(model=execution, options=options).to_dict() for execution in job_executions]
+
+
+def create_job_execution(job_id):
+    execution = services.job.create_job_execution(job_id=job_id)
+    return view_models.JobExecution(model=execution, options=None).to_dict()
