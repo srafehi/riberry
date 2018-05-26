@@ -22,25 +22,25 @@ def users_for_group_id(group_id):
     return group.users
 
 
-def instance_interfaces_for_group_id(group_id):
+def forms_for_group_id(group_id):
     group = group_by_id(group_id=group_id)
-    return group.instance_interfaces
+    return group.forms
 
 
 def remove_user_from_group(group_id, user_id):
     _remove_resource_from_group(group_id, user_id, model.group.ResourceType.user)
 
 
-def add_user_from_group(group_id, user_id):
-    _add_resource_from_group(group_id, user_id, model.group.ResourceType.user)
+def add_user_to_group(group_id, user_id):
+    _add_resource_to_group(group_id, user_id, model.group.ResourceType.user)
 
 
-def remove_instance_interface_from_group(group_id, instance_interface_id):
-    _remove_resource_from_group(group_id, instance_interface_id, model.group.ResourceType.application_instance_interface)
+def remove_form_from_group(group_id, form_id):
+    _remove_resource_from_group(group_id, form_id, model.group.ResourceType.form)
 
 
-def add_instance_interface_from_group(group_id, instance_interface_id):
-    _add_resource_from_group(group_id, instance_interface_id, model.group.ResourceType.application_instance_interface)
+def add_form_to_group(group_id, form_id):
+    _add_resource_to_group(group_id, form_id, model.group.ResourceType.form)
 
 
 def _find_group_association(group_id, resource_id, resource_type):
@@ -58,7 +58,7 @@ def _remove_resource_from_group(group_id, resource_id, resource_type):
         model.conn.commit()
 
 
-def _add_resource_from_group(group_id, resource_id, resource_type):
+def _add_resource_to_group(group_id, resource_id, resource_type):
     association = _find_group_association(group_id, resource_id, resource_type)
     if not association:
         association = model.group.ResourceGroupAssociation(

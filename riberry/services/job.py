@@ -4,8 +4,8 @@ from riberry import model, services, policy
 import json
 
 
-def jobs_by_instance_interface_id(instance_interface_id):
-    return model.job.Job.query().filter_by(instance_interface_id=instance_interface_id).all()
+def jobs_by_form_id(form_id):
+    return model.job.Job.query().filter_by(form_id=form_id).all()
 
 
 def verify_inputs(input_value_definitions, input_file_definitions, input_values, input_files):
@@ -51,14 +51,13 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
     return input_value_mapping, input_file_mapping
 
 
-def create_job(instance_interface_id, name, input_values, input_files):
+def create_job(form_id, name, input_values, input_files):
     input_values = {k: (json.dumps(v).encode() if v else v) for k, v in input_values.items()}
-    instance_interface = services.instance_interface.instance_interface_by_id(
-        instance_interface_id=instance_interface_id)
-    policy.context.authorize(instance_interface, action='view')
+    form = services.form.form_by_id(form_id=form_id)
+    policy.context.authorize(form, action='view')
 
-    input_file_definitions = instance_interface.interface.input_file_definitions
-    input_value_definitions = instance_interface.interface.input_value_definitions
+    input_file_definitions = form.interface.input_file_definitions
+    input_value_definitions = form.interface.input_value_definitions
 
     values_mapping, files_mapping = verify_inputs(
         input_value_definitions,
@@ -89,7 +88,7 @@ def create_job(instance_interface_id, name, input_values, input_files):
         input_file_instances.append(input_file_instance)
 
     job = model.job.Job(
-        instance_interface=instance_interface,
+        form=form,
         name=name,
         files=input_file_instances,
         values=input_value_instances,

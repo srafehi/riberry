@@ -34,22 +34,21 @@ class ApplicationInterface(base.Base):
         'InputValueDefinition', back_populates='interface')
     input_file_definitions: List['InputFileDefinition'] = relationship(
         'InputFileDefinition', back_populates='interface')
-    instance_interfaces: List['ApplicationInstanceInterface'] = relationship(
-        'ApplicationInstanceInterface', back_populates='interface')
+    forms: List['Form'] = relationship('Form', back_populates='interface')
     document: 'model.misc.Document' = relationship('Document')
 
     # proxies
     application_instances: List['model.application.ApplicationInstance'] = association_proxy(
-        'instance_interfaces',
+        'forms',
         'instance'
     )
 
 
-class ApplicationInstanceInterface(base.Base):
-    __tablename__ = 'app_instance_interface'
+class Form(base.Base):
+    __tablename__ = 'form'
     __reprattrs__ = ['instance_id', 'interface_id']
     __table_args__ = (
-        UniqueConstraint('instance_id', 'interface_id', name='uc_instance_interface'),
+        UniqueConstraint('instance_id', 'interface_id', name='uc_form'),
     )
 
     # columns
@@ -59,34 +58,30 @@ class ApplicationInstanceInterface(base.Base):
     enabled: bool = Column(Boolean, nullable=False, default=True)
 
     # associations
-    instance: 'model.application.ApplicationInstance' = relationship(
-        'ApplicationInstance', back_populates='instance_interfaces')
-    interface: 'ApplicationInterface' = relationship(
-        'ApplicationInterface', back_populates='instance_interfaces', lazy='joined')
-    schedules: List['ApplicationInstanceInterfaceSchedule'] = relationship(
-        'ApplicationInstanceInterfaceSchedule', back_populates='instance_interface')
-    jobs: List['Job'] = relationship('Job', back_populates='instance_interface')
+    instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')
+    interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='forms', lazy='joined')
+    schedules: List['FormSchedule'] = relationship('FormSchedule', back_populates='form')
+    jobs: List['Job'] = relationship('Job', back_populates='form')
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
-        resource_type=model.group.ResourceType.application_instance_interface
+        resource_type=model.group.ResourceType.form
     )
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
 
 
-class ApplicationInstanceInterfaceSchedule(base.Base):
-    __tablename__ = 'sched_app_instance_interface'
+class FormSchedule(base.Base):
+    __tablename__ = 'sched_form'
 
     # columns
     id = base.id_builder.build()
-    instance_id = Column(base.id_builder.type, ForeignKey('app_instance_interface.id'), nullable=False)
+    form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
     start = Column(Time, nullable=False)
     end = Column(Time, nullable=False)
 
     # associations
-    instance_interface: 'ApplicationInstanceInterface' = relationship(
-        'ApplicationInstanceInterface', back_populates='schedules')
+    form: 'Form' = relationship('Form', back_populates='schedules')
 
 
 class InputFileDefinition(base.Base):

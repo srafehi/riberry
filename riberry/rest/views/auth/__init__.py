@@ -43,28 +43,28 @@ class GroupInstanceUserCollectionResource(Resource):
         return services.auth.users_for_group_id(group_id=id)
 
 
-@api.route('/groups/<id>/instance-interfaces', endpoint='auth-group:instance-interface:collection')
-class GroupInstanceInstanceInterfaceCollectionResource(Resource):
+@api.route('/groups/<id>/forms', endpoint='auth-group:form:collection')
+class GroupFormCollectionResource(Resource):
 
     def get(self, id):
-        return services.auth.instance_interfaces_for_group_id(group_id=id)
+        return services.auth.forms_for_group_id(group_id=id)
 
 
 @api.route('/groups/<id>/users/<user_id>', endpoint='auth-group:user:resource')
-class GroupInstanceUserCollectionResource(Resource):
+class GroupUserCollectionResource(Resource):
 
     def post(self, id, user_id):
-        return services.auth.add_user_from_group(group_id=id, user_id=user_id)
+        return services.auth.add_user_to_group(group_id=id, user_id=user_id)
 
     def delete(self, id, user_id):
         return services.auth.remove_user_from_group(group_id=id, user_id=user_id)
 
 
-@api.route('/groups/<id>/instance-interfaces/<instance_interface_id>', endpoint='auth-group:instance-interface:resource')
-class GroupInstanceInstanceInterfaceCollectionResource(Resource):
+@api.route('/groups/<id>/forms/<form_id>', endpoint='auth-group:form:resource')
+class GroupFormResource(Resource):
 
-    def post(self, id, instance_interface_id):
-        return services.auth.add_instance_interface_from_group(group_id=id, instance_interface_id=instance_interface_id)
+    def post(self, id, form_id):
+        return services.auth.add_form_to_group(group_id=id, form_id=form_id)
 
-    def delete(self, id, instance_interface_id):
-        return services.auth.remove_instance_interface_from_group(group_id=id, instance_interface_id=instance_interface_id)
+    def delete(self, id, form_id):
+        return services.auth.remove_form_from_group(group_id=id, form_id=form_id)

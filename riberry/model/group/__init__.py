@@ -10,7 +10,7 @@ from riberry.model import base
 
 
 class ResourceType(enum.Enum):
-    application_instance_interface = 'ApplicationInstanceInterface'
+    form = 'Form'
     user = 'User'
 
     def __repr__(self):
@@ -60,11 +60,11 @@ class Group(base.Base):
             ResourceGroupAssociation.resource_type == ResourceType.user
         )
     )
-    instance_interface_associations: List['ResourceGroupAssociation'] = relationship(
+    form_associations: List['ResourceGroupAssociation'] = relationship(
         'ResourceGroupAssociation',
         primaryjoin=lambda: sql.and_(
             ResourceGroupAssociation.group_id == Group.id,
-            ResourceGroupAssociation.resource_type == ResourceType.application_instance_interface
+            ResourceGroupAssociation.resource_type == ResourceType.form
         )
     )
 
@@ -77,11 +77,11 @@ class Group(base.Base):
         ).all()
 
     @property
-    def instance_interfaces(self):
-        return model.interface.ApplicationInstanceInterface.query().filter(
+    def forms(self):
+        return model.interface.Form.query().filter(
             (ResourceGroupAssociation.group_id == self.id) &
-            (ResourceGroupAssociation.resource_type == ResourceType.application_instance_interface) &
-            (model.interface.ApplicationInstanceInterface.id == ResourceGroupAssociation.resource_id)
+            (ResourceGroupAssociation.resource_type == ResourceType.form) &
+            (model.interface.Form.id == ResourceGroupAssociation.resource_id)
         ).all()
 
 

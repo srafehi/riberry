@@ -6,7 +6,6 @@ from riberry.rest import view_models
 
 def authenticate_user(username: str, password: str) -> Dict:
     access_token = services.auth.authenticate_user(username=username, password=password)
-    print(access_token)
     return {
         'token': access_token
     }
@@ -27,25 +26,25 @@ def users_for_group_id(group_id, options=None):
     return [view_models.User(model=user, options=options).to_dict() for user in users]
 
 
-def instance_interfaces_for_group_id(group_id, options=None):
-    users = services.auth.instance_interfaces_for_group_id(group_id=group_id)
-    return [view_models.ApplicationInstanceInterface(model=user, options=options).to_dict() for user in users]
+def forms_for_group_id(group_id, options=None):
+    users = services.auth.forms_for_group_id(group_id=group_id)
+    return [view_models.Form(model=user, options=options).to_dict() for user in users]
 
 
 def remove_user_from_group(group_id, user_id):
     return services.auth.remove_user_from_group(group_id, user_id)
 
 
-def remove_instance_interface_from_group(group_id, instance_interface_id):
-    return services.auth.remove_instance_interface_from_group(group_id, instance_interface_id)
+def remove_form_from_group(group_id, form_id):
+    return services.auth.remove_form_from_group(group_id, form_id)
 
 
-def add_user_from_group(group_id: object, user_id: object):
-    return services.auth.add_user_from_group(group_id, user_id)
+def add_user_to_group(group_id: object, user_id: object):
+    return services.auth.add_user_to_group(group_id, user_id)
 
 
-def add_instance_interface_from_group(group_id, instance_interface_id):
-    return services.auth.add_instance_interface_from_group(group_id, instance_interface_id)
+def add_form_to_group(group_id, form_id):
+    return services.auth.add_form_to_group(group_id, form_id)
 
 
 def create_group(name):

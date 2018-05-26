@@ -255,7 +255,7 @@ CORS(app)
 api: Api = Api(app, authorizations=authorizations, security='session')
 api.add_namespace(views.application.api)
 api.add_namespace(views.application_instance.api)
-api.add_namespace(views.instance_interface.api)
+api.add_namespace(views.form.api)
 api.add_namespace(views.application_interface.api)
 api.add_namespace(views.auth.api)
 api.add_namespace(views.job.api)
@@ -319,8 +319,8 @@ class ViewApplicationUsingInstanceInterfaceRelationshipRule(policy.Rule):
         application: model.application.Application = context.resource
 
         for instance in application.instances:
-            for instance_interface in instance.instance_interfaces:
-                if set(user.groups) & set(instance_interface.groups):
+            for form in instance.forms:
+                if set(user.groups) & set(form.groups):
                     return True
         return False
 
@@ -370,8 +370,8 @@ class ViewApplicationInstanceUsingInstanceInterfaceRelationshipRule(policy.Rule)
         user: model.auth.User = context.subject
         instance: model.application.ApplicationInstance = context.resource
 
-        for instance_interface in instance.instance_interfaces:
-            if set(user.groups) & set(instance_interface.groups):
+        for form in instance.forms:
+            if set(user.groups) & set(form.groups):
                 return True
         return False
 
@@ -403,8 +403,8 @@ class ViewApplicationInstanceUsingInterfaceRelationshipRule(policy.Rule):
         user: model.auth.User = context.subject
         application_interface: model.interface.ApplicationInterface = context.resource
 
-        for instance_interface in application_interface.instance_interfaces:
-            if set(user.groups) & set(instance_interface.groups):
+        for form in application_interface.forms:
+            if set(user.groups) & set(form.groups):
                 return True
         return False
 
@@ -412,7 +412,7 @@ class ViewApplicationInstanceUsingInterfaceRelationshipRule(policy.Rule):
 class ApplicationInstanceInterfacePolicySet(policy.PolicySet):
 
     def target_clause(self, context: AttributeContext) -> bool:
-        return isinstance(context.resource, model.interface.ApplicationInstanceInterface)
+        return isinstance(context.resource, model.interface.Form)
 
     def condition(self, context: AttributeContext) -> bool:
         return True
@@ -434,9 +434,9 @@ class ViewInstanceInterfaceRule(policy.Rule):
 
     def condition(self, context: AttributeContext) -> bool:
         user: model.auth.User = context.subject
-        instance_interface: model.interface.ApplicationInstanceInterface = context.resource
+        form: model.interface.Form = context.resource
 
-        if set(user.groups) & set(instance_interface.groups):
+        if set(user.groups) & set(form.groups):
             return True
         return False
 

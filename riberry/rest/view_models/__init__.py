@@ -82,7 +82,7 @@ class Application(ViewModel):
         return [
             Expansion(key='instances', model_cls=ApplicationInstance, uselist=True),
             Expansion(key='interfaces', model_cls=ApplicationInterface, uselist=True),
-            Expansion(key='instance_interfaces', model_cls=ApplicationInstanceInterface, uselist=True, alias='instanceInterfaces')
+            Expansion(key='forms', model_cls=Form, uselist=True)
         ]
 
     def to_dict(self):
@@ -105,7 +105,7 @@ class ApplicationInterface(ViewModel):
         return [
             Expansion(key='document', model_cls=Document, uselist=False),
             Expansion(key='application', model_cls=Application, uselist=False),
-            Expansion(key='instance_interfaces', model_cls=ApplicationInstanceInterface, uselist=True, alias='instanceInterfaces'),
+            Expansion(key='forms', model_cls=Form, uselist=True),
             Expansion(key='input_value_definitions', model_cls=InputValueDefinition, uselist=True, alias='inputValues'),
             Expansion(key='input_file_definitions', model_cls=InputFileDefinition, uselist=True, alias='inputFiles')
         ]
@@ -128,7 +128,7 @@ class ApplicationInstance(ViewModel):
     def expansions() -> List[Expansion]:
         return [
             Expansion('schedules', model_cls=ApplicationInstanceSchedule, uselist=True),
-            Expansion('instance_interfaces', model_cls=ApplicationInstanceInterface, uselist=True, alias='instanceInterfaces'),
+            Expansion('forms', model_cls=Form, uselist=True),
             Expansion('heartbeat', model_cls=ApplicationHeartbeat, uselist=False)
         ]
 
@@ -170,14 +170,14 @@ class ApplicationInstanceSchedule(ViewModel):
         }
 
 
-class ApplicationInstanceInterface(ViewModel):
+class Form(ViewModel):
 
-    model: model.interface.ApplicationInstanceInterface
+    model: model.interface.Form
 
     @staticmethod
     def expansions():
         return [
-            Expansion('schedules', ApplicationInstanceInterfaceSchedule, uselist=True),
+            Expansion('schedules', FormSchedule, uselist=True),
             Expansion('interface', ApplicationInterface, uselist=False),
             Expansion('instance', ApplicationInstance, uselist=False),
             Expansion('jobs', Job, uselist=True)
@@ -190,9 +190,9 @@ class ApplicationInstanceInterface(ViewModel):
         }
 
 
-class ApplicationInstanceInterfaceSchedule(ViewModel):
+class FormSchedule(ViewModel):
 
-    model: model.interface.ApplicationInstanceInterfaceSchedule
+    model: model.interface.FormSchedule
 
     @staticmethod
     def expansions():

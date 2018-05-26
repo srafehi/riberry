@@ -30,16 +30,12 @@ class Application(base.Base):
         'ApplicationInterface', back_populates='application')
     document: 'model.misc.Document' = relationship('Document')
 
-    instance_interfaces = relationship(
-        'ApplicationInstanceInterface',
+    forms = relationship(
+        'Form',
         secondary=lambda: ApplicationInstance.__table__,
         primaryjoin=lambda: Application.id == ApplicationInstance.application_id,
-        secondaryjoin=lambda: ApplicationInstance.id == model.interface.ApplicationInstanceInterface.instance_id
+        secondaryjoin=lambda: ApplicationInstance.id == model.interface.Form.instance_id
     )
-
-    # proxies
-    # instance_interfaces: 'model.interface.ApplicationInstanceInterface' = association_proxy(
-    #     'instances', 'instance_interfaces', target_collection=dict)
 
 
 class ApplicationInstance(base.Base):
@@ -57,12 +53,11 @@ class ApplicationInstance(base.Base):
     heartbeat: 'Heartbeat' = relationship('Heartbeat', uselist=False, back_populates='instance')
     schedules: List['ApplicationInstanceSchedule'] = relationship(
         'ApplicationInstanceSchedule', back_populates='instance')
-    instance_interfaces: List['model.interface.ApplicationInstanceInterface'] = relationship(
-        'ApplicationInstanceInterface', back_populates='instance')
+    forms: List['model.interface.Form'] = relationship('Form', back_populates='instance')
 
     # proxies
     interfaces: List['model.interface.ApplicationInterface'] = association_proxy(
-        target_collection='instance_interfaces',
+        target_collection='forms',
         attr='interface'
     )
 

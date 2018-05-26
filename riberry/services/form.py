@@ -5,16 +5,16 @@ from riberry import services
 
 
 @policy.context.post_filter(action='view')
-def all_instance_interfaces() -> List[model.interface.ApplicationInstanceInterface]:
-    return model.interface.ApplicationInstanceInterface.query().all()
+def all_forms() -> List[model.interface.Form]:
+    return model.interface.Form.query().all()
 
 
 @policy.context.post_authorize(action='view')
-def instance_interface_by_id(instance_interface_id) -> model.interface.ApplicationInstanceInterface:
-    return model.interface.ApplicationInstanceInterface.query().filter_by(id=instance_interface_id).one()
+def form_by_id(form_id) -> model.interface.Form:
+    return model.interface.Form.query().filter_by(id=form_id).one()
 
 
-def create_instance_interface(instance_id, interface_id, group_names) -> model.interface.ApplicationInstanceInterface:
+def create_form(instance_id, interface_id, group_names) -> model.interface.Form:
     instance = services.application_instance.application_instance_by_id(application_instance_id=instance_id)
     interface = services.application_interface.application_interface_by_id(application_interface_id=interface_id)
 
@@ -26,22 +26,21 @@ def create_instance_interface(instance_id, interface_id, group_names) -> model.i
         group = model.group.Group.query().filter_by(name=group_name).one()
         groups.append(group)
 
-    instance_interface = model.interface.ApplicationInstanceInterface(
+    form = model.interface.Form(
         instance=instance,
         interface=interface
     )
 
-    policy.context.authorize(instance_interface, action='create')
+    policy.context.authorize(form, action='create')
 
     for group in groups:
         group_association = model.group.ResourceGroupAssociation(
             resource_id=group.id,
-            resource_type=model.group.ResourceType.application_instance_interface,
+            resource_type=model.group.ResourceType.form,
             group=group
         )
         model.conn.add(group_association)
 
-
-    model.conn.add(instance_interface)
+    model.conn.add(form)
     model.conn.commit()
-    return instance_interface
+    return form

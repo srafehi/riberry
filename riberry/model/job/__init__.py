@@ -17,22 +17,21 @@ class Job(base.Base):
 
     # columns
     id = base.id_builder.build()
-    instance_interface_id = Column(base.id_builder.type, ForeignKey('app_instance_interface.id'), nullable=False)
+    form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     name: str = Column(String(64), nullable=False, unique=True)
     created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
 
     # associations
     creator: 'model.auth.User' = relationship('User')
-    instance_interface: 'model.interface.ApplicationInstanceInterface' = \
-        relationship('ApplicationInstanceInterface', back_populates='jobs')
+    form: 'model.interface.Form' = relationship('Form', back_populates='jobs')
     executions: List['JobExecution'] = relationship('JobExecution', back_populates='job')
     schedules: List['JobSchedule'] = relationship('JobSchedule', back_populates='job')
     values: List['model.interface.InputValueInstance'] = relationship('InputValueInstance', back_populates='job')
     files: List['model.interface.InputFileInstance'] = relationship('InputFileInstance', back_populates='job')
 
     # proxies
-    instance: 'model.interface.ApplicationInstanceInterface' = association_proxy('instance_interface', 'instance')
+    instance: 'model.interface.Form' = association_proxy('form', 'instance')
 
     def execute(self):
         model.conn.add(instance=JobExecution(job=self))
