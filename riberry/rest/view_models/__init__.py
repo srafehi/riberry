@@ -129,7 +129,8 @@ class ApplicationInstance(ViewModel):
         return [
             Expansion('schedules', model_cls=ApplicationInstanceSchedule, uselist=True),
             Expansion('forms', model_cls=Form, uselist=True),
-            Expansion('heartbeat', model_cls=ApplicationHeartbeat, uselist=False)
+            Expansion('heartbeat', model_cls=ApplicationHeartbeat, uselist=False),
+            Expansion(key='application', model_cls=Application, uselist=False),
         ]
 
     def to_dict(self):
@@ -279,12 +280,35 @@ class User(ViewModel):
 
     @staticmethod
     def expansions() -> List[Expansion]:
+        return [
+            Expansion('details', UserDetails, uselist=False),
+            Expansion('groups', Group, uselist=True),
+            Expansion('jobs', Job, uselist=True),
+            Expansion('forms', Form, uselist=True),
+        ]
+
+    def to_dict(self):
+        return {
+            'id': self.model.id,
+            'username': self.model.username,
+            **self._resolve_expansions()
+        }
+
+
+class UserDetails(ViewModel):
+
+    model: model.auth.UserDetails
+
+    @staticmethod
+    def expansions() -> List[Expansion]:
         return []
 
     def to_dict(self):
         return {
             'id': self.model.id,
-            'username': self.model.username
+            'name': self.model.display_name or self.model.full_name,
+            'email': self.model.email,
+            'department': self.model.department
         }
 
 
@@ -323,7 +347,6 @@ class InputFileInstance(ViewModel):
             'size': self.model.size,
             **self._resolve_expansions()
         }
-
 
 
 class Job(ViewModel):
