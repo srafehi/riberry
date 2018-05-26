@@ -97,36 +97,6 @@ from riberry.plugins.default.auth import hash_password
 
 model.init(url='sqlite:///model.db', echo=False)
 
-# aii: model.interface.ApplicationInstanceInterface = model.interface.ApplicationInstanceInterface.query().filter_by(id=1).one()
-# for val in aii.interface.input_value_definitions:
-#     print(val, val.internal_name, val.allowed_values)
-# for fil in aii.interface.input_file_definitions:
-#     print(fil, fil.internal_name)
-#
-# print(aii.interface.input_file_definitions)
-# print(aii)
-#
-# x = {
-#     'values': {
-#         'property_value': 'JKL',
-#     },
-#     'files': {
-#         'config': b'...'
-#     }
-# }
-#
-# exit()
-
-# from riberry.model.group import Group
-#
-# for group in Group.query().all():
-#     print(group)
-#     print(group.user_associations)
-#     print(group.users)
-#     print(group.instance_interface_associations)
-#     print()
-#
-# exit()
 
 def preload():
     user = model.auth.User(username='admin', password=hash_password(b'123').decode())
@@ -134,106 +104,6 @@ def preload():
     user = model.auth.User(username='shadyrafehi', password=hash_password(b'123').decode())
     model.conn.add(user)
     model.conn.commit()
-    # group = model.group.Group(name='Sample Group')
-    # model.conn.add(
-    #     model.group.ResourceGroupAssociation(
-    #         resource_id=user.id,
-    #         resource_type=model.group.ResourceType.user,
-    #         group=group
-    #     )
-    # )
-    #
-    # model.conn.commit()
-    #
-    # app_instance = model.application.ApplicationInstance(
-    #     name='Sample Application Instance',
-    #     internal_name='application.sample.instance'
-    # )
-    # app_interface = model.interface.ApplicationInterface(
-    #     name='Sample Interface',
-    #     internal_name='interface.sample',
-    #     version=1,
-    #     input_file_definitions=[
-    #         model.interface.InputFileDefinition(
-    #             name='CSV File',
-    #             internal_name='csv_file',
-    #             type='csv',
-    #             required=True
-    #         )
-    #     ],
-    #     input_value_definitions=[
-    #         model.interface.InputValueDefinition(
-    #             name='Application Timeout',
-    #             internal_name='timeout',
-    #             type='number',
-    #             required=True,
-    #             default_binary=b'60'
-    #         ),
-    #         model.interface.InputValueDefinition(
-    #             name='Target',
-    #             internal_name='target',
-    #             type='text',
-    #             required=True,
-    #             default_binary=b'A',
-    #             allowed_binaries=[
-    #                 b'A',
-    #                 b'B',
-    #                 b'C'
-    #             ]
-    #         )
-    #     ]
-    # )
-    #
-    # app = model.application.Application(
-    #     name='Sample Application',
-    #     internal_name='application.sample',
-    #     type='MISC',
-    #     instances=[
-    #         app_instance
-    #     ],
-    #     interfaces=[
-    #         app_interface
-    #     ]
-    # )
-    #
-    # from datetime import time
-    #
-    # instance_interface = model.interface.ApplicationInstanceInterface(
-    #     instance=app_instance,
-    #     interface=app_interface,
-    #     schedules=[
-    #         model.interface.ApplicationInstanceInterfaceSchedule(
-    #             start=time(hour=2),
-    #             end=time(hour=6)
-    #         )
-    #     ]
-    # )
-    #
-    # model.conn.add(app)
-    # model.conn.add(instance_interface)
-    # model.conn.commit()
-    #
-    # gra = model.group.ResourceGroupAssociation(
-    #     group=group,
-    #     resource_id=instance_interface.id,
-    #     resource_type=model.group.ResourceType.application_instance_interface,
-    # )
-    #
-    # model.conn.add(gra)
-    # model.conn.commit()
-    #
-    # user = model.auth.User(username='johndoe', password=hash_password(b'123').decode())
-    # model.conn.add(user)
-    # model.conn.commit()
-    # group = model.group.Group(name='Another Group')
-    # model.conn.add(
-    #     model.group.ResourceGroupAssociation(
-    #         resource_id=user.id,
-    #         resource_type=model.group.ResourceType.user,
-    #         group=group
-    #     )
-    # )
-    # model.conn.commit()
 
 
 if not model.auth.User.query().first():
@@ -309,7 +179,7 @@ class ApplicationViewPolicy(policy.PolicySet):
         return True
 
 
-class ViewApplicationUsingInstanceInterfaceRelationshipRule(policy.Rule):
+class ViewApplicationUsingFormRelationshipRule(policy.Rule):
 
     def target_clause(self, context: AttributeContext) -> bool:
         return True
@@ -361,7 +231,7 @@ class ApplicationInstanceViewPolicy(policy.Policy):
         return True
 
 
-class ViewApplicationInstanceUsingInstanceInterfaceRelationshipRule(policy.Rule):
+class ViewApplicationInstanceUsingFormRelationshipRule(policy.Rule):
 
     def target_clause(self, context: AttributeContext) -> bool:
         return True
@@ -409,7 +279,7 @@ class ViewApplicationInstanceUsingInterfaceRelationshipRule(policy.Rule):
         return False
 
 
-class ApplicationInstanceInterfacePolicySet(policy.PolicySet):
+class ApplicationFormPolicySet(policy.PolicySet):
 
     def target_clause(self, context: AttributeContext) -> bool:
         return isinstance(context.resource, model.interface.Form)
@@ -418,7 +288,7 @@ class ApplicationInstanceInterfacePolicySet(policy.PolicySet):
         return True
 
 
-class ApplicationInstanceInterfaceViewPolicy(policy.Policy):
+class ApplicationFormViewPolicy(policy.Policy):
 
     def target_clause(self, context: AttributeContext) -> bool:
         return context.action == 'view'
@@ -427,7 +297,7 @@ class ApplicationInstanceInterfaceViewPolicy(policy.Policy):
         return True
 
 
-class ViewInstanceInterfaceRule(policy.Rule):
+class ViewFormRule(policy.Rule):
 
     def target_clause(self, context: AttributeContext) -> bool:
         return True
@@ -459,7 +329,7 @@ class JobViewPolicy(policy.Policy):
         return True
 
 
-class ViewJobUsingInstanceInterfaceRelationshipRule(policy.Policy):
+class ViewJobUsingFormRelationshipRule(policy.Policy):
 
     def target_clause(self, context: AttributeContext) -> bool:
         return True
@@ -468,54 +338,56 @@ class ViewJobUsingInstanceInterfaceRelationshipRule(policy.Policy):
         user: model.auth.User = context.subject
         job: model.job.Job = context.resource
 
-        job.instance
+        if set(user.groups) & set(job.form.groups):
+            return True
+        return False
 
 
 # endregion
 
 auth_engine = policy.AuthorizationEngine(
-    # RootPolicySet(
-    #     AdminPolicySet(),
-    #     UserPolicySet(
-    #         ApplicationPolicySet(
-    #             ApplicationViewPolicy(
-    #                 ViewApplicationUsingInstanceInterfaceRelationshipRule()
-    #             ),
-    #             GenericCreatePolicy(
-    #                 RejectCreateRule()
-    #             )
-    #         ),
-    #         ApplicationInstancePolicySet(
-    #             ApplicationInstanceViewPolicy(
-    #                 ViewApplicationInstanceUsingInstanceInterfaceRelationshipRule()
-    #             ),
-    #             GenericCreatePolicy(
-    #                 RejectCreateRule()
-    #             )
-    #         ),
-    #         ApplicationInterfacePolicySet(
-    #             ApplicationInterfacePolicySet(
-    #                 ViewApplicationInstanceUsingInterfaceRelationshipRule()
-    #             ),
-    #             GenericCreatePolicy(
-    #                 RejectCreateRule()
-    #             )
-    #         ),
-    #         ApplicationInstanceInterfacePolicySet(
-    #             ApplicationInstanceInterfaceViewPolicy(
-    #                 ViewInstanceInterfaceRule()
-    #             ),
-    #             GenericCreatePolicy(
-    #                 RejectCreateRule()
-    #             )
-    #         ),
-    #         JobPolicySet(
-    #             JobViewPolicy(
-    #                 ViewJobUsingInstanceInterfaceRelationshipRule()
-    #             )
-    #         )
-    #     )
-    # )
+    RootPolicySet(
+        AdminPolicySet(),
+        UserPolicySet(
+            ApplicationPolicySet(
+                ApplicationViewPolicy(
+                    ViewApplicationUsingFormRelationshipRule()
+                ),
+                GenericCreatePolicy(
+                    RejectCreateRule()
+                )
+            ),
+            ApplicationInstancePolicySet(
+                ApplicationInstanceViewPolicy(
+                    ViewApplicationInstanceUsingFormRelationshipRule()
+                ),
+                GenericCreatePolicy(
+                    RejectCreateRule()
+                )
+            ),
+            ApplicationInterfacePolicySet(
+                ApplicationInterfacePolicySet(
+                    ViewApplicationInstanceUsingInterfaceRelationshipRule()
+                ),
+                GenericCreatePolicy(
+                    RejectCreateRule()
+                )
+            ),
+            ApplicationFormPolicySet(
+                ApplicationFormViewPolicy(
+                    ViewFormRule()
+                ),
+                GenericCreatePolicy(
+                    RejectCreateRule()
+                )
+            ),
+            JobPolicySet(
+                JobViewPolicy(
+                    ViewJobUsingFormRelationshipRule()
+                )
+            )
+        )
+    )
 )
 
 
@@ -543,7 +415,6 @@ def set_auth_context():
                 print(exc)
                 raise
 
-    print(user)
     policy.context.configure(
         subject=user,
         environment=None,
