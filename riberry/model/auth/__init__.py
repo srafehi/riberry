@@ -27,9 +27,18 @@ class User(base.Base):
         resource_id=id,
         resource_type=model.group.ResourceType.user
     )
+    jobs: List['model.job.Job'] = relationship('Job', back_populates='creator')
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
+
+    @property
+    def forms(self):
+        return model.interface.Form.query().filter(
+            (model.group.ResourceGroupAssociation.group_id.in_(o.group_id for o in self.group_associations)) &
+            (model.group.ResourceGroupAssociation.resource_type == model.group.ResourceType.form) &
+            (model.interface.Form.id == model.group.ResourceGroupAssociation.resource_id)
+        ).all()
 
     @classmethod
     def authenticate(cls, username, password):
@@ -53,9 +62,9 @@ class UserDetails(base.Base):
 
     first_name = Column(String(32), nullable=False)
     last_name = Column(String(32), nullable=False)
+    display_name = Column(String(32))
     department = Column(String(64))
     email = Column(String(128))
-    mobile = Column(String(24))
     updated: datetime = Column(DateTime, default=base.utc_now)
 
     @property
