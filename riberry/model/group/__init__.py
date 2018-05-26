@@ -2,7 +2,6 @@ import enum
 from typing import List
 
 from sqlalchemy import String, Column, Enum, ForeignKey, sql
-from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
 
 from riberry import model

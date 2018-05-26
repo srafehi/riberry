@@ -1,99 +1,11 @@
-"""
-# ---------------------------
-# Applications
-# ---------------------------
-  expansion: (interfaces, instances, instances.schedules, instances.heartbeat)
-# ---------------------------
-/applications/
-/applications/:id
-/applications/:id/interfaces
-/applications/:id/instances
-
-
-# ---------------------------
-# Application Instances
-# ---------------------------
-  expansion: (application, schedules, heartbeat, instanceInterfaces, instanceInterfaces.groups, instanceInterfaces.interface)
-# ---------------------------
-/application-instances/
-/application-instances/:id
-/application-instances/:id/schedules
-/application-instances/:id/heartbeat
-/application-instances/:id/instance-interfaces
-
-
-# ---------------------------
-# Application Interfaces
-# ---------------------------
-  expansion: (inputValues, inputFiles, instanceInterfaces)
-# ---------------------------
-/application-interfaces/:id
-/application-interfaces/:id/instance-interfaces
-
-
-# ---------------------------
-# Instance Interfaces
-# ---------------------------
-  expansion: (instance, interface, groups, schedules, interface.values, interface.files)
-# ---------------------------
-/instance-interfaces/:id
-/instance-interfaces/:id/jobs [pagination]
-/instance-interfaces/:id/jobs/:id
-/instance-interfaces/:id/schedules
-/instance-interfaces/:id/groups
-
-
-# ---------------------------
-# Jobs
-# ---------------------------
-  expansion: (inputs, schedules, instanceInterface)
-# ---------------------------
-/job/ [pagination, user's executions, status-filters]
-/jobs/:id
-/jobs/:id/schedules
-/jobs/:id/inputs
-/jobs/:id/job-executions [pagination]
-/jobs/:id/job-executions/:id
-
-
-# ---------------------------
-# Job Executions
-# ---------------------------
-  expansion: ()
-# ---------------------------
-/job-executions/ [pagination, user's executions, status-filters]
-/job-executions/:id
-/job-executions/:id/artifacts [pagination, sort, filters, groupings, counts]
-/job-executions/:id/job-execution-streams [pagination, sort, filters, groupings, counts]
-
-
-# ---------------------------
-# Job Execution Streams
-# ---------------------------
-  expansion: ()
-# ---------------------------
-/job-execution-streams/:id
-/job-execution-streams/:id/artifacts [pagination, sort, filters, groupings, counts]
-
-# ---------------------------
-# Job Execution Artifacts
-# ---------------------------
-  expansion: ()
-# ---------------------------
-/job-execution-artifacts/:id
-
-"""
-
-
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from flask_cors import CORS
 from flask_restplus import Api
 
-from riberry.policy import AttributeContext
-from riberry.rest import views
 from riberry import model, policy
 from riberry.plugins.default.auth import hash_password
-
+from riberry.policy import AttributeContext
+from riberry.rest import views
 
 model.init(url='sqlite:///model.db', echo=False)
 

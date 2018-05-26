@@ -1,7 +1,8 @@
+import json
 from typing import List, Dict
+
 from riberry import services
 from riberry.rest import view_models
-import json
 
 
 def all_application_interfaces(options) -> List[Dict]:

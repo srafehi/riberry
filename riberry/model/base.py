@@ -1,6 +1,7 @@
 import pendulum
 from sqlalchemy import Column, Sequence, Integer
 from sqlalchemy.ext.declarative import declarative_base
+
 from riberry import model
 
 

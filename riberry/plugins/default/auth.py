@@ -1,5 +1,6 @@
-import os
 import hashlib
+import os
+
 from riberry.model import auth, config
 
 

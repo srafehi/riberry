@@ -1,9 +1,9 @@
 import abc
-import inspect
-from typing import Set, Union, Optional, Type, Callable
-from threading import local
-from contextlib import contextmanager
 import functools
+import inspect
+from contextlib import contextmanager
+from threading import local
+from typing import Set, Union, Optional, Type, Callable
 
 
 class NotApplicable(Exception):

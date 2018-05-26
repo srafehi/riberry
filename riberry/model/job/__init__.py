@@ -7,6 +7,7 @@ from croniter import croniter
 from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, deferred
+
 from riberry import model
 from riberry.model import base
 
