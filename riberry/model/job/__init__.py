@@ -4,7 +4,7 @@ from typing import List
 
 import pendulum
 from croniter import croniter
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, deferred
 
@@ -15,6 +15,10 @@ from riberry.model import base
 class Job(base.Base):
     __tablename__ = 'job'
     __reprattrs__ = ['name']
+    __table_args__ = (
+        Index('j__idx_form_id', 'form_id'),
+        Index('j__idx_creator_id', 'creator_id'),
+    )
 
     # columns
     id = base.id_builder.build()
@@ -32,7 +36,8 @@ class Job(base.Base):
     files: List['model.interface.InputFileInstance'] = relationship('InputFileInstance', back_populates='job')
 
     # proxies
-    instance: 'model.interface.Form' = association_proxy('form', 'instance')
+    instance: 'model.application.ApplicationInstance' = association_proxy('form', 'instance')
+    interface: 'model.interface.ApplicationInterface' = association_proxy('form', 'interface')
 
     def execute(self):
         model.conn.add(instance=JobExecution(job=self))
@@ -83,11 +88,15 @@ class JobSchedule(base.Base):
 class JobExecution(base.Base):
     __tablename__ = 'job_execution'
     __reprattrs__ = ['job_id', 'task_id', 'status']
+    __table_args__ = (
+        Index('j_e__idx_job_id', 'job_id'),
+        Index('j_e__idx_creator_id', 'creator_id'),
+    )
 
     # columns
     id = base.id_builder.build()
     job_id = Column(base.id_builder.type, ForeignKey('job.id'))
-    job: 'Job' = relationship('Job', back_populates='executions')
+    creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     task_id: str = Column(String(36), unique=True)
     status: str = Column(String(24), default='RECEIVED')
     created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
@@ -96,6 +105,8 @@ class JobExecution(base.Base):
     updated: datetime = Column(DateTime, default=base.utc_now, nullable=False)
 
     # associations
+    creator: 'model.auth.User' = relationship('User')
+    job: 'Job' = relationship('Job', back_populates='executions')
     streams: List['JobExecutionStream'] = relationship('JobExecutionStream', back_populates='job_execution')
     artifacts: List['JobExecutionArtifact'] = relationship('JobExecutionArtifact', back_populates='job_execution')
 
@@ -103,6 +114,9 @@ class JobExecution(base.Base):
 class JobExecutionStream(base.Base):
     __tablename__ = 'job_stream'
     __reprattrs__ = ['name', 'task_id', 'status']
+    __table_args__ = (
+        Index('j_s__idx_job_execution_id', 'job_execution_id'),
+    )
 
     # columns
     id = base.id_builder.build()
@@ -124,6 +138,9 @@ class JobExecutionStream(base.Base):
 class JobExecutionStreamStep(base.Base):
     __tablename__ = 'job_stream_step'
     __reprattrs__ = ['name', 'task_id', 'status']
+    __table_args__ = (
+        Index('j_s_s__idx_stream_id', 'stream_id'),
+    )
 
     # columns
     id = base.id_builder.build()
@@ -143,6 +160,10 @@ class JobExecutionStreamStep(base.Base):
 class JobExecutionArtifact(base.Base):
     __tablename__ = 'job_artifact'
     __reprattrs__ = ['name', 'filename']
+    __table_args__ = (
+        Index('j_a__idx_job_execution_id', 'job_execution_id'),
+        Index('j_a__idx_stream_id', 'stream_id'),
+    )
 
     # columns
     id = base.id_builder.build()
@@ -157,6 +178,7 @@ class JobExecutionArtifact(base.Base):
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='artifacts')
     stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='artifacts')
+    binary: 'JobExecutionArtifactBinary' = relationship('JobExecutionArtifactBinary', back_populates='artifact', uselist=False)
 
     @property
     def content_type(self):
@@ -173,3 +195,7 @@ class JobExecutionArtifactBinary(base.Base):
     # columns
     id = base.id_builder.build()
     binary: bytes = deferred(Column(Binary, nullable=True))
+    artifact_id = Column(base.id_builder.type, ForeignKey('job_artifact.id'), nullable=False)
+
+    # associations
+    artifact: 'JobExecutionArtifact' = relationship('JobExecutionArtifact', back_populates='binary')

@@ -28,6 +28,7 @@ class User(base.Base):
         resource_type=model.group.ResourceType.user
     )
     jobs: List['model.job.Job'] = relationship('Job', back_populates='creator')
+    executions: List['model.job.JobExecution'] = relationship('JobExecution', back_populates='creator')
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')

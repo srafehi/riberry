@@ -337,6 +337,7 @@ def set_auth_context():
 @app.teardown_request
 def rem_auth_context(*_):
     policy.context.reset()
+    model.conn.close()
 
 
 if __name__ == '__main__':

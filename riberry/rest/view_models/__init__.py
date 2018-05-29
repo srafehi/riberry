@@ -2,6 +2,8 @@ from typing import List, Dict
 
 from riberry import model, services
 
+import pendulum
+
 
 class Expansion:
 
@@ -43,7 +45,6 @@ class Expansion:
 
 
 class ViewModel:
-
     __model_mapping__ = {}
 
     def __init_subclass__(cls, **kwargs):
@@ -74,7 +75,6 @@ class ViewModel:
 
 
 class Application(ViewModel):
-
     model: model.application.Application
 
     @staticmethod
@@ -97,7 +97,6 @@ class Application(ViewModel):
 
 
 class ApplicationInterface(ViewModel):
-
     model: model.interface.ApplicationInterface
 
     @staticmethod
@@ -121,7 +120,6 @@ class ApplicationInterface(ViewModel):
 
 
 class ApplicationInstance(ViewModel):
-
     model: model.application.ApplicationInstance
 
     @staticmethod
@@ -143,7 +141,6 @@ class ApplicationInstance(ViewModel):
 
 
 class ApplicationHeartbeat(ViewModel):
-
     model: model.application.Heartbeat
 
     @staticmethod
@@ -152,13 +149,12 @@ class ApplicationHeartbeat(ViewModel):
 
     def to_dict(self):
         return {
-            'created': self.model.created.isoformat(),
-            'updated': self.model.updated.isoformat()
+            'created': pendulum.instance(self.model.created).isoformat(),
+            'updated': pendulum.instance(self.model.updated).isoformat(),
         }
 
 
 class ApplicationInstanceSchedule(ViewModel):
-
     model: model.application.ApplicationInstanceSchedule
 
     @staticmethod
@@ -172,7 +168,6 @@ class ApplicationInstanceSchedule(ViewModel):
 
 
 class Form(ViewModel):
-
     model: model.interface.Form
 
     @staticmethod
@@ -192,7 +187,6 @@ class Form(ViewModel):
 
 
 class FormSchedule(ViewModel):
-
     model: model.interface.FormSchedule
 
     @staticmethod
@@ -208,7 +202,6 @@ class FormSchedule(ViewModel):
 
 
 class Document(ViewModel):
-
     model: model.misc.Document
 
     @staticmethod
@@ -224,7 +217,6 @@ class Document(ViewModel):
 
 
 class InputValueDefinition(ViewModel):
-
     model: model.interface.InputValueDefinition
 
     @staticmethod
@@ -243,7 +235,6 @@ class InputValueDefinition(ViewModel):
 
 
 class InputFileDefinition(ViewModel):
-
     model: model.interface.InputFileDefinition
 
     @staticmethod
@@ -260,7 +251,6 @@ class InputFileDefinition(ViewModel):
 
 
 class Group(ViewModel):
-
     model: model.group.Group
 
     @staticmethod
@@ -275,7 +265,6 @@ class Group(ViewModel):
 
 
 class User(ViewModel):
-
     model: model.auth.User
 
     @staticmethod
@@ -284,19 +273,19 @@ class User(ViewModel):
             Expansion('details', UserDetails, uselist=False),
             Expansion('groups', Group, uselist=True),
             Expansion('jobs', Job, uselist=True),
+            Expansion('executions', JobExecution, uselist=True),
             Expansion('forms', Form, uselist=True),
         ]
 
     def to_dict(self):
         return {
             'id': self.model.id,
-            'username': self.model.username,
+            'userName': self.model.username,
             **self._resolve_expansions()
         }
 
 
 class UserDetails(ViewModel):
-
     model: model.auth.UserDetails
 
     @staticmethod
@@ -313,7 +302,6 @@ class UserDetails(ViewModel):
 
 
 class InputValueInstance(ViewModel):
-
     model: model.interface.InputValueInstance
 
     @staticmethod
@@ -331,7 +319,6 @@ class InputValueInstance(ViewModel):
 
 
 class InputFileInstance(ViewModel):
-
     model: model.interface.InputFileInstance
 
     @staticmethod
@@ -350,7 +337,6 @@ class InputFileInstance(ViewModel):
 
 
 class Job(ViewModel):
-
     model: model.job.Job
 
     @staticmethod
@@ -358,6 +344,9 @@ class Job(ViewModel):
         return [
             Expansion('creator', User, uselist=False),
             Expansion('executions', JobExecution, uselist=True),
+            Expansion('instance', ApplicationInstance, uselist=False),
+            Expansion('interface', ApplicationInterface, uselist=False),
+            Expansion('form', Form, uselist=False),
             Expansion('values', InputValueInstance, uselist=True, alias='inputValues'),
             Expansion('files', InputFileInstance, uselist=True, alias='inputFiles'),
         ]
@@ -366,27 +355,96 @@ class Job(ViewModel):
         return {
             'id': self.model.id,
             'name': self.model.name,
-            'created': self.model.created.isoformat(),
+            'created': pendulum.instance(self.model.created).isoformat(),
             **self._resolve_expansions()
         }
 
 
 class JobExecution(ViewModel):
-
     model: model.job.JobExecution
 
     @staticmethod
     def expansions() -> List[Expansion]:
         return [
-            Expansion('job', Job, uselist=False)
+            Expansion('creator', User, uselist=False),
+            Expansion('job', Job, uselist=False),
+            Expansion('artifacts', JobExecutionArfitact, uselist=True),
+            Expansion('streams', JobExecutionStream, uselist=True),
         ]
 
     def to_dict(self):
         return {
             'id': self.model.id,
-            'created': self.model.created.isoformat(),
-            'started': self.model.started.isoformat() if self.model.started else None,
-            'updated': self.model.updated.isoformat(),
-            'completed': self.model.completed.isoformat() if self.model.started else None,
+            'status': self.model.status,
+            'created': pendulum.instance(self.model.created).isoformat(),
+            'started': pendulum.instance(self.model.started).isoformat() if self.model.started else None,
+            'updated': pendulum.instance(self.model.updated).isoformat(),
+            'completed': pendulum.instance(self.model.completed).isoformat() if self.model.started else None,
             **self._resolve_expansions()
+        }
+
+
+class JobExecutionStream(ViewModel):
+    model: model.job.JobExecutionStream
+
+    @staticmethod
+    def expansions() -> List[Expansion]:
+        return [
+            Expansion('execution', JobExecution, uselist=False),
+            Expansion('steps', JobExecutionStreamStep, uselist=True),
+            Expansion('artifacts', JobExecutionArfitact, uselist=True),
+        ]
+
+    def to_dict(self):
+        return {
+            'id': self.model.id,
+            'name': self.model.name,
+            'status': self.model.status,
+            'created': pendulum.instance(self.model.created).isoformat(),
+            'started': pendulum.instance(self.model.started).isoformat() if self.model.started else None,
+            'updated': pendulum.instance(self.model.updated).isoformat(),
+            'completed': pendulum.instance(self.model.completed).isoformat() if self.model.started else None,
+            **self._resolve_expansions(),
+        }
+
+
+class JobExecutionStreamStep(ViewModel):
+    model: model.job.JobExecutionStreamStep
+
+    @staticmethod
+    def expansions() -> List[Expansion]:
+        return [
+            Expansion('execution', JobExecution, uselist=False),
+        ]
+
+    def to_dict(self):
+        return {
+            'id': self.model.id,
+            'name': self.model.name,
+            'status': self.model.status,
+            'created': pendulum.instance(self.model.created).isoformat(),
+            'started': pendulum.instance(self.model.started).isoformat() if self.model.started else None,
+            'updated': pendulum.instance(self.model.updated).isoformat(),
+            'completed': pendulum.instance(self.model.completed).isoformat() if self.model.started else None,
+            **self._resolve_expansions(),
+        }
+
+
+class JobExecutionArfitact(ViewModel):
+    model: model.job.JobExecutionArtifact
+
+    @staticmethod
+    def expansions() -> List[Expansion]:
+        return [
+            Expansion('execution', JobExecution, uselist=False),
+        ]
+
+    def to_dict(self):
+        return {
+            'id': self.model.id,
+            'name': self.model.name,
+            'type': self.model.type,
+            'created': pendulum.instance(self.model.created).isoformat(),
+            'size': self.model.size,
+            **self._resolve_expansions(),
         }

@@ -115,7 +115,7 @@ def job_executions_by_id(job_id):
 
 def create_job_execution(job_id):
     job = job_by_id(job_id=job_id)
-    execution = model.job.JobExecution(job=job)
+    execution = model.job.JobExecution(job=job, creator=policy.context.subject)
 
     policy.context.authorize(execution, action='create')
     model.conn.add(execution)
