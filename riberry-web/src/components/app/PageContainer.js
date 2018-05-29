@@ -15,13 +15,15 @@ const styles = {
 @withStyles(styles)
 export class PageContainer extends React.Component {
     render() {
-        const {classes, children} = this.props;
+        const {classes, children, spacing=16} = this.props;
         return (
             <main className={classes.root}>
                 <Grid container>
                     <Grid item xs={2}/>
                     <Grid item xs={8}>
-                        {children}
+                        <Grid container spacing={spacing}>
+                            {children}
+                        </Grid>
                     </Grid>
                 </Grid>
             </main>

@@ -92,32 +92,31 @@ export default class Dashboard extends React.Component {
 
         return (
             <PageContainer>
-                <Grid container spacing={16}>
-                    <Grid item xs={12}>
-                        <DashboardCard title='Last 7 Days'>
-                            <DashboardCardPanel title='Queued jobs' value={dashboardStore.summary.RECEIVED + dashboardStore.summary.READY + dashboardStore.summary.QUEUED}/>
-                            <DashboardCardPanel title='Active jobs' value={dashboardStore.summary.ACTIVE}/>
-                            <DashboardCardPanel title='Successful jobs' value={dashboardStore.summary.SUCCESS}/>
-                            <DashboardCardPanel title='Failed jobs' value={dashboardStore.summary.FAILURE}/>
-                        </DashboardCard>
-                    </Grid>
-                    <Grid item xs={dashboardStore.executions.length ? 7 : 12}>
-                        <Card>
-                            <CardHeader title="Forms"/>
-                            <List dense>
-                                {dashboardStore.forms.map(form => (
-                                    <CardListItem
-                                        {... Dashboard.formIconSettings(form)}
-                                        key={form.id}
-                                        to={`/forms/${form.id}`}
-                                        primary={form.interface.name} secondary={form.instance.name}
-                                        menuItems={['Create Job']}/>
-                                ))}
-                            </List>
-                        </Card>
-                    </Grid>
-                    {jobExecutions}
+                <Grid item xs={12}>
+                    <DashboardCard title='Last 7 Days'>
+                        <DashboardCardPanel title='Queued jobs'
+                                            value={dashboardStore.summary.RECEIVED + dashboardStore.summary.READY + dashboardStore.summary.QUEUED}/>
+                        <DashboardCardPanel title='Active jobs' value={dashboardStore.summary.ACTIVE}/>
+                        <DashboardCardPanel title='Successful jobs' value={dashboardStore.summary.SUCCESS}/>
+                        <DashboardCardPanel title='Failed jobs' value={dashboardStore.summary.FAILURE}/>
+                    </DashboardCard>
                 </Grid>
+                <Grid item xs={dashboardStore.executions.length ? 7 : 12}>
+                    <Card>
+                        <CardHeader title="Forms"/>
+                        <List dense>
+                            {dashboardStore.forms.map(form => (
+                                <CardListItem
+                                    {... Dashboard.formIconSettings(form)}
+                                    key={form.id}
+                                    to={`/forms/${form.id}`}
+                                    primary={form.interface.name} secondary={form.instance.name}
+                                    menuItems={['Create Job']}/>
+                            ))}
+                        </List>
+                    </Card>
+                </Grid>
+                {jobExecutions}
             </PageContainer>
         )
     }
