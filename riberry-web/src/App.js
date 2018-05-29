@@ -1,21 +1,39 @@
-import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
 
-class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
-      </div>
-    );
-  }
+import {RootContainer} from "./components/app/RootContainer";
+import {NavigationBar} from "./components/app/NavigationBar";
+import {NagivationDrawer} from "./components/app/NagivationDrawer";
+import {Content} from "./containers/app/Content";
+import {Login} from "./containers/pages/login/Login";
+import {inject, observer} from 'mobx-react';
+import {withRouter} from "react-router-dom";
+
+const MainApp = () => (
+    <RootContainer>
+        <NavigationBar/>
+        <NagivationDrawer menuItems={[
+            {title: 'Dashboard', to: '/dashboard'},
+            {title: 'Forms', to: '/forms'},
+            {title: 'Jobs', to: '/jobs'}
+        ]}/>
+        <Content/>
+    </RootContainer>
+);
+
+
+@inject('userStore')
+@withRouter
+@observer
+class App extends React.Component {
+    render() {
+        const {userStore} = this.props;
+        if (userStore.initialLoad) {
+            return <div>loading...</div>
+        } else {
+            return userStore.loggedIn ? <MainApp/> : <Login/>
+        }
+
+    }
 }
 
 export default App;
