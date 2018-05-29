@@ -95,10 +95,10 @@ export default class Dashboard extends React.Component {
                 <Grid container spacing={16}>
                     <Grid item xs={12}>
                         <DashboardCard title='Last 7 Days'>
-                            <DashboardCardPanel title='Queued jobs' value={0}/>
-                            <DashboardCardPanel title='Active jobs' value={0}/>
-                            <DashboardCardPanel title='Successful jobs' value={0}/>
-                            <DashboardCardPanel title='Failed jobs' value={0}/>
+                            <DashboardCardPanel title='Queued jobs' value={dashboardStore.summary.RECEIVED + dashboardStore.summary.READY + dashboardStore.summary.QUEUED}/>
+                            <DashboardCardPanel title='Active jobs' value={dashboardStore.summary.ACTIVE}/>
+                            <DashboardCardPanel title='Successful jobs' value={dashboardStore.summary.SUCCESS}/>
+                            <DashboardCardPanel title='Failed jobs' value={dashboardStore.summary.FAILURE}/>
                         </DashboardCard>
                     </Grid>
                     <Grid item xs={dashboardStore.executions.length ? 7 : 12}>

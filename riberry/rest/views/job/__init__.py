@@ -17,8 +17,15 @@ class JobResource(Resource):
         return views.make_response(services.job.job_by_id(job_id=id, options=options))
 
 
+@api.route('/summary', endpoint='job:summary:collection')
+class JobSummaryResource(Resource):
+
+    def get(self):
+        return views.make_response(services.job.summary_overall())
+
+
 @api.route('/<id>/executions', endpoint='job:execution:resource')
-class JobResource(Resource):
+class JobExecutionsResource(Resource):
 
     @use_args(args.base)
     def get(self, options, id):

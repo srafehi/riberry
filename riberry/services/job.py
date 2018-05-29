@@ -1,5 +1,9 @@
 from typing import Dict
 
+from sqlalchemy import func
+
+import pendulum
+from datetime import timedelta
 from riberry import model, services, policy
 import json
 
@@ -122,3 +126,17 @@ def create_job_execution(job_id):
     model.conn.commit()
 
     return execution
+
+
+def summary_overall():
+    now = pendulum.DateTime.utcnow()
+    from_date = now - timedelta(days=7)
+
+    summary = model.conn.query(
+        model.job.JobExecution.status,
+        func.count(model.job.JobExecution.status)
+    ).filter(
+        model.job.JobExecution.created >= from_date
+    ).group_by(model.job.JobExecution.status).all()
+
+    return dict(summary)

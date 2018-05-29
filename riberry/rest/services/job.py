@@ -30,3 +30,7 @@ def job_executions_by_id(job_id, options):
 def create_job_execution(job_id):
     execution = services.job.create_job_execution(job_id=job_id)
     return view_models.JobExecution(model=execution, options=None).to_dict()
+
+
+def summary_overall():
+    return services.job.summary_overall()

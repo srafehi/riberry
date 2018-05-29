@@ -55,11 +55,15 @@ const forms = {
     get: ({expand}={}) => fetchApi({method: 'GET', resource: expandResource('forms/', expand)}),
 };
 
+const jobs = {
+    summary: () => fetchApi({method: 'GET', resource: 'jobs/summary'}),
+};
 
 const api = {
     self,
     forms,
-    sessions
+    sessions,
+    jobs
 };
 
 export default api;

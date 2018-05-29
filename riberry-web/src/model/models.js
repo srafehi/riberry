@@ -71,3 +71,13 @@ export const Group = types.model({
     id: idType,
     name: types.string,
 });
+
+
+export const JobSummary = types.model({
+    RECEIVED: types.optional(types.number, 0),
+    READY: types.optional(types.number, 0),
+    QUEUED: types.optional(types.number, 0),
+    ACTIVE: types.optional(types.number, 0),
+    SUCCESS: types.optional(types.number, 0),
+    FAILURE: types.optional(types.number, 0),
+});
