@@ -22,7 +22,7 @@ class ResourceGroupAssociation(base.Base):
 
     # columns
     id = base.id_builder.build()
-    group_id = Column(ForeignKey('group.id'), nullable=False)
+    group_id = Column(ForeignKey('groups.id'), nullable=False)
     resource_id = Column(base.id_builder.type, nullable=False)
     resource_type = Column(Enum(ResourceType), nullable=False)
 
@@ -42,7 +42,7 @@ class ResourceGroupAssociation(base.Base):
 
 
 class Group(base.Base):
-    __tablename__ = 'group'
+    __tablename__ = 'groups'
     __reprattrs__ = ['name']
 
     # columns

@@ -2,7 +2,7 @@ import json
 import mimetypes
 from typing import List
 
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, Time
+from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, deferred
@@ -77,8 +77,8 @@ class FormSchedule(base.Base):
     # columns
     id = base.id_builder.build()
     form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
-    start = Column(Time, nullable=False)
-    end = Column(Time, nullable=False)
+    start = Column(DateTime, nullable=False)
+    end = Column(DateTime, nullable=False)
 
     # associations
     form: 'Form' = relationship('Form', back_populates='schedules')
