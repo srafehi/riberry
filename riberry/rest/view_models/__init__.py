@@ -115,6 +115,7 @@ class ApplicationInterface(ViewModel):
             'name': self.model.name,
             'internalName': self.model.internal_name,
             'version': self.model.version,
+            'description': self.model.description,
             **self._resolve_expansions()
         }
 
@@ -227,6 +228,7 @@ class InputValueDefinition(ViewModel):
         return {
             'name': self.model.name,
             'internalName': self.model.internal_name,
+            'description': self.model.description,
             'type': self.model.type,
             'required': self.model.required,
             'default': self.model.default_value,
@@ -245,6 +247,7 @@ class InputFileDefinition(ViewModel):
         return {
             'name': self.model.name,
             'internalName': self.model.internal_name,
+            'description': self.model.description,
             'type': self.model.type,
             'required': self.model.required
         }

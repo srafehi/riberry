@@ -26,7 +26,7 @@ class ApplicationInterface(base.Base):
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
     version: int = Column(Integer, nullable=False, default=1)
-    description: str = Column(String(48))
+    description: str = Column(String(128))
 
     # associations
     application: 'model.application.Application' = relationship('Application', back_populates='interfaces')
@@ -94,7 +94,7 @@ class InputFileDefinition(base.Base):
 
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
-    description: str = Column(String(48))
+    description: str = Column(String(128))
     type: str = Column(String(64), nullable=False)
     required: bool = Column(Boolean, nullable=False, default=True)
 
@@ -112,7 +112,7 @@ class InputValueDefinition(base.Base):
 
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
-    description: str = Column(String(48))
+    description: str = Column(String(128))
     type: str = Column(String(64), nullable=False)
     required: bool = Column(Boolean, nullable=False, default=True)
     default_binary = Column('default', Binary)
