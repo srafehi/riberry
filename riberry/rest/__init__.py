@@ -13,6 +13,7 @@ def preload():
     user = model.auth.User(
         username='admin',
         password=model.auth.User.secure_password('admin').decode(),
+        auth_provider='default',
         details=model.auth.UserDetails(
             first_name='Admin',
             last_name='Admin',
