@@ -8,6 +8,7 @@ sqlalchemy
 celery==4.2.0rc3
 pyyaml
 pyjwt
+toml
 
 pytest
 pytest-cov

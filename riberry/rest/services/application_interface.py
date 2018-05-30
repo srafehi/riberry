@@ -27,9 +27,9 @@ def _cleanse_input_definitions(data):
     data['internal_name'] = data['internalName']
     del data['internalName']
 
-    if 'default' in data:
-        data['default_binary'] = json.dumps(data['default']).encode()
-        del data['default']
+    if 'defaults' in data:
+        data['default_binary'] = json.dumps(data['defaults']).encode()
+        del data['defaults']
 
     if 'enumerations' in data:
         data['allowed_binaries'] = [json.dumps(e).encode() for e in data['enumerations']]

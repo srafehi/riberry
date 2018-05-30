@@ -1,0 +1,63 @@
+[database.connection]
+
+envvar = "RIBERRY_CONNECTION_STRING"
+
+
+[authentication]
+
+providers = ["default", "ldap"]
+default = "default"
+
+
+[authentication.token]
+
+provider = "jwt"
+envvar = "RIBERRY_AUTHENTICATION_SECRET"
+
+
+[authentication.ldap]
+
+server = "..."
+ssl = true
+
+
+[authentication.ldap.user]
+
+searchPath = "..."
+class = "user"
+
+
+[authentication.ldap.user.attributes]
+
+uniqueName = "sAMAccountName"
+distinguishedName = "distinguishedName"
+membership = "memberOf"
+
+
+[authentication.ldap.user.attributes.additional]
+
+firstName = "givenName"
+lastName = "sn"
+displayName = "displayName"
+email = "email"
+department = "department"
+
+
+[authentication.group.user]
+
+searchPath = "..."
+class = "group"
+extraFilter = "(sAMAccountName=*)"
+
+
+[authentication.ldap.group.attributes]
+
+uniqueName = "sAMAccountName"
+distinguishedName = "distinguishedName"
+membership = "memberOf"
+
+
+[authentication.ldap.group.attributes.additional]
+
+label = "name"
+description = "description"

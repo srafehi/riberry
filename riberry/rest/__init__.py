@@ -2,25 +2,31 @@ from flask import Flask, request
 from flask_cors import CORS
 from flask_restplus import Api
 
-from riberry import model, policy
-from riberry.plugins.default.auth import hash_password
+from riberry import model, policy, config
 from riberry.policy import AttributeContext
 from riberry.rest import views
 
-model.init(url='sqlite:///model.db', echo=False)
+model.init(url=config.config.database.connection_string, echo=config.config.database.echo)
 
 
 def preload():
-    user = model.auth.User(username='admin', password=hash_password(b'123').decode())
-    model.conn.add(user)
-    user = model.auth.User(username='shadyrafehi', password=hash_password(b'123').decode())
+    user = model.auth.User(
+        username='admin',
+        password=model.auth.User.secure_password('admin').decode(),
+        details=model.auth.UserDetails(
+            first_name='Admin',
+            last_name='Admin',
+            display_name='System Administrator',
+            department='Operations',
+            email='admin@email.com'
+        )
+    )
     model.conn.add(user)
     model.conn.commit()
 
 
 if not model.auth.User.query().first():
     preload()
-
 
 authorizations = {
     'apikey': {
@@ -29,7 +35,6 @@ authorizations = {
         'name': 'Authorization'
     }
 }
-
 
 app = Flask(__name__)
 app.config.SWAGGER_UI_JSONEDITOR = True
@@ -41,6 +46,7 @@ api.add_namespace(views.form.api)
 api.add_namespace(views.application_interface.api)
 api.add_namespace(views.auth.api)
 api.add_namespace(views.job.api)
+api.add_namespace(views.self.api)
 
 
 # region Authorization
@@ -307,10 +313,10 @@ auth_engine = policy.AuthorizationEngine(
 def permission_error_handler(error):
     code = getattr(error, 'code', 403)
     return {
-        'error': True,
-        'message': 'You do have have the correct permissions to access this resource',
-        'code': code
-    }, code
+               'error': True,
+               'message': 'You do have have the correct permissions to access this resource',
+               'code': code
+           }, code
 
 
 @app.before_request
@@ -341,4 +347,6 @@ def rem_auth_context(*_):
 
 
 if __name__ == '__main__':
+    # import waitress
+    # waitress.serve(app)
     app.run(debug=True)

@@ -10,7 +10,7 @@ from sqlalchemy.orm import relationship, validates
 
 from riberry import model
 from riberry.model import base
-from riberry.model.config import config
+from riberry.config import config
 
 
 class User(base.Base):
@@ -18,8 +18,9 @@ class User(base.Base):
     __reprattrs__ = ['username']
 
     id = base.id_builder.build()
-    username = Column('username', String(32), nullable=False, unique=True)
-    password = Column('password', String(512))
+    username = Column(String(48), nullable=False, unique=True)
+    password = Column(String(512))
+    auth_provider = Column(String(32), nullable=False, default=config.authentication.default_provider_name)
     details: 'UserDetails' = relationship('UserDetails', uselist=False, back_populates='user')
 
     # associations
@@ -43,8 +44,15 @@ class User(base.Base):
 
     @classmethod
     def authenticate(cls, username, password):
-        if not config.authentication_provider.authenticate(username=username, password=password):
+        existing_user: cls = cls.query().filter_by(username=username).first()
+        if existing_user:
+            provider = config.authentication[existing_user.auth_provider]
+        else:
+            provider = config.authentication.default_provider
+
+        if not provider.authenticate(username=username, password=password):
             raise Exception('Unauthorized')
+
         return cls.query().filter_by(username=username).first()
 
     @validates('username')
@@ -52,6 +60,12 @@ class User(base.Base):
         if not username or len(username) < 3:
             raise ValueError(f'User.username :: usernames must be 3+ characters long. Received {repr(username)}')
         return username
+
+    @classmethod
+    def secure_password(cls, password: str, provider_name=None) -> bytes:
+        provider = config.authentication[provider_name or config.authentication.default_provider_name]
+        password = provider.secure_password(password=password)
+        return password
 
 
 class UserDetails(base.Base):
@@ -90,9 +104,9 @@ class AuthToken:
             'iat': iat.int_timestamp,
             'exp': exp.int_timestamp,
             'subject': user.username
-        }, config.secrets['jwt_secret'], algorithm='HS256')
+        }, config.authentication.token.secret, algorithm='HS256')
 
     @staticmethod
     def verify(token: AnyStr) -> Dict:
-        return jwt.decode(token, config.secrets['jwt_secret'], algorithms=['HS256'])
+        return jwt.decode(token, config.authentication.token.secret, algorithms=['HS256'])
 

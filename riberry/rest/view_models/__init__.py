@@ -231,7 +231,7 @@ class InputValueDefinition(ViewModel):
             'description': self.model.description,
             'type': self.model.type,
             'required': self.model.required,
-            'default': self.model.default_value,
+            'defaults': self.model.default_value,
             'enumerations': list(self.model.allowed_values)
         }
 

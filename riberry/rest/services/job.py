@@ -2,14 +2,15 @@ from riberry import services
 from riberry.rest import view_models
 
 
-def create_job(form_id, name, input_values, input_files):
+def create_job(form_id, name, input_values, input_files, execute):
     job = services.job.create_job(
         form_id=form_id,
         name=name,
         input_values=input_values,
-        input_files=input_files
+        input_files=input_files,
+        execute=execute
     )
-    return view_models.Job(model=job, options=None).to_dict()
+    return view_models.Job(model=job, options={'expand': {'executions': {}}}).to_dict()
 
 
 def jobs_by_form_id(form_id, options=None):
@@ -28,7 +29,7 @@ def job_executions_by_id(job_id, options):
 
 
 def create_job_execution(job_id):
-    execution = services.job.create_job_execution(job_id=job_id)
+    execution = services.job.create_job_execution_by_job_id(job_id=job_id)
     return view_models.JobExecution(model=execution, options=None).to_dict()
 
 

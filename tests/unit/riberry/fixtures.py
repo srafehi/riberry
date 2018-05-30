@@ -1,6 +1,6 @@
 import pytest
 from riberry.model import init, conn, auth, base
-from riberry.plugins.default.auth import hash_password
+from riberry.plugins.defaults.authentication import hash_password
 
 
 @pytest.fixture(autouse=True)

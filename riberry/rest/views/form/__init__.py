@@ -52,13 +52,15 @@ class FormJobCollectionResource(Resource):
         for key, value in request.files.items():
             input_files[key] = value
         job_name = request.form.get('jobName')
+        execute = request.form.get('executeNow') == '1'
         inputs = json.loads(request.form.get('inputs', '{}'))
 
         response = services.job.create_job(
             form_id=id,
             name=job_name,
             input_values=inputs,
-            input_files=input_files
+            input_files=input_files,
+            execute=execute
         )
 
         return views.make_response(response)

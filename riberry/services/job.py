@@ -55,7 +55,7 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
     return input_value_mapping, input_file_mapping
 
 
-def create_job(form_id, name, input_values, input_files):
+def create_job(form_id, name, input_values, input_files, execute):
     input_values = {k: (json.dumps(v).encode() if v else v) for k, v in input_values.items()}
     form = services.form.form_by_id(form_id=form_id)
     policy.context.authorize(form, action='view')
@@ -100,6 +100,8 @@ def create_job(form_id, name, input_values, input_files):
     )
 
     policy.context.authorize(job, action='create')
+    if execute:
+        create_job_execution(job)
 
     model.conn.add(job)
     model.conn.commit()
@@ -117,8 +119,12 @@ def job_executions_by_id(job_id):
     return model.job.JobExecution.query().filter_by(job_id=job_id).all()
 
 
-def create_job_execution(job_id):
+def create_job_execution_by_job_id(job_id):
     job = job_by_id(job_id=job_id)
+    return create_job_execution(job=job)
+
+
+def create_job_execution(job):
     execution = model.job.JobExecution(job=job, creator=policy.context.subject)
 
     policy.context.authorize(execution, action='create')

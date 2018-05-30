@@ -115,7 +115,7 @@ class InputValueDefinition(base.Base):
     description: str = Column(String(128))
     type: str = Column(String(64), nullable=False)
     required: bool = Column(Boolean, nullable=False, default=True)
-    default_binary = Column('default', Binary)
+    default_binary = Column('defaults', Binary)
 
     # associations
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='input_value_definitions')
