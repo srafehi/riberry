@@ -14,7 +14,6 @@ class MyResource(Resource):
     @use_args(args.base)
     def get(self, options):
         options = parse_args(options)
-        print(options)
         return views.make_response(services.self.profile(options=options))
 
 
