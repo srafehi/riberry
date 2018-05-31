@@ -22,7 +22,7 @@ export const Application = types.model({
     name: types.string,
     internalName: types.string,
     type: types.optional(types.string, ''),
-    description: types.optional(types.string, ''),
+    description: types.maybe(types.string),
     interfaces: types.optional(types.array(types.late(() => ApplicationInterface)), [])
 });
 
@@ -30,7 +30,28 @@ export const ApplicationInterface = types.model({
     id: idType,
     name: types.string,
     internalName: types.string,
-    version: types.number
+    version: types.number,
+    description: types.maybe(types.string),
+    inputFiles: types.optional(types.array(types.late(() => InputFileDefinition)), []),
+    inputValues: types.optional(types.array(types.late(() => InputValueDefinition)), []),
+});
+
+export const InputFileDefinition = types.model({
+    name: types.string,
+    type: types.string,
+    internalName: types.string,
+    description: types.maybe(types.string),
+    required: types.boolean,
+});
+
+export const InputValueDefinition = types.model({
+    name: types.string,
+    type: types.string,
+    internalName: types.string,
+    description: types.maybe(types.string),
+    required: types.boolean,
+    default: types.frozen,
+    enumerations: types.optional(types.array(types.frozen), []),
 });
 
 export const ApplicationInstance = types.model({
@@ -49,16 +70,19 @@ export const Heartbeat = types.model({
 
 export const Form = types.model({
     id: idType,
-    instance: types.late(() => ApplicationInstance),
-    interface: types.late(() => ApplicationInterface)
+    instance: types.maybe(types.late(() => ApplicationInstance)),
+    interface: types.late(() => ApplicationInterface),
+    jobs: types.maybe(types.array(types.late(() => Job))),
 });
 
 export const Job = types.model({
     id: idType,
     name: types.string,
+    created: types.string,
+    creator: types.maybe(types.late(() => User)),
     instance: types.maybe(types.late(() => ApplicationInstance)),
     interface: types.maybe(types.late(() => ApplicationInterface)),
-    job: types.maybe(types.late(() => Form)),
+    executions: types.maybe(types.array(types.late(() => JobExecution))),
 });
 
 export const JobExecution = types.model({

@@ -6,10 +6,16 @@ import {Card, CardHeader, colors, Grid, List} from "@material-ui/core";
 import {CardListItem} from "../../../components/CardList";
 import {inject, observer} from 'mobx-react';
 import {DateTime} from 'luxon';
+import {JobForm} from "../../../components/common/JobForm";
+
 
 @inject('dashboardStore')
 @observer
 export default class Dashboard extends React.Component {
+
+    state = {
+        createJobFormId: null
+    };
 
     async componentWillMount() {
         const {dashboardStore} = this.props;
@@ -20,6 +26,12 @@ export default class Dashboard extends React.Component {
         const {dashboardStore} = this.props;
         dashboardStore.tearDown();
     }
+
+    onFormMenuItemClick = formId => menuItem => {
+        if (menuItem === 'Create Job') {
+            this.setState({createJobFormId: formId});
+        }
+    };
 
     static formIconSettings(form) {
         if (form.instance.heartbeat == null) {
@@ -92,6 +104,7 @@ export default class Dashboard extends React.Component {
 
         return (
             <PageContainer>
+                {this.state.createJobFormId ? <JobForm formId={this.state.createJobFormId} onClose={() => this.setState({createJobFormId: null})}/> : null}
                 <Grid item xs={12}>
                     <DashboardCard title='Last 7 Days'>
                         <DashboardCardPanel title='Queued jobs'
@@ -111,7 +124,9 @@ export default class Dashboard extends React.Component {
                                     key={form.id}
                                     to={`/forms/${form.id}`}
                                     primary={form.interface.name} secondary={form.instance.name}
-                                    menuItems={['Create Job']}/>
+                                    menuItems={['Create Job']}
+                                    onMenuItemClick={this.onFormMenuItemClick(form.id)}
+                                />
                             ))}
                         </List>
                     </Card>

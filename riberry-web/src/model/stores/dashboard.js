@@ -1,13 +1,12 @@
 import {flow, types} from "mobx-state-tree"
 import api from "../../api/api";
 import {Form, JobExecution, JobSummary} from "../models";
+import {injectInterval} from "../util";
 
-
-let interval = null;
 
 const loadForms = self => flow(function* () {
     const [formResponse, selfResponse, jobResponse] = yield Promise.all([
-        api.forms.get({expand: ['interface', 'schedules', 'instance.schedules', 'instance.application', 'instance.heartbeat']}),
+        api.forms.getAll({expand: ['interface', 'schedules', 'instance.schedules', 'instance.application', 'instance.heartbeat']}),
         api.self.profile({expand: ['executions.job.interface']}),
         api.jobs.summary()
     ]);
@@ -16,21 +15,9 @@ const loadForms = self => flow(function* () {
     self.summary = jobResponse.data;
 });
 
-const setup = self => async () => {
-    await self.loadForms();
-    interval = setInterval(self.loadForms, 2000);
-};
 
-
-const tearDown = () => {
-    clearInterval(interval);
-};
-
-
-const storeActions = self => ({
-    loadForms: loadForms(self),
-    setup: setup(self),
-    tearDown: tearDown
+const storeActions = self => injectInterval(self, (s) => s.loadForms, {
+    loadForms: loadForms(self)
 });
 
 
@@ -46,5 +33,5 @@ const DashboardStore = types.model({
 export const dashboardStore = DashboardStore.create({
     forms: [],
     executions: [],
-    summary: JobSummary.create({})
+    summary: JobSummary.create({}),
 });

@@ -52,11 +52,20 @@ const self = {
 
 
 const forms = {
-    get: ({expand}={}) => fetchApi({method: 'GET', resource: expandResource('forms/', expand)}),
+    getAll: ({expand}={}) => fetchApi({method: 'GET', resource: expandResource('forms/', expand)}),
+    get: ({id, expand}={}) => fetchApi({method: 'GET', resource: expandResource(`forms/${id}`, expand)}),
 };
 
 const jobs = {
     summary: () => fetchApi({method: 'GET', resource: 'jobs/summary'}),
+    create: ({formId, data}) => fetch(`${URL}/forms/${formId}/jobs`, {
+        method: 'POST',
+        mode: 'cors',
+        body: data,
+        headers: {
+            Authorization: `Bearer ${getSession(TOKEN_NAME)}`
+        }
+    })
 };
 
 const api = {
