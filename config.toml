@@ -21,6 +21,11 @@ server = "..."
 ssl = true
 
 
+[authentication.ldap.credentials]
+
+envvar = "RIBERRY_LDAP_CREDENTIALS"
+
+
 [authentication.ldap.user]
 
 searchPath = "..."
@@ -39,11 +44,11 @@ membership = "memberOf"
 firstName = "givenName"
 lastName = "sn"
 displayName = "displayName"
-email = "email"
+email = "mail"
 department = "department"
 
 
-[authentication.group.user]
+[authentication.ldap.group]
 
 searchPath = "..."
 class = "group"
