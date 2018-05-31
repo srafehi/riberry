@@ -9,6 +9,9 @@
 # Misc
 .DS_Store
 
+# Data
+*.db
+
 
 ##########################
 # PYTHON                 #

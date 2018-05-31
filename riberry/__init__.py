@@ -1,4 +1,4 @@
-from riberry import config, plugins, model, rest
+from riberry import config, plugins, model
 from riberry.client import workflow as wf
 
 
