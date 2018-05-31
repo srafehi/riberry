@@ -1,6 +1,6 @@
 version: 2
 jobs:
-  backend:
+  build:
     docker:
       - image: circleci/python:3.6.1
     working_directory: ~/repo
@@ -15,26 +15,3 @@ jobs:
             - ./venv
           key: py-dependencies-{{ checksum "requirements.txt" }}
       - run: . venv/bin/activate && pytest --cov=riberry ./tests
-
-  frontend:
-    docker:
-      - image: circleci/node:8.11.1
-    working_directory: ~/repo
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-          - nd-dependencies-{{ checksum "./riberry-web/package.json" }}
-      - run: cd ./riberry-web && yarn install
-      - save_cache:
-          paths:
-            - ./riberry-web/node_modules
-          key: nd-dependencies-{{ checksum "./riberry-web/package.json" }}
-      - run: cd ./riberry-web && yarn test
-
-workflows:
-  version: 2
-  frontend_backend:
-    jobs:
-      - frontend
-      - backend
