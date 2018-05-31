@@ -2,7 +2,7 @@ export const getSession = (name) => document.cookie.replace(new RegExp('(?:(?:^|
 export const setSession = (name, value) => document.cookie = `${name}=${value}`;
 
 export const TOKEN_NAME = 'token';
-const URL = "http://localhost:5000";
+const URL = window.serverUrl;
 
 window.getSession = getSession;
 window.setSession = setSession;

@@ -1,10 +1,14 @@
-from flask import Flask, request
+import os
+from flask import Flask, request, Blueprint, send_from_directory
 from flask_cors import CORS
 from flask_restplus import Api
 
 from riberry import model, policy, config
 from riberry.policy import AttributeContext
 from riberry.rest import views
+
+
+DIRECTORY = os.environ.get('RIBERRY_WEBAPP_PATH', None)
 
 model.init(url=config.config.database.connection_string, echo=config.config.database.echo)
 
@@ -37,10 +41,12 @@ authorizations = {
     }
 }
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/_')
 app.config.SWAGGER_UI_JSONEDITOR = True
 CORS(app)
-api: Api = Api(app, authorizations=authorizations, security='session')
+
+blueprint: Blueprint = Blueprint('api', __name__, url_prefix='/api/0')
+api: Api = Api(blueprint, authorizations=authorizations, security='session')
 api.add_namespace(views.application.api)
 api.add_namespace(views.application_instance.api)
 api.add_namespace(views.form.api)
@@ -48,10 +54,22 @@ api.add_namespace(views.application_interface.api)
 api.add_namespace(views.auth.api)
 api.add_namespace(views.job.api)
 api.add_namespace(views.self.api)
+app.register_blueprint(blueprint)
+
+
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    full_path = os.path.realpath(os.path.join(DIRECTORY, path or 'index.html'))
+    if path and os.path.exists(full_path):
+        directory, filename = os.path.split(full_path)
+        return send_from_directory(directory, filename)
+    else:
+        return send_from_directory(DIRECTORY, 'index.html')
+
 
 
 # region Authorization
-
 
 class RootPolicySet(policy.PolicySet):
 
@@ -331,7 +349,6 @@ def set_auth_context():
                 payload = model.auth.AuthToken.verify(token)
                 user = model.auth.User.query().filter_by(username=payload['subject']).one()
             except Exception as exc:
-                print(exc)
                 raise
 
     policy.context.configure(
@@ -349,5 +366,5 @@ def rem_auth_context(*_):
 
 if __name__ == '__main__':
     # import waitress
-    # waitress.serve(app)
+    # waitress.serve(app, port=5000)
     app.run(debug=True)
