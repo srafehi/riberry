@@ -39,4 +39,7 @@ class DefaultAuthenticationProvider(AuthenticationProvider):
 
     def authenticate(self, username: str, password: str) -> bool:
         user = auth.User.query().filter_by(username=username).first()
-        return check_password(input_password=(password or '').encode(), hashed_password=user.password.encode())
+        if user:
+            return check_password(input_password=(password or '').encode(), hashed_password=user.password.encode())
+        else:
+            return False
