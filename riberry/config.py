@@ -23,6 +23,9 @@ class DatabaseConfiguation:
         self.connection_string = _load_config_value(self.raw_config)
         self.echo = self.raw_config.get('echo', False)
 
+    def enable(self):
+        riberry.model.init(url=self.connection_string, echo=self.echo)
+
 
 class AuthenticationConfigToken:
 
@@ -71,6 +74,10 @@ class RiberryConfig:
         self.raw_config = config_dict
         self.authentication = AuthenticationConfig(self.raw_config['authentication'])
         self.database = DatabaseConfiguation(self.raw_config['database']['connection'])
+
+    def enable(self):
+        self.authentication.enable()
+        self.database.enable()
 
 
 config: RiberryConfig = RiberryConfig(config_dict=_config)
