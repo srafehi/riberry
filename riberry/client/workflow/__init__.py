@@ -69,7 +69,7 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
         wf.artifact(
             name=f'Exception {current_task.name}',
             type='ERROR_HANDLED' if 'rib_fallback' in task_kwargs else 'ERROR_FATAL',
-            filename=f'{str(current_task)}.log',
+            filename=f'{current_task.name}-{current_task.request.id}.log',
             content=traceback.format_exc().encode()
         )
 
@@ -89,7 +89,7 @@ def bypass(func, **task_kwargs):
             raise Exception('Workflow already cancelled')
 
         filtered_kwargs = {k: v for k, v in kwargs.items() if k not in BYPASS_ARGS}
-        execute_task(
+        return execute_task(
             func=func,
             func_args=args,
             func_kwargs=filtered_kwargs,
@@ -168,6 +168,7 @@ class Workflow:
             files=input_files
         )
 
-        x = body.on_error(tasks.workflow_complete.si(status='FAILURE'))
-        x.apply_async(link=tasks.workflow_complete.si(status='SUCCESS'))
-        return
+        callback = tasks.workflow_complete.si(status='SUCCESS')
+
+        task = body.on_error(tasks.workflow_complete.si(status='FAILURE')) | callback
+        return task()
