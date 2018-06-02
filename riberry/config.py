@@ -12,6 +12,8 @@ def _load_config_value(config):
             return f.read()
     elif 'envvar' in config:
         return os.getenv(config['envvar'])
+    elif 'value' in config:
+        return config['value']
 
 
 class DatabaseConfiguation:
