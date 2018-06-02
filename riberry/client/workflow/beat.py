@@ -19,7 +19,6 @@ app.conf.beat_schedule = {
 }
 
 app.conf.timezone = 'UTC'
-app.conf.imports = ['applications']
 
 
 @app.task

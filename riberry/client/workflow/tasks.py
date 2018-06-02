@@ -1,65 +1,68 @@
 import base64
-import importlib
 import json
 import os
 
 import pendulum
+import traceback
 from celery import shared_task
-
 from riberry import model
+from riberry.client import workflow
 
 
 @shared_task
 def poll():
-    print(model.job.Job.query().all())
-    print(os.environ['RIBERRY_INSTANCE'])
-    app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(internal_name=os.environ['RIBERRY_INSTANCE']).first()
+    app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
+        internal_name=os.environ['RIBERRY_INSTANCE']
+    ).first()
     if not app_instance:
         return
 
-    execution: model.job.JobExecution = model.job.JobExecution.query().filter(model.job.JobExecution.status == 'RECEIVED').join(model.job.Job).filter_by(instance=app_instance).first()
-    print(execution)
+    execution: model.job.JobExecution = model.job.JobExecution.query().filter(
+        model.job.JobExecution.status == 'RECEIVED'
+    ).join(model.job.Job).filter_by(instance=app_instance).first()
+
     if execution:
-        module_path = app_instance.application.internal_name
-        module = importlib.import_module(module_path)
-        print(module)
+        application_name = app_instance.application.internal_name
+        workflow_app = workflow.Workflow.__registered__[application_name]
+
         job = execution.job
         interface = job.interface
-        data = {
-            **{v.definition.internal_name: v.value for v in job.values},
-            **{v.definition.internal_name: v.binary.decode() for v in job.files},
-        }
+
         try:
-            task = module.workflow.start(
+            task = workflow_app.start(
                 execution_id=execution.id,
                 input_name=interface.internal_name,
                 input_version=interface.version,
-                input_data=data
+                input_values={v.definition.internal_name: v.value for v in job.values},
+                input_files={v.definition.internal_name: base64.b64encode(v.binary).decode() for v in job.files}
             )
             execution.status = 'READY'
         except:
-            raise
-            # execution.status = 'FAILURE'
-            # import traceback
-            # message = traceback.format_exc().encode()
-            # execution.artefacts.append(
-            #     model.JobExecutionArtefact(
-            #         job_execution=execution,
-            #         name='Error on Startup',
-            #         filename='startup-error.txt',
-            #         type='ERROR',
-            #         size=len(message),
-            #         binary=message
-            #     )
-            # )
-
-        print(task)
+            execution.status = 'FAILURE'
+            message = traceback.format_exc().encode()
+            execution.artifacts.append(
+                model.job.JobExecutionArtifact(
+                    job_execution=execution,
+                    name='Error on Startup',
+                    filename='startup-error.txt',
+                    type='ERROR',
+                    size=len(message),
+                    binary=model.job.JobExecutionArtifactBinary(
+                        binary=message
+                    )
+                )
+            )
+        else:
+            print(task)
         model.conn.commit()
+        model.conn.close()
 
 
 @shared_task
 def echo():
-    app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(internal_name=os.environ["RIBERRY_INSTANCE"]).first()
+    app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
+        internal_name=os.environ["RIBERRY_INSTANCE"]
+    ).first()
     if not app_instance:
         return
 
@@ -70,6 +73,7 @@ def echo():
 
     heartbeat.updated = pendulum.DateTime.utcnow()
     model.conn.commit()
+    model.conn.close()
 
 
 def create_event(name, root_id, task_id, data=None, binary=None):
@@ -114,7 +118,7 @@ def workflow_step_update(root_id, stream_name, step_name, task_id, status=None, 
         step.note = note
 
     model.conn.commit()
-    model.conn.remove()
+    model.conn.close()
 
 
 @shared_task(queue='event')
@@ -127,36 +131,10 @@ def workflow_stream_update(root_id, stream_name, task_id, status):
 
     stream.status = status
     model.conn.commit()
-    model.conn.remove()
+    model.conn.close()
 
 
 @shared_task(bind=True)
 def workflow_complete(task, status):
-    root_id = task.request.root_id
-    job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).one()
-    job.status = status
-    job.updated = pendulum.DateTime.utcnow()
-    job.task_id = root_id
+    return workflow.workflow_complete(task, status)
 
-    stream = model.job.JobExecutionStream.query().filter_by(job_execution=job, name='primary').one()
-    stream.status = status
-    stream.updated = pendulum.DateTime.utcnow()
-
-    model.conn.commit()
-    model.conn.remove()
-
-
-@shared_task(bind=True)
-def workflow_start(task, job_id):
-    root_id = task.request.root_id
-
-    job = model.job.JobExecution.query().filter_by(id=job_id).one()
-    job.status = 'ACTIVE'
-    job.task_id = root_id
-
-    created = pendulum.DateTime.utcnow()
-    stream = model.job.JobExecutionStream(job_execution=job, name='primary', task_id=task.request.id, created=created, updated=created, status='ACTIVE')
-    model.conn.add(stream)
-
-    model.conn.commit()
-    model.conn.remove()

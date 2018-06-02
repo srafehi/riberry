@@ -1,30 +1,113 @@
-from . import tasks
-from celery import signals, current_task
-
-
 import functools
+import traceback
+
+import pendulum
 from celery import Celery
+from celery import current_task
+from celery import exceptions as celery_exc
+from celery.result import AsyncResult
+
+from riberry import model
+from . import tasks, wf, signals
+
+IGNORE_EXCEPTIONS = (
+    celery_exc.Ignore,
+    celery_exc.Retry,
+    celery_exc.SoftTimeLimitExceeded,
+    celery_exc.TimeLimitExceeded
+)
+
+BYPASS_ARGS = (
+    '__ss__', '__se__', '__sb__'
+)
 
 
-def bypass(func):
+def workflow_complete(task, status):
+    root_id = task.request.root_id
+    job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).one()
+    job.status = status
+    job.updated = pendulum.DateTime.utcnow()
+    job.task_id = root_id
+
+    stream = model.job.JobExecutionStream.query().filter_by(job_execution=job, name='primary').one()
+    stream.status = status
+    stream.updated = pendulum.DateTime.utcnow()
+
+    model.conn.commit()
+    model.conn.close()
+
+
+def is_workflow_complete(task):
+    root_id = task.request.root_id
+    job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).first()
+    return job.status == 'FAILURE' if job else False
+
+
+def workflow_started(task, job_id):
+    root_id = task.request.root_id
+
+    job = model.job.JobExecution.query().filter_by(id=job_id).one()
+    job.status = 'ACTIVE'
+    job.task_id = root_id
+
+    created = pendulum.DateTime.utcnow()
+    stream = model.job.JobExecutionStream(job_execution=job, name='primary', task_id=task.request.id, created=created,
+                                          updated=created, status='ACTIVE')
+    model.conn.add(stream)
+
+    model.conn.commit()
+    model.conn.close()
+
+
+def execute_task(func, func_args, func_kwargs, task_kwargs):
+    # noinspection PyBroadException
+    try:
+        return func(*func_args, **func_kwargs)
+    except IGNORE_EXCEPTIONS:
+        raise
+    except:
+        wf.artifact(
+            name=f'Exception {current_task.name}',
+            type='ERROR_HANDLED' if 'rib_fallback' in task_kwargs else 'ERROR_FATAL',
+            filename=f'{str(current_task)}.log',
+            content=traceback.format_exc().encode()
+        )
+
+        if 'rib_fallback' in task_kwargs:
+            fallback = task_kwargs.get('wf_fallback')
+            return fallback() if callable(fallback) else fallback
+        else:
+            workflow_complete(current_task, status='FAILURE')
+            raise
+
+
+def bypass(func, **task_kwargs):
     @functools.wraps(func)
     def inner(*args, **kwargs):
-        print(f'{args} {kwargs}')
-        kwargs = {k: v for k, v in kwargs.items() if not (k.startswith('__') and k.endswith('__'))}
-        return func(*args, **kwargs)
+        if is_workflow_complete(current_task):
+            AsyncResult(current_task.request.id).revoke()
+            raise Exception('Workflow already cancelled')
+
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in BYPASS_ARGS}
+        execute_task(
+            func=func,
+            func_args=args,
+            func_kwargs=filtered_kwargs,
+            task_kwargs=task_kwargs
+        )
+
     return inner
 
 
 def patch_app(app):
-
     def task_deco(*args, **kwargs):
         if len(args) == 1:
             if callable(args[0]):
-                return Celery.task(app, bypass(*args), **kwargs)
+                return Celery.task(app, bypass(*args, **kwargs), **kwargs)
             raise TypeError('argument 1 to @task() must be a callable')
 
         def inner(func):
-            return Celery.task(app, **kwargs)(bypass(func))
+            return Celery.task(app, **kwargs)(bypass(func, **kwargs))
 
         return inner
 
@@ -32,158 +115,59 @@ def patch_app(app):
     return app
 
 
-@signals.before_task_publish.connect
-def before_task_publish(sender, headers, body, **_):
-    if not current_task:
-        return
-
-    root_id = current_task.request.root_id
-    args, kwargs, *_ = body
-    task_id = headers['id']
-
-    if '__ss__' in kwargs:
-        tasks.create_event(
-            name='stream',
-            root_id=root_id,
-            task_id=task_id,
-            data={
-                'stream': kwargs['__ss__'],
-                'state': 'QUEUED'
-            }
-        )
-
-    if '__sb__' in kwargs:
-        stream, step = kwargs['__sb__']
-        tasks.create_event(
-            name='step',
-            root_id=root_id,
-            task_id=task_id,
-            data={
-                'stream': stream,
-                'step': step,
-                'state': 'QUEUED'
-            }
-        )
-
-
-# def make_wrapper(task):
-#     old_run = task.run
-#
-#     def new_run(*args, **kwargs):
-#         kwargs = {k: v for k, v in kwargs.items() if not k.startswith('__') and not k.endswith('__')}
-#         return old_run(*args, **kwargs)
-#
-#     task.run = new_run
-
-
-@signals.task_prerun.connect
-def task_prerun(sender, kwargs, **_):
-    task_id = current_task.request.id
-    root_id = current_task.request.root_id
-    current_task.stream = None
-    current_task.step = None
-
-    if '__ss__' in kwargs:
-        stream = kwargs['__ss__']
-        print(f'{current_task.stream} {stream}')
-        current_task.stream = stream
-        tasks.create_event(
-            name='stream',
-            root_id=root_id,
-            task_id=task_id,
-            data={
-                'stream': stream,
-                'state': 'ACTIVE'
-            }
-        )
-
-    if '__se__' in kwargs:
-        stream = kwargs['__se__']
-        current_task.stream = stream
-
-    if '__sb__' in kwargs:
-        stream, step = kwargs['__sb__']
-        current_task.stream = stream
-        current_task.step = step
-        tasks.create_event(
-            name='step',
-            root_id=root_id,
-            task_id=task_id,
-            data={
-                'stream': stream,
-                'step': step,
-                'state': 'ACTIVE'
-            }
-        )
-
-
-@signals.task_postrun.connect
-def task_postrun(sender, state, kwargs, **_):
-    task_id = sender.request.id
-    root_id = sender.request.root_id
-
-    if '__ss__' in kwargs and state not in ('IGNORED', 'SUCCESS'):
-        stream = kwargs['__ss__']
-        tasks.create_event(
-            name='stream',
-            root_id=root_id,
-            task_id=task_id,
-            data={
-                'stream': stream,
-                'state': state
-            }
-        )
-
-    if '__se__' in kwargs:
-        stream = kwargs['__se__']
-        tasks.create_event(
-            name='stream',
-            root_id=root_id,
-            task_id=task_id,
-            data={
-                'stream': stream,
-                'state': state
-            }
-        )
-
-    if '__sb__' in kwargs:
-        stream, step = kwargs['__sb__']
-        current_task.stream = stream
-        current_task.step = step
-        tasks.create_event(
-            name='step',
-            root_id=root_id,
-            task_id=task_id,
-            data={
-                'stream': stream,
-                'step': step,
-                'state': 'SUCCESS' if state == 'IGNORED' else state
-            }
-        )
-
-
 class Workflow:
+    __registered__ = {}
 
-    def __init__(self, app, entry_point, report_task=None):
-        patch_app(app)
-        self.start_task = entry_point
-        self.report_task = report_task
-        self.input_processors = {}
+    def __init__(self, name, app, beat_queue):
+        self.__registered__[name] = self
+        self.app = patch_app(app)
+        self.form_entries = {}
+        self.entry_point = self._make_entry_point(self.app, self.form_entries)
+        self._configure_beat_queues(app, beat_queue)
 
-    def start(self, execution_id, input_name, input_version, input_data):
-        parsed_input = self.input_processors[(input_name, input_version)](execution_id=execution_id, **input_data)
-        body = self.start_task.si(**parsed_input, __sb__=('primary', 'start'))
-        if self.report_task:
-            body |= self.report_task.s(__sb__=('primary', 'report'))
+    @staticmethod
+    def _configure_beat_queues(app, beat_queue):
+        schedule = {
+            'poll-executions': {
+                'task': 'riberry.client.workflow.tasks.poll',
+                'schedule': 0.5,
+                'options': {'queue': beat_queue}
+            },
+            'echo-status': {
+                'task': 'riberry.client.workflow.tasks.echo',
+                'schedule': 2,
+                'options': {'queue': beat_queue}
+            }
+        }
 
-        workflow = (tasks.workflow_start.s(execution_id) | body.on_error(tasks.workflow_complete.si(status='FAILURE')) | tasks.workflow_complete.si(status='SUCCESS'))
+        if not app.conf.beat_schedule:
+            app.conf.beat_schedule = {}
+        app.conf.beat_schedule.update(schedule)
 
-        return workflow.delay()
+    @staticmethod
+    def _make_entry_point(app, form_entries):
+        @app.task(bind=True)
+        def entry_point(task, execution_id, name, version, values, files):
+            workflow_started(task, execution_id)
+            form_entries[(name, version)](task, **values, **files)
 
-    def register_input_processor(self, name, version):
+        return entry_point
+
+    def entry(self, name, version):
         def wrapper(func):
-            self.input_processors[(name, version)] = func
-            return func
+            self.form_entries[(name, version)] = func
+
         return wrapper
 
+    def start(self, execution_id, input_name, input_version, input_values, input_files):
+        body = self.entry_point.si(
+            execution_id=execution_id,
+            name=input_name,
+            version=input_version,
+            values=input_values,
+            files=input_files
+        )
 
+        x = body.on_error(tasks.workflow_complete.si(status='FAILURE'))
+        x.apply_async(link=tasks.workflow_complete.si(status='SUCCESS'))
+        return

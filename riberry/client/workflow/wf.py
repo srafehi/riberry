@@ -34,7 +34,7 @@ def e(task, stream):
     return TaskWrap(task, __se__=stream)
 
 
-def artefact(name, filename, content, stream=None, step=None):
+def artifact(name, type, filename, content, stream=None, step=None):
     task_id = current_task.request.id
     root_id = current_task.request.root_id
     stream = stream or getattr(current_task, 'stream', None)
@@ -46,6 +46,7 @@ def artefact(name, filename, content, stream=None, step=None):
         task_id=task_id,
         data={
             'name': name,
+            'type': type,
             'stream': stream,
             'step': step,
             'filename': filename,

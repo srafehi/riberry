@@ -17,6 +17,7 @@ def handle_artefacts(events: List[model.misc.Event]):
 
             artifact = model.job.JobExecutionArtifact(
                 name=event_data['name'],
+                type=event_data['type'],
                 filename=event_data['filename'],
                 size=len(event.binary),
                 created=pendulum.from_timestamp(event.time),
