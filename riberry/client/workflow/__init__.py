@@ -25,13 +25,19 @@ BYPASS_ARGS = (
 def workflow_complete(task, status):
     root_id = task.request.root_id
     job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).one()
-    job.status = status
-    job.updated = pendulum.DateTime.utcnow()
     job.task_id = root_id
+    job.status = status
+    job.completed = job.updated = pendulum.DateTime.utcnow()
 
-    stream = model.job.JobExecutionStream.query().filter_by(job_execution=job, name='primary').one()
-    stream.status = status
-    stream.updated = pendulum.DateTime.utcnow()
+    tasks.create_event(
+        name='stream',
+        root_id=root_id,
+        task_id=root_id,
+        data={
+            'stream': 'Primary',
+            'state': status
+        }
+    )
 
     model.conn.commit()
     model.conn.close()
@@ -46,14 +52,21 @@ def is_workflow_complete(task):
 def workflow_started(task, job_id):
     root_id = task.request.root_id
 
-    job = model.job.JobExecution.query().filter_by(id=job_id).one()
+    job: model.job.JobExecution = model.job.JobExecution.query().filter_by(id=job_id).one()
+    job.started = job.updated = pendulum.DateTime.utcnow()
     job.status = 'ACTIVE'
     job.task_id = root_id
 
-    created = pendulum.DateTime.utcnow()
-    stream = model.job.JobExecutionStream(job_execution=job, name='primary', task_id=task.request.id, created=created,
-                                          updated=created, status='ACTIVE')
-    model.conn.add(stream)
+    tasks.create_event(
+        name='stream',
+        root_id=root_id,
+        task_id=root_id,
+        data={
+            'stream': 'Primary',
+            'state': 'ACTIVE'
+        }
+    )
+    task.stream = 'Primary'
 
     model.conn.commit()
     model.conn.close()

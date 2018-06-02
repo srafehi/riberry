@@ -80,11 +80,20 @@ def handle_steps(events: List[model.misc.Event]):
                 )
                 model.conn.add(step)
 
-            step_updated = pendulum.instance(step.updated, tz='Australia/Melbourne')
+            step_updated = pendulum.instance(step.updated, tz='utc')
             if event_time >= step_updated:
-                step.status = event_data['state']
+                status = event_data['state']
+                step.status = status
                 step.updated = event_time
+                if status == 'ACTIVE':
+                    step.started = event_time
+                elif status in ('SUCCESS', 'FAILURED'):
+                    step.completed = event_time
+
+
         except:
+            import traceback
+            print(traceback.format_exc())
             pass
         else:
             to_delete.append(event)
@@ -120,10 +129,15 @@ def handle_streams(events: List[model.misc.Event]):
                 )
                 model.conn.add(stream)
 
-            stream_updated = pendulum.instance(stream.updated, tz='Australia/Melbourne')
+            stream_updated = pendulum.instance(stream.updated, tz='utc')
             if event_time >= stream_updated:
-                stream.status = event_data['state']
+                status = event_data['state']
+                stream.status = status
                 stream.updated = event_time
+                if status == 'ACTIVE':
+                    stream.started = event_time
+                elif status in ('SUCCESS', 'FAILURED'):
+                    stream.completed = event_time
         except:
             pass
         else:
