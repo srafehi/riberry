@@ -18,14 +18,6 @@ def poll():
     if not app_instance:
         return
 
-    active_count: int = model.job.JobExecution.query().filter(
-        model.job.JobExecution.status.in_(('ACTIVE', 'READY'))
-    ).join(model.job.Job).filter_by(instance=app_instance).count()
-
-    if active_count >= 10:
-        print(f'Active count {active_count}')
-        return
-
     execution: model.job.JobExecution = model.job.JobExecution.query().filter(
         model.job.JobExecution.status == 'RECEIVED'
     ).join(model.job.Job).filter_by(instance=app_instance).first()
@@ -53,8 +45,9 @@ def poll():
                 model.job.JobExecutionArtifact(
                     job_execution=execution,
                     name='Error on Startup',
+                    type='error',
+                    category='Fatal',
                     filename='startup-error.txt',
-                    type='ERROR',
                     size=len(message),
                     binary=model.job.JobExecutionArtifactBinary(
                         binary=message
