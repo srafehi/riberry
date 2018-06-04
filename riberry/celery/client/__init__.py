@@ -8,7 +8,8 @@ from celery import exceptions as celery_exc
 from celery.result import AsyncResult
 
 from riberry import model
-from . import tasks, wf, signals
+from riberry.celery.client import tasks
+from . import wf
 
 IGNORE_EXCEPTIONS = (
     celery_exc.Ignore,
@@ -143,7 +144,7 @@ class Workflow:
         schedule = {
             'poll-executions': {
                 'task': 'riberry.client.workflow.tasks.poll',
-                'schedule': 0.5,
+                'schedule': 0.1,
                 'options': {'queue': beat_queue}
             },
             'echo-status': {

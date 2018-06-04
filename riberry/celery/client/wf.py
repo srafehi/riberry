@@ -1,5 +1,6 @@
 from celery import current_task
-from .tasks import create_event
+
+from riberry.celery.client.tasks import create_event
 
 
 class TaskWrap:
@@ -53,4 +54,3 @@ def artifact(name, type, filename, content, stream=None, step=None):
         },
         binary=content
     )
-

@@ -1,8 +1,10 @@
-from typing import List
-from riberry import model
 import json
 from collections import defaultdict
+from typing import List
+
 import pendulum
+
+from riberry import model
 
 
 def handle_artefacts(events: List[model.misc.Event]):
@@ -31,7 +33,8 @@ def handle_artefacts(events: List[model.misc.Event]):
 
             if stream_name:
                 if (stream_name, event.root_id) not in streams:
-                    streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(name=stream_name, job_execution=job_execution).one()
+                    streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(
+                        name=stream_name, job_execution=job_execution).one()
                 stream = streams[(stream_name, event.root_id)]
                 artifact.stream = stream
 
@@ -62,12 +65,14 @@ def handle_steps(events: List[model.misc.Event]):
             job_execution = job_executions[event.root_id]
 
             if (stream_name, event.root_id) not in streams:
-                streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(name=stream_name, job_execution=job_execution).one()
+                streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(name=stream_name,
+                                                                                                       job_execution=job_execution).one()
             stream = streams[(stream_name, event.root_id)]
 
             try:
                 if (stream_name, event.task_id) not in steps:
-                    steps[(stream_name, event.task_id)] = model.job.JobExecutionStreamStep.query().filter_by(task_id=event.task_id, stream=stream).one()
+                    steps[(stream_name, event.task_id)] = model.job.JobExecutionStreamStep.query().filter_by(
+                        task_id=event.task_id, stream=stream).one()
                 step = steps[(stream_name, event.task_id)]
             except Exception:
                 step = model.job.JobExecutionStreamStep(
@@ -116,7 +121,8 @@ def handle_streams(events: List[model.misc.Event]):
             job_execution = job_executions[event.root_id]
             try:
                 if (stream_name, event.root_id) not in streams:
-                    streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(name=stream_name, job_execution=job_execution).one()
+                    streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(
+                        name=stream_name, job_execution=job_execution).one()
                 stream = streams[(stream_name, event.root_id)]
             except Exception:
                 stream = model.job.JobExecutionStream(
@@ -179,7 +185,7 @@ def process():
 
         model.conn.commit()
     finally:
-        model.conn.remove()
+        model.conn.close()
 
 
 if __name__ == '__main__':

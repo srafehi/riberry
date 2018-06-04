@@ -1,6 +1,6 @@
 from celery import signals, current_task
 
-from riberry.client.workflow import tasks
+from riberry.celery.client import tasks
 
 
 @signals.before_task_publish.connect
@@ -91,7 +91,7 @@ def task_postrun(sender, state, kwargs, **_):
             task_id=task_id,
             data={
                 'stream': stream,
-                'state': state
+                'state': state or 'SS_UK'
             }
         )
 
@@ -103,7 +103,7 @@ def task_postrun(sender, state, kwargs, **_):
             task_id=task_id,
             data={
                 'stream': stream,
-                'state': state
+                'state': state or 'SS_SE'
             }
         )
 
@@ -118,6 +118,6 @@ def task_postrun(sender, state, kwargs, **_):
             data={
                 'stream': stream,
                 'step': step,
-                'state': 'SUCCESS' if state == 'IGNORED' else state
+                'state': 'SUCCESS' if state == 'IGNORED' else state or 'FAILURE'
             }
         )

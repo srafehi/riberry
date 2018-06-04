@@ -1,12 +1,13 @@
 import base64
 import json
 import os
+import traceback
 
 import pendulum
-import traceback
 from celery import shared_task
+
 from riberry import model
-from riberry.client import workflow
+from riberry.celery import client
 
 
 @shared_task
@@ -17,13 +18,21 @@ def poll():
     if not app_instance:
         return
 
+    active_count: int = model.job.JobExecution.query().filter(
+        model.job.JobExecution.status.in_(('ACTIVE', 'READY'))
+    ).join(model.job.Job).filter_by(instance=app_instance).count()
+
+    if active_count >= 10:
+        print(f'Active count {active_count}')
+        return
+
     execution: model.job.JobExecution = model.job.JobExecution.query().filter(
         model.job.JobExecution.status == 'RECEIVED'
     ).join(model.job.Job).filter_by(instance=app_instance).first()
 
     if execution:
         application_name = app_instance.application.internal_name
-        workflow_app = workflow.Workflow.__registered__[application_name]
+        workflow_app = client.Workflow.__registered__[application_name]
 
         job = execution.job
         interface = job.interface
@@ -55,7 +64,7 @@ def poll():
         else:
             print(task)
         model.conn.commit()
-        model.conn.close()
+    model.conn.close()
 
 
 @shared_task
@@ -136,5 +145,4 @@ def workflow_stream_update(root_id, stream_name, task_id, status):
 
 @shared_task(bind=True)
 def workflow_complete(task, status):
-    return workflow.workflow_complete(task, status)
-
+    return client.workflow_complete(task, status)
