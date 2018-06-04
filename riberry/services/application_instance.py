@@ -19,12 +19,23 @@ def instances_by_application_id(application_id) -> List[model.application.Applic
     return application.instances
 
 
-def create_application_instance(application_id, name, internal_name) -> model.application.ApplicationInstance:
+def create_application_instance(application_id, name, internal_name, schedules) -> model.application.ApplicationInstance:
     application = services.application.application_by_id(application_id=application_id)
+
+    schedules = [
+        model.application.ApplicationInstanceSchedule(
+            days=schedule['days'],
+            start_time=schedule['start_time'],
+            end_time=schedule['end_time'],
+            timezone=schedule['timezone']
+        ) for schedule in schedules
+    ]
+
     application_instance = model.application.ApplicationInstance(
         application=application,
         name=name,
-        internal_name=internal_name
+        internal_name=internal_name,
+        schedules=schedules,
     )
 
     policy.context.authorize(application_instance, action='create')
