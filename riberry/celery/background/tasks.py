@@ -6,7 +6,7 @@ from . import app
 
 
 @app.task
-def execution_events():
+def workflow_events():
     execution_events.process()
 
 

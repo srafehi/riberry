@@ -35,19 +35,21 @@ def e(task, stream):
     return TaskWrap(task, __se__=stream)
 
 
-def artifact(name, type, filename, content, stream=None, step=None):
+def artifact(name, type, category, filename, content, data=None, stream=None, step=None):
     task_id = current_task.request.id
     root_id = current_task.request.root_id
     stream = stream or getattr(current_task, 'stream', None)
     step = step or getattr(current_task, 'step', None)
 
     create_event(
-        'artefact',
+        'artifact',
         root_id=root_id,
         task_id=task_id,
         data={
             'name': name,
             'type': type,
+            'category': category,
+            'data': data or {},
             'stream': stream,
             'step': step,
             'filename': filename,

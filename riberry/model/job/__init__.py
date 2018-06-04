@@ -1,15 +1,25 @@
+import enum
 import mimetypes
 from datetime import datetime
 from typing import List
 
 import pendulum
 from croniter import croniter
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index, Enum
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, deferred
 
 from riberry import model
 from riberry.model import base
+
+
+class ArtifactType(enum.Enum):
+    output = 'output'
+    error = 'error'
+    report = 'report'
+
+    def __repr__(self):
+        return repr(self.value)
 
 
 class Job(base.Base):
@@ -170,7 +180,8 @@ class JobExecutionArtifact(base.Base):
     job_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), nullable=False)
     stream_id = Column(base.id_builder.type, ForeignKey('job_stream.id'))
     name: str = Column(String(64), nullable=False)
-    type: str = Column(String(64), nullable=True)
+    type: str = Column(Enum(ArtifactType), nullable=False)
+    category: str = Column(String(64), nullable=False, default='Default')
     filename: str = Column(String(512), nullable=False)
     created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
     size: int = Column(Integer, nullable=False)
@@ -179,6 +190,7 @@ class JobExecutionArtifact(base.Base):
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='artifacts')
     stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='artifacts')
     binary: 'JobExecutionArtifactBinary' = relationship('JobExecutionArtifactBinary', back_populates='artifact', uselist=False)
+    data: List['JobExecutionArtifactData'] = relationship('JobExecutionArtifactData', back_populates='artifact')
 
     @property
     def content_type(self):
@@ -187,6 +199,19 @@ class JobExecutionArtifact(base.Base):
     @property
     def content_encoding(self):
         return mimetypes.guess_type(self.filename)[1]
+
+
+class JobExecutionArtifactData(base.Base):
+    __tablename__ = 'job_artifact_data'
+
+    # columns
+    id = base.id_builder.build()
+    title: str = Column(String(64), nullable=False)
+    description: str = Column(String(512), nullable=False)
+    artifact_id = Column(base.id_builder.type, ForeignKey('job_artifact.id'), nullable=False)
+
+    # associations
+    artifact: 'JobExecutionArtifact' = relationship('JobExecutionArtifact', back_populates='data')
 
 
 class JobExecutionArtifactBinary(base.Base):

@@ -9,7 +9,7 @@ from celery.result import AsyncResult
 
 from riberry import model
 from riberry.celery.client import tasks
-from . import wf
+from . import wf, signals
 
 IGNORE_EXCEPTIONS = (
     celery_exc.Ignore,
@@ -82,7 +82,8 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
     except:
         wf.artifact(
             name=f'Exception {current_task.name}',
-            type='ERROR_HANDLED' if 'rib_fallback' in task_kwargs else 'ERROR_FATAL',
+            type='error',
+            category='Fatal' if 'rib_fallback' in task_kwargs else 'Intercepted',
             filename=f'{current_task.name}-{current_task.request.id}.log',
             content=traceback.format_exc().encode()
         )
@@ -143,12 +144,12 @@ class Workflow:
     def _configure_beat_queues(app, beat_queue):
         schedule = {
             'poll-executions': {
-                'task': 'riberry.client.workflow.tasks.poll',
+                'task': 'riberry.celery.client.tasks.poll',
                 'schedule': 0.1,
                 'options': {'queue': beat_queue}
             },
             'echo-status': {
-                'task': 'riberry.client.workflow.tasks.echo',
+                'task': 'riberry.celery.client.tasks.echo',
                 'schedule': 2,
                 'options': {'queue': beat_queue}
             }

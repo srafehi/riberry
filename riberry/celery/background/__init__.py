@@ -4,7 +4,7 @@ app = Celery(main='background-tasks')
 app.conf.result_backend = app.conf.broker_url = 'redis://'
 app.conf.beat_schedule = {
     'process:execution': {
-        'task': 'riberry.celery.background.tasks.execution_events',
+        'task': 'riberry.celery.background.tasks.workflow_events',
         'schedule': 2,
         'options': {'queue': 'riberry.background.executions'}
     },

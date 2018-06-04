@@ -19,11 +19,18 @@ def handle_artefacts(events: List[model.misc.Event]):
 
             artifact = model.job.JobExecutionArtifact(
                 name=event_data['name'],
-                type=event_data['type'],
+                type=model.job.ArtifactType[event_data['type']],
+                category=event_data['category'],
                 filename=event_data['filename'],
                 size=len(event.binary),
                 created=pendulum.from_timestamp(event.time),
-                binary=model.job.JobExecutionArtifactBinary(binary=event.binary)
+                binary=model.job.JobExecutionArtifactBinary(binary=event.binary),
+                data=[
+                    model.job.JobExecutionArtifactData(
+                        title=title,
+                        description=description
+                    ) for title, description in event_data['data'].items()
+                ]
             )
 
             if event.root_id not in job_executions:
@@ -155,7 +162,7 @@ def handle_streams(events: List[model.misc.Event]):
 handlers = {
     'stream': handle_streams,
     'step': handle_steps,
-    'artefact': handle_artefacts
+    'artifact': handle_artefacts
 }
 
 
