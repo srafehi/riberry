@@ -63,6 +63,13 @@ class ApplicationInstance(base.Base):
 
     @property
     def status(self):
+
+        schedules = self.schedules
+        if schedules:
+            for schedule in schedules:
+                if not schedule.active():
+                    return 'inactive'
+
         if not self.heartbeat:
             return 'created'
 
@@ -92,6 +99,25 @@ class ApplicationInstanceSchedule(base.Base):
     # columns
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
+    days = Column(String(27), nullable=False)
+    start_time = Column(String(5), nullable=False)
+    end_time = Column(String(5), nullable=False)
+    timezone = Column(String(128), nullable=False, default='UTC')
 
     # associations
     instance: 'ApplicationInstance' = relationship('ApplicationInstance', back_populates='schedules')
+
+    def active(self):
+        now = pendulum.DateTime.now(tz=self.timezone)
+        if self.days != '*':
+            all_days = self.days.lower().split(',')
+            if now.format('dd').lower() not in all_days:
+                return False
+
+        start_dt = pendulum.parse(self.start_time, tz=self.timezone)
+        end_dt = pendulum.parse(self.end_time, tz=self.timezone)
+
+        return end_dt > now > start_dt
+
+
+

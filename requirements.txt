@@ -1,3 +1,4 @@
+redis
 croniter
 pendulum
 sqlalchemy

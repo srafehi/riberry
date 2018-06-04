@@ -9,7 +9,7 @@ from celery.result import AsyncResult
 
 from riberry import model
 from riberry.celery.client import tasks
-from . import wf, signals
+from . import wf, signals, scale
 
 IGNORE_EXCEPTIONS = (
     celery_exc.Ignore,
@@ -134,6 +134,7 @@ class Workflow:
     __registered__ = {}
 
     def __init__(self, name, app, beat_queue):
+        self.name = name
         self.__registered__[name] = self
         self.app = patch_app(app)
         self.form_entries = {}
@@ -145,7 +146,7 @@ class Workflow:
         schedule = {
             'poll-executions': {
                 'task': 'riberry.celery.client.tasks.poll',
-                'schedule': 0.1,
+                'schedule': 2,
                 'options': {'queue': beat_queue}
             },
             'echo-status': {

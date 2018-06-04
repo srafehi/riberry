@@ -11,6 +11,12 @@ class __ModelProxy:
     def __getattr__(self, item):
         return getattr(self.raw_session, item)
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
 
 conn: session.Session = __ModelProxy()
 
