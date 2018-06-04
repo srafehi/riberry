@@ -22,7 +22,6 @@ class DatabaseConfig:
         self.raw_config = config_dict
         self.connection_string = _load_config_value(self.raw_config['connection'])
         self.echo = self.raw_config['connection'].get('echo', False)
-        print(self.raw_config)
         self.connection_arguments = self.raw_config.get('arguments', {})
 
     def enable(self):
