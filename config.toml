@@ -3,6 +3,11 @@
 envvar = "RIBERRY_CONNECTION_STRING"
 
 
+[database.arguments]
+
+timeout = 60
+
+
 [authentication]
 
 providers = ["default", "ldap"]

@@ -16,15 +16,21 @@ def _load_config_value(config):
         return config['value']
 
 
-class DatabaseConfiguation:
+class DatabaseConfig:
 
     def __init__(self, config_dict):
         self.raw_config = config_dict
-        self.connection_string = _load_config_value(self.raw_config)
-        self.echo = self.raw_config.get('echo', False)
+        self.connection_string = _load_config_value(self.raw_config['connection'])
+        self.echo = self.raw_config['connection'].get('echo', False)
+        print(self.raw_config)
+        self.connection_arguments = self.raw_config.get('arguments', {})
 
     def enable(self):
-        riberry.model.init(url=self.connection_string, echo=self.echo)
+        riberry.model.init(
+            url=self.connection_string,
+            echo=self.echo,
+            connection_arguments=self.connection_arguments
+        )
 
 
 class AuthenticationConfigToken:
@@ -73,7 +79,7 @@ class RiberryConfig:
     def __init__(self, config_dict):
         self.raw_config = config_dict
         self.authentication = AuthenticationConfig(self.raw_config['authentication'])
-        self.database = DatabaseConfiguation(self.raw_config['database']['connection'])
+        self.database = DatabaseConfig(self.raw_config['database'])
 
     def enable(self):
         self.authentication.enable()
