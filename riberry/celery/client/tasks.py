@@ -15,7 +15,7 @@ def poll():
     app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
         internal_name=os.environ['RIBERRY_INSTANCE']
     ).first()
-    if not app_instance:
+    if not app_instance or app_instance.status != 'online':
         return
 
     execution: model.job.JobExecution = model.job.JobExecution.query().filter(
