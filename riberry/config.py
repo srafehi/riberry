@@ -6,7 +6,7 @@ import os
 _config = toml.load(os.environ['RIBERRY_CONFIG_PATH'])
 
 
-def _load_config_value(config):
+def load_config_value(config):
     if 'path' in config:
         with open(config['path']) as f:
             return f.read()
@@ -20,7 +20,7 @@ class DatabaseConfig:
 
     def __init__(self, config_dict):
         self.raw_config = config_dict
-        self.connection_string = _load_config_value(self.raw_config['connection'])
+        self.connection_string = load_config_value(self.raw_config['connection'])
         self.echo = self.raw_config['connection'].get('echo', False)
         self.connection_arguments = self.raw_config.get('arguments', {})
 
@@ -37,7 +37,7 @@ class AuthenticationConfigToken:
     def __init__(self, config_dict):
         self.raw_config = config_dict
         self.provider = self.raw_config['provider']
-        self.secret = _load_config_value(self.raw_config)
+        self.secret = load_config_value(self.raw_config)
 
 
 class AuthenticationConfig:
