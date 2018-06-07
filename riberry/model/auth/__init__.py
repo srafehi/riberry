@@ -30,6 +30,7 @@ class User(base.Base):
     )
     jobs: List['model.job.Job'] = relationship('Job', back_populates='creator')
     executions: List['model.job.JobExecution'] = relationship('JobExecution', back_populates='creator')
+    notifications: List['model.misc.UserNotification'] = relationship('UserNotification', back_populates='user')
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
