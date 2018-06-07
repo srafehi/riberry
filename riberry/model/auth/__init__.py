@@ -111,5 +111,10 @@ class AuthToken:
 
     @staticmethod
     def verify(token: AnyStr) -> Dict:
-        return jwt.decode(token, config.authentication.token.secret, algorithms=['HS256'])
+        try:
+            return jwt.decode(token, config.authentication.token.secret, algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            raise exc.SessionExpired
+        except Exception:
+            raise exc.AuthenticationError
 
