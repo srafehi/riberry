@@ -47,7 +47,9 @@ class Group(base.Base):
 
     # columns
     id = base.id_builder.build()
-    name: str = Column(String(64), nullable=False, unique=True)
+    name: str = Column(String(128), nullable=False, unique=True)
+    _display_name: str = Column('display_name', String(128))
+    description: str = Column(String(128))
 
     # associations
     resource_associations: List['ResourceGroupAssociation'] = relationship(
@@ -66,6 +68,10 @@ class Group(base.Base):
             ResourceGroupAssociation.resource_type == ResourceType.form
         )
     )
+
+    @property
+    def display_name(self):
+        return self._display_name or self.name
 
     @property
     def users(self):
