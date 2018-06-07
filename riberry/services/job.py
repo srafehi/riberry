@@ -4,7 +4,7 @@ from sqlalchemy import func
 
 import pendulum
 from datetime import timedelta
-from riberry import model, services, policy
+from riberry import model, services, policy, exc
 import json
 
 
@@ -21,6 +21,7 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
 
     input_value_mapping = {}
     input_file_mapping = {}
+    errors = []
 
     for name, definition in value_map_definitions.items():
         if name in input_values:
@@ -29,11 +30,15 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
             value = definition.default_binary
 
         if definition.required and not value:
-            raise ValueError(f'Mandatory input {repr(definition.name)}/{repr(definition.internal_name)} not provided')
-        if definition.allowed_values and value not in definition.allowed_binaries:
-            raise ValueError(
-                f'Input {repr(definition.name)}/{repr(definition.internal_name)} provided invalid enumeration: {value} '
-                f'(expected: {definition.allowed_binaries})')
+            err = exc.RequiredInputError(target='job', field=definition.name, internal_name=definition.internal_name)
+            errors.append(err)
+            continue
+
+        if definition.allowed_binaries and value not in definition.allowed_binaries:
+            err = exc.InvalidEnumError(target='job', field=definition.name, allowed_values=definition.allowed_values,
+                                       internal_name=definition.internal_name)
+            errors.append(err)
+            continue
 
         input_value_mapping[definition] = value
 
@@ -44,13 +49,20 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
             value = None
 
         if definition.required and not value:
-            raise ValueError(f'Mandatory file {repr(definition.name)}/{repr(definition.internal_name)} not provided')
+            err = exc.RequiredInputError(target='job', field=definition.name, internal_name=definition.internal_name)
+            errors.append(err)
+            continue
 
         input_file_mapping[definition] = value
 
     unexpected_inputs = set(input_values) | set(input_files)
     if unexpected_inputs:
-        raise ValueError(f'Received unexpected arguments: {unexpected_inputs}')
+        for input_ in unexpected_inputs:
+            err = exc.UnknownInputError(target='job', field=input_)
+            errors.append(err)
+
+    if errors:
+        raise exc.InputErrorGroup(*errors)
 
     return input_value_mapping, input_file_mapping
 
@@ -63,12 +75,28 @@ def create_job(form_id, name, input_values, input_files, execute):
     input_file_definitions = form.interface.input_file_definitions
     input_value_definitions = form.interface.input_value_definitions
 
-    values_mapping, files_mapping = verify_inputs(
-        input_value_definitions,
-        input_file_definitions,
-        input_values,
-        input_files
-    )
+    errors = []
+    if not name:
+        err = exc.RequiredInputError(target='job', field='name')
+        errors.append(err)
+    else:
+        if model.job.Job.query().filter_by(name=name).first():
+            err = exc.UniqueInputConstraintError(target='job', field='name', value=name)
+            errors.append(err)
+
+    try:
+        values_mapping, files_mapping = verify_inputs(
+            input_value_definitions,
+            input_file_definitions,
+            input_values,
+            input_files
+        )
+    except exc.InputErrorGroup as e:
+        e.extend(errors)
+        raise
+    else:
+        if errors:
+            raise exc.InputErrorGroup(*errors)
 
     input_value_instances = []
     input_file_instances = []
