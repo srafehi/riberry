@@ -73,22 +73,25 @@ class UserDetails(base.Base):
 
     id = base.id_builder.build()
     user_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
-    user = relationship('User', back_populates='details')
+    user: 'User' = relationship('User', back_populates='details')
 
-    first_name = Column(String(32), nullable=False)
-    last_name = Column(String(32), nullable=False)
-    display_name = Column(String(32))
-    department = Column(String(64))
+    first_name = Column(String(64))
+    last_name = Column(String(64))
+    display_name = Column(String(128))
+    department = Column(String(128))
     email = Column(String(128))
     updated: datetime = Column(DateTime, default=base.utc_now)
 
     @property
     def full_name(self):
-        return f'{self.first_name} {self.last_name}'
+        if self.first_name and self.last_name:
+            return f'{self.first_name} {self.last_name}'
+        else:
+            return self.first_name or self.last_name or self.display_name or self.user.username
 
     @validates('email')
     def validate_email(self, _, email):
-        if not email or not re.match(r'[^@]+@[^@]+\.[^@]+', email or ''):
+        if email and not re.match(r'[^@]+@[^@]+\.[^@]+', email or ''):
             raise ValueError(f'UserDetails.email :: Invalid email received ({repr(email)})')
         return email
 
