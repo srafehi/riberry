@@ -10,7 +10,8 @@ def profile() -> model.auth.User:
 
 
 def latest_notifications():
-    return model.misc.UserNotification.query().order_by(
+    user = policy.context.subject
+    return model.misc.UserNotification.query().filter_by(user=user).order_by(
         desc(model.misc.UserNotification.created)
     ).limit(32).all()
 
