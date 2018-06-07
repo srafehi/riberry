@@ -137,5 +137,5 @@ def workflow_stream_update(root_id, stream_name, task_id, status):
 
 
 @shared_task(bind=True)
-def workflow_complete(task, status):
-    return client.workflow_complete(task, status)
+def workflow_complete(task, status, primary_stream):
+    return client.workflow_complete(task, status, primary_stream)

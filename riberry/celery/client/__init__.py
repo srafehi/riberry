@@ -1,5 +1,6 @@
 import functools
 import traceback
+from typing import Dict, Tuple
 
 import pendulum
 from celery import Celery
@@ -23,7 +24,7 @@ BYPASS_ARGS = (
 )
 
 
-def workflow_complete(task, status):
+def workflow_complete(task, status, primary_stream):
     root_id = task.request.root_id
     job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).one()
     job.task_id = root_id
@@ -35,7 +36,7 @@ def workflow_complete(task, status):
         root_id=root_id,
         task_id=root_id,
         data={
-            'stream': 'Primary',
+            'stream': primary_stream,
             'state': status
         }
     )
@@ -50,7 +51,7 @@ def is_workflow_complete(task):
     return job.status == 'FAILURE' if job else False
 
 
-def workflow_started(task, job_id):
+def workflow_started(task, job_id, primary_stream):
     root_id = task.request.root_id
 
     job: model.job.JobExecution = model.job.JobExecution.query().filter_by(id=job_id).one()
@@ -63,11 +64,11 @@ def workflow_started(task, job_id):
         root_id=root_id,
         task_id=root_id,
         data={
-            'stream': 'Primary',
+            'stream': primary_stream,
             'state': 'ACTIVE'
         }
     )
-    task.stream = 'Primary'
+    task.stream = primary_stream
 
     model.conn.commit()
     model.conn.close()
@@ -130,6 +131,15 @@ def patch_app(app):
     return app
 
 
+class WorkflowEntry:
+
+    def __init__(self, name, version, func, primary_stream):
+        self.name = name
+        self.version = version
+        self.func = func
+        self.primary_stream = primary_stream
+
+
 class Workflow:
     __registered__ = {}
 
@@ -137,7 +147,7 @@ class Workflow:
         self.name = name
         self.__registered__[name] = self
         self.app = patch_app(app)
-        self.form_entries = {}
+        self.form_entries: Dict[Tuple[str, str], WorkflowEntry] = {}
         self.entry_point = self._make_entry_point(self.app, self.form_entries)
         self._configure_beat_queues(app, beat_queue)
 
@@ -161,21 +171,32 @@ class Workflow:
         app.conf.beat_schedule.update(schedule)
 
     @staticmethod
-    def _make_entry_point(app, form_entries):
+    def _make_entry_point(app, form_entries: Dict[Tuple[str, str], WorkflowEntry]):
         @app.task(bind=True)
-        def entry_point(task, execution_id, name, version, values, files):
-            workflow_started(task, execution_id)
-            form_entries[(name, version)](task, **values, **files)
+        def entry_point(task, execution_id, name: str, version: str, values: Dict, files: Dict):
+            workflow_entry = form_entries[(name, version)]
+            workflow_started(task, execution_id, workflow_entry.primary_stream)
+            workflow_entry.func(task, **values, **files)
 
         return entry_point
 
-    def entry(self, name, version):
+    def entry(self, name, version, primary_stream='Overall'):
         def wrapper(func):
-            self.form_entries[(name, version)] = func
+            self.form_entries[(name, version)] = WorkflowEntry(
+                name=name,
+                version=version,
+                func=func,
+                primary_stream=primary_stream)
 
         return wrapper
 
     def start(self, execution_id, input_name, input_version, input_values, input_files):
+        if (input_name, input_version) not in self.form_entries:
+            raise ValueError(f'Application {self.name:!r} does not have an entry point with '
+                             f'name {input_name!r} and version {input_version} registered.')
+
+        workflow_entry: WorkflowEntry = self.entry_point[(input_name, input_version)]
+
         body = self.entry_point.si(
             execution_id=execution_id,
             name=input_name,
@@ -184,7 +205,8 @@ class Workflow:
             files=input_files
         )
 
-        callback = tasks.workflow_complete.si(status='SUCCESS')
+        callback_success = tasks.workflow_complete.si(status='SUCCESS', primary_stream=workflow_entry.primary_stream)
+        callback_failure = tasks.workflow_complete.si(status='FAILURE', primary_stream=workflow_entry.primary_stream)
+        task = body.on_error(callback_failure) | callback_success
 
-        task = body.on_error(tasks.workflow_complete.si(status='FAILURE')) | callback
         return task()
