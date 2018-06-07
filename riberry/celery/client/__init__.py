@@ -41,24 +41,9 @@ def workflow_complete(task, status, primary_stream):
         }
     )
 
-    notification = model.misc.Notification(
-        type=(
-            model.misc.NotificationType.success if str(status).lower() == 'success'
-            else model.misc.NotificationType.error
-        ),
-        message=f'Completed execution #{job.id} for job {job.job.name} with status {str(status).lower()}',
-        user_notifications=[
-            model.misc.UserNotification(user=job.creator)
-        ],
-        targets=[
-            model.misc.NotificationTarget(target='JobExecution', target_id=job.id)
-        ]
-    )
-
-    model.conn.add(notification)
-
     model.conn.commit()
     model.conn.close()
+    wf.notify(notification_type='workflow_complete', data=dict(status=status))
 
 
 def is_workflow_complete(task):
@@ -86,21 +71,9 @@ def workflow_started(task, job_id, primary_stream):
     )
     task.stream = primary_stream
 
-    notification = model.misc.Notification(
-        type=model.misc.NotificationType.info,
-        message=f'Processing execution #{job.id} for job {job.job.name}',
-        user_notifications=[
-            model.misc.UserNotification(user=job.creator)
-        ],
-        targets=[
-            model.misc.NotificationTarget(target='JobExecution', target_id=job.id)
-        ]
-    )
-
-    model.conn.add(notification)
-
     model.conn.commit()
     model.conn.close()
+    wf.notify(notification_type='workflow_started')
 
 
 def execute_task(func, func_args, func_kwargs, task_kwargs):
@@ -122,7 +95,7 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
             fallback = task_kwargs.get('wf_fallback')
             return fallback() if callable(fallback) else fallback
         else:
-            workflow_complete(current_task, status='FAILURE')
+            workflow_complete(current_task, status='FAILURE', primary_stream='NA')
             raise
 
 

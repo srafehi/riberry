@@ -56,3 +56,19 @@ def artifact(name, type, category, filename, content, data=None, stream=None, st
         },
         binary=content
     )
+
+
+def notify(notification_type, data=None):
+    task_id = current_task.request.id
+    root_id = current_task.request.root_id
+
+    create_event(
+        'notify',
+        root_id=root_id,
+        task_id=task_id,
+        data={
+            'type': notification_type,
+            'data': data or {}
+        },
+        binary=None
+    )

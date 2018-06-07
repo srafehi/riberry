@@ -159,10 +159,58 @@ def handle_streams(events: List[model.misc.Event]):
     return to_delete
 
 
+def handle_notifications(events: List[model.misc.Event]):
+    to_delete = []
+
+    for event in events:
+        event_data = json.loads(event.data)
+        notification_type = event_data['type']
+        notification_data = event_data['data']
+
+        execution: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+        user = execution.creator
+
+        if notification_type == 'workflow_complete':
+            status = str(notification_data['status']).lower()
+            notification = model.misc.Notification(
+                type=(
+                    model.misc.NotificationType.success if str(status).lower() == 'success'
+                    else model.misc.NotificationType.error
+                ),
+                message=f'Completed execution #{execution.id} for job {execution.job.name} '
+                        f'with status {str(status).lower()}',
+                user_notifications=[
+                    model.misc.UserNotification(user=user)
+                ],
+                targets=[
+                    model.misc.NotificationTarget(target='JobExecution', target_id=execution.id)
+                ]
+            )
+            model.conn.add(notification)
+
+        elif notification_type == 'workflow_started':
+            notification = model.misc.Notification(
+                type=model.misc.NotificationType.info,
+                message=f'Processing execution #{execution.id} for job {execution.job.name}',
+                user_notifications=[
+                    model.misc.UserNotification(user=execution.creator)
+                ],
+                targets=[
+                    model.misc.NotificationTarget(target='JobExecution', target_id=execution.id)
+                ]
+            )
+            model.conn.add(notification)
+
+        to_delete.append(event)
+
+    return to_delete
+
+
 handlers = {
     'stream': handle_streams,
     'step': handle_steps,
-    'artifact': handle_artefacts
+    'artifact': handle_artefacts,
+    'notify': handle_notifications,
 }
 
 
