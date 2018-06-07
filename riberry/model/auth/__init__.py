@@ -8,7 +8,7 @@ from sqlalchemy import Column, String, ForeignKey, DateTime
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, validates
 
-from riberry import model
+from riberry import model, exc
 from riberry.model import base
 from riberry.config import config
 
@@ -51,7 +51,7 @@ class User(base.Base):
             provider = config.authentication.default_provider
 
         if not provider.authenticate(username=username, password=password):
-            raise Exception('Unauthorized')
+            raise exc.AuthenticationError
 
         return cls.query().filter_by(username=username).first()
 
