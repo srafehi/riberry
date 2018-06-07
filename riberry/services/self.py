@@ -24,7 +24,7 @@ def unread_notification_count():
 def mark_notifications_as_read(notification_ids: List):
     user = policy.context.subject
     notifications: List[model.misc.UserNotification] = model.misc.UserNotification.query().filter(
-        (model.misc.UserNotification.notification_id.in_(notification_ids)) &
+        (model.misc.UserNotification.id.in_(notification_ids)) &
         (model.misc.UserNotification.user == user) &
         (model.misc.UserNotification.read == False)
     ).all()
