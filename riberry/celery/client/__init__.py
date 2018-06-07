@@ -195,7 +195,7 @@ class Workflow:
             raise ValueError(f'Application {self.name:!r} does not have an entry point with '
                              f'name {input_name!r} and version {input_version} registered.')
 
-        workflow_entry: WorkflowEntry = self.entry_point[(input_name, input_version)]
+        workflow_entry: WorkflowEntry = self.form_entries[(input_name, input_version)]
 
         body = self.entry_point.si(
             execution_id=execution_id,
