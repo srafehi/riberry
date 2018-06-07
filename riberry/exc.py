@@ -62,3 +62,42 @@ class UnknownError(BaseError):
 
     def __init__(self, error=None):
         super(UnknownError, self).__init__()
+
+
+class InputErrorGroup(BaseError):
+    __msg__ = 'One or more errors occurred while validating the given input.'
+    __http_code__ = 400
+
+    def __init__(self, *errors):
+        super(InputErrorGroup, self).__init__(
+            target=None,
+            data={'errors': [e.output() if isinstance(e, BaseError) else e for e in errors]}
+        )
+
+
+class MissingInputError(BaseError):
+    __msg__ = 'Mandatory field {field!r} not provided.'
+    __http_code__ = 400
+
+    def __init__(self, field, internal_name=None):
+        super(MissingInputError, self).__init__(target=internal_name, field=field)
+
+
+class InvalidInputError(BaseError):
+    __msg__ = 'Invalid value provided for field {field!r}'
+    __http_code__ = 400
+
+    def __init__(self, field, internal_name=None):
+        super(InvalidInputError, self).__init__(target=internal_name, field=field)
+
+
+class InvalidEnumError(BaseError):
+    __msg__ = 'Invalid value provided for field {field!r}. Allowed: {allowed_values}'
+    __http_code__ = 400
+
+    def __init__(self, field, allowed_values, internal_name=None):
+        super(InvalidEnumError, self).__init__(
+            target=internal_name,
+            field=field,
+            allowed_values=', '.join(repr(value) for value in allowed_values)
+        )
