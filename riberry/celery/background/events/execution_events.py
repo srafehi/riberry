@@ -1,13 +1,30 @@
 import json
+import smtplib
 from collections import defaultdict
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from typing import List
 
 import pendulum
 
-from riberry import model
+from riberry import model, config
 
 
-def handle_artefacts(events: List[model.misc.Event]):
+def email_notification(host, body, subject, sender, recipients: List):
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = sender
+        msg['To'] = ', '.join(recipients)
+        msg.attach(MIMEText(body, 'plain'))
+        s = smtplib.SMTP(host)
+        s.sendmail(sender, recipients, msg.as_string())
+        s.quit()
+    except:
+        pass
+
+
+def handle_artifacts(events: List[model.misc.Event]):
     job_executions = {}
     streams = {}
 
@@ -172,13 +189,14 @@ def handle_notifications(events: List[model.misc.Event]):
 
         if notification_type == 'workflow_complete':
             status = str(notification_data['status']).lower()
+            message = f'Completed execution #{execution.id} for job ' \
+                      f'{execution.job.name} with status {str(status).lower()}'
             notification = model.misc.Notification(
                 type=(
                     model.misc.NotificationType.success if str(status).lower() == 'success'
                     else model.misc.NotificationType.error
                 ),
-                message=f'Completed execution #{execution.id} for job {execution.job.name} '
-                        f'with status {str(status).lower()}',
+                message=message,
                 user_notifications=[
                     model.misc.UserNotification(user=user)
                 ],
@@ -187,11 +205,20 @@ def handle_notifications(events: List[model.misc.Event]):
                 ]
             )
             model.conn.add(notification)
+            if config.config.email.enabled:
+                email_notification(
+                    host=config.config.email.smtp_server,
+                    body=message,
+                    subject='Workflow started',
+                    sender=config.config.email.sender,
+                    recipients=[user.details.email],
+                )
 
         elif notification_type == 'workflow_started':
+            message = f'Processing execution #{execution.id} for job {execution.job.name}'
             notification = model.misc.Notification(
                 type=model.misc.NotificationType.info,
-                message=f'Processing execution #{execution.id} for job {execution.job.name}',
+                message=message,
                 user_notifications=[
                     model.misc.UserNotification(user=execution.creator)
                 ],
@@ -200,6 +227,14 @@ def handle_notifications(events: List[model.misc.Event]):
                 ]
             )
             model.conn.add(notification)
+            if config.config.email.enabled:
+                email_notification(
+                    host=config.config.email.smtp_server,
+                    body=message,
+                    subject='Workflow completed',
+                    sender=config.config.email.sender,
+                    recipients=[user.details.email],
+                )
 
         to_delete.append(event)
 
@@ -209,7 +244,7 @@ def handle_notifications(events: List[model.misc.Event]):
 handlers = {
     'stream': handle_streams,
     'step': handle_steps,
-    'artifact': handle_artefacts,
+    'artifact': handle_artifacts,
     'notify': handle_notifications,
 }
 

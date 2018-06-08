@@ -71,3 +71,11 @@ membership = "memberOf"
 
 label = "name"
 description = "description"
+
+
+[notifications.email]
+
+enabled = false
+smtpServer = "..."
+sender = "noreply@example.com"
+

@@ -73,12 +73,26 @@ class AuthenticationConfig:
         pass
 
 
+class EmailConfig:
+
+    def __init__(self, config_dict):
+        self.raw_config = config_dict
+        self._enabled = config_dict.get('enabled', False)
+        self.smtp_server = config_dict.get('smtpServer')
+        self.sender = config_dict.get('sender')
+
+    @property
+    def enabled(self):
+        return self._enabled and self.smtp_server and self.sender
+
+
 class RiberryConfig:
 
     def __init__(self, config_dict):
         self.raw_config = config_dict
         self.authentication = AuthenticationConfig(self.raw_config['authentication'])
         self.database = DatabaseConfig(self.raw_config['database'])
+        self.email = EmailConfig(self.raw_config.get('email', {}))
 
     def enable(self):
         self.authentication.enable()
