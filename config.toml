@@ -73,7 +73,7 @@ label = "name"
 description = "description"
 
 
-[notifications.email]
+[notification.email]
 
 enabled = false
 smtpServer = "..."

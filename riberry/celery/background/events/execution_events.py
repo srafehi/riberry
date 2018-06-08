@@ -209,7 +209,7 @@ def handle_notifications(events: List[model.misc.Event]):
                 email_notification(
                     host=config.config.email.smtp_server,
                     body=message,
-                    subject='Workflow started',
+                    subject=f'Riberry / Completed / {execution.job.name} / execution #{execution.id}',
                     sender=config.config.email.sender,
                     recipients=[user.details.email],
                 )
@@ -231,7 +231,7 @@ def handle_notifications(events: List[model.misc.Event]):
                 email_notification(
                     host=config.config.email.smtp_server,
                     body=message,
-                    subject='Workflow completed',
+                    subject=f'Riberry / Started / {execution.job.name} / execution #{execution.id}',
                     sender=config.config.email.sender,
                     recipients=[user.details.email],
                 )
