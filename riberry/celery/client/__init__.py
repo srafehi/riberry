@@ -31,15 +31,21 @@ def workflow_complete(task, status, primary_stream):
     job.status = status
     job.completed = job.updated = pendulum.DateTime.utcnow()
 
-    tasks.create_event(
-        name='stream',
-        root_id=root_id,
-        task_id=root_id,
-        data={
-            'stream': primary_stream,
-            'state': status
-        }
-    )
+    if primary_stream is None:
+        stream = model.job.JobExecutionStream.query().filter_by(task_id=root_id).first()
+        if stream is not None:
+            primary_stream = stream.name
+
+    if primary_stream is not None:
+        tasks.create_event(
+            name='stream',
+            root_id=root_id,
+            task_id=root_id,
+            data={
+                'stream': primary_stream,
+                'state': status
+            }
+        )
 
     model.conn.commit()
     model.conn.close()
@@ -95,7 +101,7 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
             fallback = task_kwargs.get('wf_fallback')
             return fallback() if callable(fallback) else fallback
         else:
-            workflow_complete(current_task, status='FAILURE', primary_stream='NA')
+            workflow_complete(current_task, status='FAILURE', primary_stream=None)
             raise
 
 

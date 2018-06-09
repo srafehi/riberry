@@ -209,7 +209,7 @@ def handle_notifications(events: List[model.misc.Event]):
                 email_notification(
                     host=config.config.email.smtp_server,
                     body=message,
-                    subject=f'Riberry / Completed / {execution.job.name} / execution #{execution.id}',
+                    subject=f'Riberry / {status.title()} / {execution.job.name} / execution #{execution.id}',
                     sender=config.config.email.sender,
                     recipients=[user.details.email],
                 )
