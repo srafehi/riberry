@@ -91,18 +91,18 @@ def create_event(name, root_id, task_id, data=None, binary=None):
 
 @shared_task
 def event(name, time, task_id, root_id, data=None, binary=None):
-    evt = model.misc.Event(
-        name=name,
-        time=time,
-        task_id=task_id,
-        root_id=root_id,
-        data=json.dumps(data),
-        binary=base64.b64decode(binary) if binary else None
-    )
+    with model.conn:
+        evt = model.misc.Event(
+            name=name,
+            time=time,
+            task_id=task_id,
+            root_id=root_id,
+            data=json.dumps(data),
+            binary=base64.b64decode(binary) if binary else None
+        )
 
-    model.conn.add(evt)
-    model.conn.commit()
-    model.conn.close()
+        model.conn.add(evt)
+        model.conn.commit()
 
 
 @shared_task(queue='event')

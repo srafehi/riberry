@@ -1,6 +1,12 @@
 from celery import signals, current_task
 
+from riberry import model
 from riberry.celery.client import tasks
+
+
+@signals.celeryd_after_setup.connect
+def setup_direct_queue(sender, instance, **kwargs):
+    model.conn.raw_engine.dispose()
 
 
 @signals.before_task_publish.connect
