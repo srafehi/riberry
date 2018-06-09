@@ -32,7 +32,7 @@ class ScaleBootstep(bootsteps.Step):
     def __init__(self, worker, scale=False, **_):
         super(ScaleBootstep, self).__init__(worker)
         if scale:
-            os.environ['CELERY_SCALE_WORKER'] = '1'
+            os.environ['RIBERRY_SCALE_WORKER'] = '1'
 
 
 class CeleryScale:
@@ -66,7 +66,7 @@ class CeleryScale:
 
     @property
     def should_scale(self):
-        return os.getenv('CELERY_SCALE_WORKER') == '1'
+        return os.getenv('RIBERRY_SCALE_WORKER') == '1'
 
     def scale_down_workers(self, consumer):
         for queue in consumer.task_consumer.queues:
