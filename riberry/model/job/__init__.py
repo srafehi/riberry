@@ -35,7 +35,7 @@ class Job(base.Base):
     form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     name: str = Column(String(64), nullable=False, unique=True)
-    created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
 
     # associations
     creator: 'model.auth.User' = relationship('User')
@@ -62,8 +62,8 @@ class JobSchedule(base.Base):
     job: 'Job' = relationship('Job', back_populates='schedules')
     enabled: bool = Column(Boolean, default=True, nullable=False)
     cron: str = Column(String(24), nullable=False)
-    created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
-    last_run: datetime = Column(DateTime, default=None)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
+    last_run: datetime = Column(DateTime(timezone=True), default=None)
     limit: int = Column(Integer)
     total_runs: int = Column(Integer, default=0)
 
@@ -109,10 +109,10 @@ class JobExecution(base.Base):
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     task_id: str = Column(String(36), unique=True)
     status: str = Column(String(24), default='RECEIVED')
-    created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
-    started: datetime = Column(DateTime)
-    completed: datetime = Column(DateTime)
-    updated: datetime = Column(DateTime, default=base.utc_now, nullable=False)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
+    started: datetime = Column(DateTime(timezone=True))
+    completed: datetime = Column(DateTime(timezone=True))
+    updated: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
 
     # associations
     creator: 'model.auth.User' = relationship('User')
@@ -134,10 +134,10 @@ class JobExecutionStream(base.Base):
     task_id: str = Column(String(36), unique=True)
     name: str = Column(String(64))
     status: str = Column(String(24), default='QUEUED')
-    created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
-    started: datetime = Column(DateTime)
-    completed: datetime = Column(DateTime)
-    updated: datetime = Column(DateTime, default=base.utc_now, nullable=False)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
+    started: datetime = Column(DateTime(timezone=True))
+    completed: datetime = Column(DateTime(timezone=True))
+    updated: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
 
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='streams')
@@ -158,10 +158,10 @@ class JobExecutionStreamStep(base.Base):
     task_id: str = Column(String(36), unique=True)
     name: str = Column(String(64))
     status: str = Column(String(24), default='RECEIVED')
-    created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
-    started: datetime = Column(DateTime)
-    completed: datetime = Column(DateTime)
-    updated: datetime = Column(DateTime, default=base.utc_now, nullable=False)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
+    started: datetime = Column(DateTime(timezone=True))
+    completed: datetime = Column(DateTime(timezone=True))
+    updated: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
 
     # associations
     stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='steps')
@@ -183,7 +183,7 @@ class JobExecutionArtifact(base.Base):
     type: str = Column(Enum(ArtifactType), nullable=False)
     category: str = Column(String(128), nullable=False, default='Default')
     filename: str = Column(String(512), nullable=False)
-    created: datetime = Column(DateTime, default=base.utc_now, nullable=False)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
     size: int = Column(Integer, nullable=False)
 
     # associations

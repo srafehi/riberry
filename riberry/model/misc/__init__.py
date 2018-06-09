@@ -49,7 +49,7 @@ class UserNotification(base.Base):
     id = base.id_builder.build()
     user_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     notification_id = Column(base.id_builder.type, ForeignKey('notification.id'), nullable=False)
-    created: datetime = Column(DateTime, default=base.utc_now)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now)
     read = Column(Boolean, nullable=False, default=False)
 
     # associations

@@ -86,8 +86,8 @@ class Heartbeat(base.Base):
     # columns
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
-    created: datetime = Column(DateTime, default=base.utc_now)
-    updated: datetime = Column(DateTime, default=base.utc_now)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now)
+    updated: datetime = Column(DateTime(timezone=True), default=base.utc_now)
 
     # associations
     instance: 'ApplicationInstance' = relationship('ApplicationInstance', back_populates='heartbeat')

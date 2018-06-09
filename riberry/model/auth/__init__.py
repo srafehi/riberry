@@ -81,7 +81,7 @@ class UserDetails(base.Base):
     display_name = Column(String(128))
     department = Column(String(128))
     email = Column(String(128))
-    updated: datetime = Column(DateTime, default=base.utc_now)
+    updated: datetime = Column(DateTime(timezone=True), default=base.utc_now)
 
     @property
     def full_name(self):
