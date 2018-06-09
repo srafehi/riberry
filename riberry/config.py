@@ -99,6 +99,10 @@ class RiberryConfig:
 
         self.email = EmailNotificationConfig(email_config)
 
+    @property
+    def celery(self):
+        return self.raw_config.get('celery') or {}
+
     def enable(self):
         self.authentication.enable()
         self.database.enable()

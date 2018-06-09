@@ -275,7 +275,7 @@ def process():
 
         model.conn.commit()
     finally:
-        model.conn.close()
+        model.conn.remove()
 
 
 if __name__ == '__main__':

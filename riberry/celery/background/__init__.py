@@ -1,8 +1,11 @@
 from celery import Celery
+from riberry import config
 
 app = Celery(main='background-tasks')
-app.conf.result_backend = app.conf.broker_url = 'redis://'
-app.conf.beat_schedule = {
+
+app.conf.update(config.config.celery)
+
+app.conf.beat_schedule.update({
     'process:execution': {
         'task': 'riberry.celery.background.tasks.workflow_events',
         'schedule': 2,
@@ -18,11 +21,9 @@ app.conf.beat_schedule = {
         'schedule': 5,
         'options': {'queue': 'riberry.background.misc'}
     }
-}
+})
 
-
-app.conf.timezone = 'UTC'
-app.conf.imports = ['riberry.celery.background.tasks']
+app.conf.imports = list(app.conf.imports) + ['riberry.celery.background.tasks']
 
 
 def register_task(task_path, schedule):
