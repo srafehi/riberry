@@ -19,22 +19,23 @@ class Application(base.Base):
     document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
     name: str = Column(String(64), nullable=False, unique=True)
     internal_name: str = Column(String(256), nullable=False, unique=True)
-    description: str = Column(String(128))
+    description: str = Column(String(256))
     type: str = Column(String(64), nullable=False)
     enabled: bool = Column(Boolean, default=True)
 
     # associations
     instances: List['ApplicationInstance'] = relationship(
-        'ApplicationInstance', back_populates='application')
+        'ApplicationInstance', cascade='delete, delete-orphan', back_populates='application')
     interfaces: List['model.interface.ApplicationInterface'] = relationship(
-        'ApplicationInterface', back_populates='application')
+        'ApplicationInterface', cascade='delete, delete-orphan', back_populates='application')
     document: 'model.misc.Document' = relationship('Document')
 
-    forms = relationship(
+    forms: List['model.interface.Form'] = relationship(
         'Form',
         secondary=lambda: ApplicationInstance.__table__,
         primaryjoin=lambda: Application.id == ApplicationInstance.application_id,
-        secondaryjoin=lambda: ApplicationInstance.id == model.interface.Form.instance_id
+        secondaryjoin=lambda: ApplicationInstance.id == model.interface.Form.instance_id,
+        viewonly=True,
     )
 
 
@@ -52,8 +53,8 @@ class ApplicationInstance(base.Base):
     application: 'Application' = relationship('Application', back_populates='instances')
     heartbeat: 'Heartbeat' = relationship('Heartbeat', uselist=False, back_populates='instance')
     schedules: List['ApplicationInstanceSchedule'] = relationship(
-        'ApplicationInstanceSchedule', back_populates='instance')
-    forms: List['model.interface.Form'] = relationship('Form', back_populates='instance')
+        'ApplicationInstanceSchedule', cascade='delete, delete-orphan', back_populates='instance')
+    forms: List['model.interface.Form'] = relationship('Form', cascade='delete, delete-orphan', back_populates='instance')
 
     # proxies
     interfaces: List['model.interface.ApplicationInterface'] = association_proxy(

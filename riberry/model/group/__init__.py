@@ -37,7 +37,8 @@ class ResourceGroupAssociation(base.Base):
                 resource_id == ResourceGroupAssociation.resource_id,
                 ResourceGroupAssociation.resource_type == resource_type
             ),
-            foreign_keys=lambda: ResourceGroupAssociation.resource_id
+            foreign_keys=lambda: ResourceGroupAssociation.resource_id,
+            cascade='delete, delete-orphan',
         )
 
 

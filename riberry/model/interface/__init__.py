@@ -26,15 +26,15 @@ class ApplicationInterface(base.Base):
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
     version: int = Column(Integer, nullable=False, default=1)
-    description: str = Column(String(128))
+    description: str = Column(String(256))
 
     # associations
     application: 'model.application.Application' = relationship('Application', back_populates='interfaces')
     input_value_definitions: List['InputValueDefinition'] = relationship(
-        'InputValueDefinition', back_populates='interface')
+        'InputValueDefinition', cascade='delete, delete-orphan', back_populates='interface')
     input_file_definitions: List['InputFileDefinition'] = relationship(
-        'InputFileDefinition', back_populates='interface')
-    forms: List['Form'] = relationship('Form', back_populates='interface')
+        'InputFileDefinition', cascade='delete, delete-orphan', back_populates='interface')
+    forms: List['Form'] = relationship('Form', cascade='delete, delete-orphan', back_populates='interface')
     document: 'model.misc.Document' = relationship('Document')
 
     # proxies
@@ -53,15 +53,15 @@ class Form(base.Base):
 
     # columns
     id = base.id_builder.build()
-    instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'))
-    interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'))
+    instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
+    interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'), nullable=False)
     enabled: bool = Column(Boolean, nullable=False, default=True)
 
     # associations
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='forms', lazy='joined')
     schedules: List['FormSchedule'] = relationship('FormSchedule', back_populates='form')
-    jobs: List['Job'] = relationship('Job', back_populates='form')
+    jobs: List['model.job.Job'] = relationship('Job', back_populates='form')
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
         resource_type=model.group.ResourceType.form
@@ -90,7 +90,7 @@ class InputFileDefinition(base.Base):
 
     # columns
     id = base.id_builder.build()
-    application_interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'))
+    application_interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'), nullable=False)
 
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
@@ -108,7 +108,7 @@ class InputValueDefinition(base.Base):
 
     # columns
     id = base.id_builder.build()
-    application_interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'))
+    application_interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'), nullable=False)
 
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
