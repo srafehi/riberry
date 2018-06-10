@@ -55,7 +55,6 @@ def _remove_resource_from_group(group_id, resource_id, resource_type):
     association = _find_group_association(group_id, resource_id, resource_type)
     if association:
         model.conn.delete(association)
-        model.conn.commit()
 
 
 def _add_resource_to_group(group_id, resource_id, resource_type):
@@ -67,11 +66,9 @@ def _add_resource_to_group(group_id, resource_id, resource_type):
             resource_type=resource_type
         )
         model.conn.add(association)
-        model.conn.commit()
 
 
 def create_group(name):
     group = model.group.Group(name=name)
     model.conn.add(group)
-    model.conn.commit()
     return group

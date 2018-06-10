@@ -28,21 +28,11 @@ def create_application(name, internal_name, description, type):
 
     policy.context.authorize(app, action='create')
     model.conn.add(app)
-    model.conn.commit()
-
     return app
 
 
-def update_application_by_id(application_id, attributes):
-    return update_application(application_by_id(application_id), attributes)
-
-
-def update_application_by_internal_name(internal_name, attributes):
-    return update_application(application_by_internal_name(internal_name), attributes)
-
-
-def update_application(app, attributes):
+def update_application(application, attributes):
     for attr in {'name', 'description', 'type'} & set(attributes):
-        setattr(app, attr, attributes[attr])
+        setattr(application, attr, attributes[attr])
 
-    return app
+    return application

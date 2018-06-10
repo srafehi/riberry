@@ -132,7 +132,6 @@ def create_job(form_id, name, input_values, input_files, execute):
         create_job_execution(job)
 
     model.conn.add(job)
-    model.conn.commit()
 
     return job
 
@@ -157,7 +156,6 @@ def create_job_execution(job):
 
     policy.context.authorize(execution, action='create')
     model.conn.add(execution)
-    model.conn.commit()
 
     return execution
 

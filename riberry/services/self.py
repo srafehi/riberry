@@ -32,8 +32,6 @@ def mark_notifications_as_read(notification_ids: List):
     for notification in notifications:
         notification.read = True
 
-    model.conn.commit()
-
 
 def mark_all_notifications_as_read():
     user = policy.context.subject
@@ -45,4 +43,3 @@ def mark_all_notifications_as_read():
     for notification in notifications:
         notification.read = True
 
-    model.conn.commit()
