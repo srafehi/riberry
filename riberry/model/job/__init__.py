@@ -40,10 +40,10 @@ class Job(base.Base):
     # associations
     creator: 'model.auth.User' = relationship('User')
     form: 'model.interface.Form' = relationship('Form', back_populates='jobs')
-    executions: List['JobExecution'] = relationship('JobExecution', back_populates='job')
-    schedules: List['JobSchedule'] = relationship('JobSchedule', back_populates='job')
-    values: List['model.interface.InputValueInstance'] = relationship('InputValueInstance', back_populates='job')
-    files: List['model.interface.InputFileInstance'] = relationship('InputFileInstance', back_populates='job')
+    executions: List['JobExecution'] = relationship('JobExecution', cascade='delete, delete-orphan', back_populates='job')
+    schedules: List['JobSchedule'] = relationship('JobSchedule', cascade='delete, delete-orphan', back_populates='job')
+    values: List['model.interface.InputValueInstance'] = relationship('InputValueInstance', cascade='delete, delete-orphan', back_populates='job')
+    files: List['model.interface.InputFileInstance'] = relationship('InputFileInstance', cascade='delete, delete-orphan', back_populates='job')
 
     # proxies
     instance: 'model.application.ApplicationInstance' = association_proxy('form', 'instance')
@@ -58,7 +58,7 @@ class JobSchedule(base.Base):
 
     # columns
     id = base.id_builder.build()
-    job_id = Column(base.id_builder.type, ForeignKey('job.id'))
+    job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
     job: 'Job' = relationship('Job', back_populates='schedules')
     enabled: bool = Column(Boolean, default=True, nullable=False)
     cron: str = Column(String(24), nullable=False)
@@ -105,7 +105,7 @@ class JobExecution(base.Base):
 
     # columns
     id = base.id_builder.build()
-    job_id = Column(base.id_builder.type, ForeignKey('job.id'))
+    job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     task_id: str = Column(String(36), unique=True)
     status: str = Column(String(24), default='RECEIVED')
@@ -117,8 +117,8 @@ class JobExecution(base.Base):
     # associations
     creator: 'model.auth.User' = relationship('User')
     job: 'Job' = relationship('Job', back_populates='executions')
-    streams: List['JobExecutionStream'] = relationship('JobExecutionStream', back_populates='job_execution')
-    artifacts: List['JobExecutionArtifact'] = relationship('JobExecutionArtifact', back_populates='job_execution')
+    streams: List['JobExecutionStream'] = relationship('JobExecutionStream', cascade='delete, delete-orphan', back_populates='job_execution')
+    artifacts: List['JobExecutionArtifact'] = relationship('JobExecutionArtifact', cascade='delete, delete-orphan', back_populates='job_execution')
 
 
 class JobExecutionStream(base.Base):
@@ -141,7 +141,7 @@ class JobExecutionStream(base.Base):
 
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='streams')
-    steps: List['JobExecutionStreamStep'] = relationship('JobExecutionStreamStep', back_populates='stream')
+    steps: List['JobExecutionStreamStep'] = relationship('JobExecutionStreamStep', cascade='delete, delete-orphan', back_populates='stream')
     artifacts: List['JobExecutionArtifact'] = relationship('JobExecutionArtifact', back_populates='stream')
 
 
@@ -189,8 +189,10 @@ class JobExecutionArtifact(base.Base):
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='artifacts')
     stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='artifacts')
-    binary: 'JobExecutionArtifactBinary' = relationship('JobExecutionArtifactBinary', back_populates='artifact', uselist=False)
-    data: List['JobExecutionArtifactData'] = relationship('JobExecutionArtifactData', back_populates='artifact')
+    binary: 'JobExecutionArtifactBinary' = relationship(
+        'JobExecutionArtifactBinary', cascade='delete, delete-orphan', back_populates='artifact', uselist=False)
+    data: List['JobExecutionArtifactData'] = relationship(
+        'JobExecutionArtifactData', cascade='delete, delete-orphan', back_populates='artifact')
 
     @property
     def content_type(self):

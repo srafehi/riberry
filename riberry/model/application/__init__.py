@@ -28,7 +28,7 @@ class Application(base.Base):
         'ApplicationInstance', cascade='delete, delete-orphan', back_populates='application')
     interfaces: List['model.interface.ApplicationInterface'] = relationship(
         'ApplicationInterface', cascade='delete, delete-orphan', back_populates='application')
-    document: 'model.misc.Document' = relationship('Document')
+    document: 'model.misc.Document' = relationship('Document', cascade='delete, delete-orphan', single_parent=True)
 
     forms: List['model.interface.Form'] = relationship(
         'Form',
@@ -51,9 +51,9 @@ class ApplicationInstance(base.Base):
 
     # associations
     application: 'Application' = relationship('Application', back_populates='instances')
-    heartbeat: 'Heartbeat' = relationship('Heartbeat', uselist=False, back_populates='instance')
+    heartbeat: 'Heartbeat' = relationship('Heartbeat', cascade='delete, delete-orphan', uselist=False, back_populates='instance')
     schedules: List['ApplicationInstanceSchedule'] = relationship(
-        'ApplicationInstanceSchedule', cascade='delete, delete-orphan', back_populates='instance')
+        'ApplicationInstanceSchedule', cascade='save-update, delete, delete-orphan', back_populates='instance')
     forms: List['model.interface.Form'] = relationship('Form', cascade='delete, delete-orphan', back_populates='instance')
 
     # proxies

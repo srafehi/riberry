@@ -35,7 +35,7 @@ class ApplicationInterface(base.Base):
     input_file_definitions: List['InputFileDefinition'] = relationship(
         'InputFileDefinition', cascade='delete, delete-orphan', back_populates='interface')
     forms: List['Form'] = relationship('Form', cascade='delete, delete-orphan', back_populates='interface')
-    document: 'model.misc.Document' = relationship('Document')
+    document: 'model.misc.Document' = relationship('Document', cascade='delete, delete-orphan', single_parent=True)
 
     # proxies
     application_instances: List['model.application.ApplicationInstance'] = association_proxy(
@@ -61,7 +61,7 @@ class Form(base.Base):
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='forms', lazy='joined')
     schedules: List['FormSchedule'] = relationship('FormSchedule', back_populates='form')
-    jobs: List['model.job.Job'] = relationship('Job', back_populates='form')
+    jobs: List['model.job.Job'] = relationship('Job', cascade='delete, delete-orphan', back_populates='form')
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
         resource_type=model.group.ResourceType.form
@@ -99,6 +99,8 @@ class InputFileDefinition(base.Base):
     required: bool = Column(Boolean, nullable=False, default=True)
 
     # associations
+    instances: List['InputFileInstance'] = relationship(
+        'InputFileInstance', cascade='delete, delete-orphan', back_populates='definition')
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='input_file_definitions')
 
 
@@ -118,8 +120,11 @@ class InputValueDefinition(base.Base):
     default_binary = Column('defaults', Binary)
 
     # associations
+    instances: List['InputValueInstance'] = relationship(
+        'InputValueInstance', cascade='delete, delete-orphan', back_populates='definition')
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='input_value_definitions')
-    allowed_value_enumerations: List['InputValueEnum'] = relationship('InputValueEnum', back_populates='definition')
+    allowed_value_enumerations: List['InputValueEnum'] = relationship(
+        'InputValueEnum', cascade='delete, delete-orphan', back_populates='definition')
 
     # proxies
     allowed_binaries: List[bytes] = association_proxy(
@@ -151,7 +156,8 @@ class InputValueEnum(base.Base):
     value = Column(Binary, nullable=False)
 
     # associations
-    definition: 'InputValueDefinition' = relationship('InputValueDefinition', back_populates='allowed_value_enumerations')
+    definition: 'InputValueDefinition' = relationship(
+        'InputValueDefinition', back_populates='allowed_value_enumerations')
 
 
 class InputValueInstance(base.Base):
@@ -165,7 +171,7 @@ class InputValueInstance(base.Base):
 
     # associations
     job: 'model.job.Job' = relationship('Job', back_populates='values')
-    definition: 'InputValueDefinition' = relationship('InputValueDefinition')
+    definition: 'InputValueDefinition' = relationship('InputValueDefinition', back_populates='instances')
 
     @hybrid_property
     def value(self):
@@ -190,7 +196,7 @@ class InputFileInstance(base.Base):
 
     # associations
     job: 'model.job.Job' = relationship('Job', back_populates='files')
-    definition: 'InputFileDefinition' = relationship('InputFileDefinition')
+    definition: 'InputFileDefinition' = relationship('InputFileDefinition', back_populates='instances')
 
     @property
     def content_type(self):
