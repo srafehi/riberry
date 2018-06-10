@@ -11,10 +11,11 @@ from riberry.model import base
 
 class Document(base.Base):
     __tablename__ = 'document'
+    __reprattrs__ = ['type']
 
     id = base.id_builder.build()
-    type = Column(String(24), nullable=False, default='markdown')
-    content = Column(Binary, nullable=False)
+    type: str = Column(String(24), nullable=False, default='markdown')
+    content: bytes = Column(Binary, nullable=False)
 
 
 class Event(base.Base):

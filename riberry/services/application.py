@@ -18,12 +18,13 @@ def application_by_internal_name(internal_name) -> model.application.Application
     return model.application.Application.query().filter_by(internal_name=internal_name).one()
 
 
-def create_application(name, internal_name, description, type):
+def create_application(name, internal_name, description, type, document):
     app = model.application.Application(
         name=name,
         internal_name=internal_name,
         description=description,
-        type=type
+        type=type,
+        document=model.misc.Document(content=document) if document else None
     )
 
     policy.context.authorize(app, action='create')
