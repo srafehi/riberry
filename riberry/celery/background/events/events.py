@@ -249,10 +249,14 @@ handlers = {
 }
 
 
-def process():
+def process(event_limit=None):
     try:
         event_mapping = defaultdict(list)
-        events = model.misc.Event.query().order_by(model.misc.Event.time.asc()).all()
+        query = model.misc.Event.query().order_by(model.misc.Event.time.asc())
+        if event_limit:
+            query = query.limit(event_limit)
+        events = query.all()
+
         if not events:
             return
 

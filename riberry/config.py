@@ -32,7 +32,7 @@ class DatabaseConfig:
         )
 
 
-class AuthenticationConfigToken:
+class AuthenticationTokenConfig:
 
     def __init__(self, config_dict):
         self.raw_config = config_dict
@@ -46,7 +46,7 @@ class AuthenticationConfig:
         self.raw_config = config_dict
         self.provider_names = self.raw_config['providers']
         self.default_provider_name = self.raw_config['default']
-        self.token = AuthenticationConfigToken(self.raw_config['token'])
+        self.token = AuthenticationTokenConfig(self.raw_config['token'])
         self._config_cache = {}
 
     def __getitem__(self, item):
@@ -86,6 +86,29 @@ class EmailNotificationConfig:
         return self._enabled and self.smtp_server and self.sender
 
 
+class BackgroundTaskConfig:
+
+    def __init__(self, config_dict):
+        self.raw_config = config_dict or {}
+        self.events = BackgroundTaskEventsConfig(self.raw_config.get('events') or {})
+        self.schedules = BackgroundTaskScheduleConfig(self.raw_config.get('schedules') or {})
+
+
+class BackgroundTaskEventsConfig:
+
+    def __init__(self, config_dict):
+        self.raw_config = config_dict or {}
+        self.interval = config_dict.get('interval', 2)
+        self.processing_limit = config_dict.get('limit', 1000)
+
+
+class BackgroundTaskScheduleConfig:
+
+    def __init__(self, config_dict):
+        self.raw_config = config_dict or {}
+        self.interval = config_dict.get('interval', 10)
+
+
 class RiberryConfig:
 
     def __init__(self, config_dict):
@@ -98,6 +121,7 @@ class RiberryConfig:
             email_config = {}
 
         self.email = EmailNotificationConfig(email_config)
+        self.background = BackgroundTaskConfig(self.raw_config.get('background') or {})
 
     @property
     def celery(self):

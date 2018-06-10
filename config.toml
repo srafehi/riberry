@@ -4,6 +4,17 @@ result_backend = 'redis://'
 broker_url = 'redis://'
 
 
+[background.events]
+
+limit = 1000
+interval = 2
+
+
+[background.schedules]
+
+interval = 5
+
+
 [database.connection]
 
 envvar = "RIBERRY_CONNECTION_STRING"

@@ -7,20 +7,18 @@ app.conf.update(config.config.celery)
 
 app.conf.beat_schedule.update({
     'process:execution': {
-        'task': 'riberry.celery.background.tasks.workflow_events',
-        'schedule': 2,
-        'options': {'queue': 'riberry.background.executions'}
+        'task': 'riberry.celery.background.tasks.process_events',
+        'schedule': config.config.background.events.interval,
+        'kwargs': {
+            'event_limit': config.config.background.events.processing_limit
+        },
+        'options': {'queue': 'riberry.background.events'}
     },
     'process:job-schedule': {
         'task': 'riberry.celery.background.tasks.job_schedules',
-        'schedule': 5,
-        'options': {'queue': 'riberry.background.misc'}
+        'schedule': config.config.background.schedules.interval,
+        'options': {'queue': 'riberry.background.schedules'}
     },
-    'process:notifications': {
-        'task': 'riberry.celery.background.tasks.notifications',
-        'schedule': 5,
-        'options': {'queue': 'riberry.background.misc'}
-    }
 })
 
 app.conf.imports = list(app.conf.imports) + ['riberry.celery.background.tasks']

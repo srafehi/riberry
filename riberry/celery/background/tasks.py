@@ -1,13 +1,13 @@
 import importlib
 
 from riberry import model
-from riberry.celery.background.events import execution_events
+from riberry.celery.background.events import events
 from . import app
 
 
 @app.task
-def workflow_events():
-    execution_events.process()
+def process_events(event_limit=None):
+    events.process(event_limit)
 
 
 @app.task
@@ -16,11 +16,6 @@ def job_schedules():
         schedule.run()
 
     model.conn.commit()
-
-
-@app.task
-def notifications():
-    pass
 
 
 @app.task
