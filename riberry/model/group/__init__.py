@@ -38,7 +38,7 @@ class ResourceGroupAssociation(base.Base):
                 ResourceGroupAssociation.resource_type == resource_type
             ),
             foreign_keys=lambda: ResourceGroupAssociation.resource_id,
-            cascade='delete, delete-orphan',
+            cascade='save-update, merge, delete, delete-orphan',
         )
 
 

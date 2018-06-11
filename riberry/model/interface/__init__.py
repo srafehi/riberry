@@ -31,11 +31,11 @@ class ApplicationInterface(base.Base):
     # associations
     application: 'model.application.Application' = relationship('Application', back_populates='interfaces')
     input_value_definitions: List['InputValueDefinition'] = relationship(
-        'InputValueDefinition', cascade='delete, delete-orphan', back_populates='interface')
+        'InputValueDefinition', cascade='save-update, merge, delete, delete-orphan', back_populates='interface')
     input_file_definitions: List['InputFileDefinition'] = relationship(
-        'InputFileDefinition', cascade='delete, delete-orphan', back_populates='interface')
-    forms: List['Form'] = relationship('Form', cascade='delete, delete-orphan', back_populates='interface')
-    document: 'model.misc.Document' = relationship('Document', cascade='delete, delete-orphan', single_parent=True)
+        'InputFileDefinition', cascade='save-update, merge, delete, delete-orphan', back_populates='interface')
+    forms: List['Form'] = relationship('Form', cascade='save-update, merge, delete, delete-orphan', back_populates='interface')
+    document: 'model.misc.Document' = relationship('Document', cascade='save-update, merge, delete, delete-orphan', single_parent=True)
 
     # proxies
     application_instances: List['model.application.ApplicationInstance'] = association_proxy(
@@ -61,7 +61,7 @@ class Form(base.Base):
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='forms', lazy='joined')
     schedules: List['FormSchedule'] = relationship('FormSchedule', back_populates='form')
-    jobs: List['model.job.Job'] = relationship('Job', cascade='delete, delete-orphan', back_populates='form')
+    jobs: List['model.job.Job'] = relationship('Job', cascade='save-update, merge, delete, delete-orphan', back_populates='form')
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
         resource_type=model.group.ResourceType.form
@@ -100,7 +100,7 @@ class InputFileDefinition(base.Base):
 
     # associations
     instances: List['InputFileInstance'] = relationship(
-        'InputFileInstance', cascade='delete, delete-orphan', back_populates='definition')
+        'InputFileInstance', cascade='save-update, merge, delete, delete-orphan', back_populates='definition')
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='input_file_definitions')
 
 
@@ -121,10 +121,10 @@ class InputValueDefinition(base.Base):
 
     # associations
     instances: List['InputValueInstance'] = relationship(
-        'InputValueInstance', cascade='delete, delete-orphan', back_populates='definition')
+        'InputValueInstance', cascade='save-update, merge, delete, delete-orphan', back_populates='definition')
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='input_value_definitions')
     allowed_value_enumerations: List['InputValueEnum'] = relationship(
-        'InputValueEnum', cascade='delete, delete-orphan', back_populates='definition')
+        'InputValueEnum', cascade='save-update, merge, delete, delete-orphan', back_populates='definition')
 
     # proxies
     allowed_binaries: List[bytes] = association_proxy(
