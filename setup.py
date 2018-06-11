@@ -15,6 +15,7 @@ setup(
         'celery==4.2.0rc4',
         'pyyaml',
         'pyjwt',
-        'toml'
+        'toml',
+        'click',
     ],
 )
