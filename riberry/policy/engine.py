@@ -38,6 +38,14 @@ class PolicyContext:
         setattr(self._local, item, value)
 
     @property
+    def enabled(self):
+        return self['enabled']
+
+    @enabled.setter
+    def enabled(self, value):
+        self['enabled'] = value
+
+    @property
     def subject(self):
         return self['subject']
 
@@ -75,13 +83,23 @@ class PolicyContext:
         yield
         self.reset()
 
+    @contextmanager
+    def disabled_scope(self):
+        try:
+            self.enabled = False
+            yield
+        finally:
+            self.enabled = True
+
     def configure(self, subject, environment, policy_engine, on_deny: Optional[Union[Type, Callable]] = PermissionError):
+        self.enabled = True
         self.subject = subject
         self.environment = environment
         self.engine = policy_engine
         self.on_deny = on_deny
 
     def reset(self):
+        self.enabled = True
         self.subject = None
         self.environment = None
         self.engine = None
@@ -92,6 +110,10 @@ class PolicyContext:
         return cls()
 
     def authorize(self, resource, action, on_deny: Optional[Union[Type, Callable]] = _no_default):
+
+        if not self.enabled:
+            return True
+
         attr_context = AttributeContext(
             subject=self.subject,
             environment=self.environment,

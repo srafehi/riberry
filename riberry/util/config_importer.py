@@ -5,7 +5,7 @@ import yaml
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.exc import NoResultFound
 
-from riberry import model, services
+from riberry import model, services, policy
 
 
 class Loader(yaml.SafeLoader):
@@ -386,7 +386,7 @@ def import_from_file(config_path, dry_run=True, formatter=json_diff):
     with open(config_path) as f:
         config = yaml.load(f, Loader) or {}
 
-    with model.conn.no_autoflush:
+    with model.conn.no_autoflush, policy.context.disabled_scope():
         output = import_config(config, formatter=formatter)
 
     if dry_run:
