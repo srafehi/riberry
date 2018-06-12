@@ -1,5 +1,7 @@
 from typing import List
 
+from sqlalchemy import desc
+
 from riberry import model, policy
 from riberry import services
 
@@ -26,3 +28,11 @@ def create_form(instance, interface) -> model.interface.Form:
     policy.context.authorize(form, action='create')
     model.conn.add(form)
     return form
+
+
+def job_executions_by_id(form_id, limit=50):
+    form = form_by_id(form_id=form_id)
+    return model.job.JobExecution.query().filter(
+        (model.job.JobExecution.job_id == model.job.Job.id) &
+        (model.job.Job.form_id == form.id)
+    ).order_by(desc(model.job.JobExecution.updated)).limit(limit).all()

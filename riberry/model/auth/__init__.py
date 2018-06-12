@@ -4,7 +4,7 @@ from typing import AnyStr, Dict, List
 
 import jwt
 import pendulum
-from sqlalchemy import Column, String, ForeignKey, DateTime
+from sqlalchemy import Column, String, ForeignKey, DateTime, desc
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, validates
 
@@ -28,9 +28,18 @@ class User(base.Base):
         resource_id=id,
         resource_type=model.group.ResourceType.user
     )
-    jobs: List['model.job.Job'] = relationship('Job', back_populates='creator')
-    executions: List['model.job.JobExecution'] = relationship('JobExecution', back_populates='creator')
-    notifications: List['model.misc.UserNotification'] = relationship('UserNotification', back_populates='user')
+    jobs: List['model.job.Job'] = relationship(
+        'Job',
+        order_by=lambda: desc(model.job.Job.created),
+        back_populates='creator')
+    executions: List['model.job.JobExecution'] = relationship(
+        'JobExecution',
+        order_by=lambda: desc(model.job.JobExecution.updated),
+        back_populates='creator')
+    notifications: List['model.misc.UserNotification'] = relationship(
+        'UserNotification',
+        order_by=lambda: desc(model.misc.UserNotification.created),
+        back_populates='user')
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
