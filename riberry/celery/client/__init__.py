@@ -92,13 +92,13 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
         wf.artifact(
             name=f'Exception {current_task.name}',
             type='error',
-            category='Fatal' if 'rib_fallback' in task_kwargs else 'Intercepted',
+            category='Intercepted' if 'rib_fallback' in task_kwargs else 'Fatal',
             filename=f'{current_task.name}-{current_task.request.id}.log',
             content=traceback.format_exc().encode()
         )
 
         if 'rib_fallback' in task_kwargs:
-            fallback = task_kwargs.get('wf_fallback')
+            fallback = task_kwargs.get('rib_fallback')
             return fallback() if callable(fallback) else fallback
         else:
             workflow_complete(current_task, status='FAILURE', primary_stream=None)
