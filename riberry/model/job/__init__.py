@@ -5,7 +5,7 @@ from typing import List
 
 import pendulum
 from croniter import croniter
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index, Enum
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index, Enum, desc
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, deferred
 
@@ -40,7 +40,11 @@ class Job(base.Base):
     # associations
     creator: 'model.auth.User' = relationship('User')
     form: 'model.interface.Form' = relationship('Form', back_populates='jobs')
-    executions: List['JobExecution'] = relationship('JobExecution', cascade='save-update, merge, delete, delete-orphan', back_populates='job')
+    executions: List['JobExecution'] = relationship(
+        'JobExecution',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: desc(JobExecution.updated),
+        back_populates='job')
     schedules: List['JobSchedule'] = relationship('JobSchedule', cascade='save-update, merge, delete, delete-orphan', back_populates='job')
     values: List['model.interface.InputValueInstance'] = relationship('InputValueInstance', cascade='save-update, merge, delete, delete-orphan', back_populates='job')
     files: List['model.interface.InputFileInstance'] = relationship('InputFileInstance', cascade='save-update, merge, delete, delete-orphan', back_populates='job')
@@ -117,8 +121,17 @@ class JobExecution(base.Base):
     # associations
     creator: 'model.auth.User' = relationship('User')
     job: 'Job' = relationship('Job', back_populates='executions')
-    streams: List['JobExecutionStream'] = relationship('JobExecutionStream', cascade='save-update, merge, delete, delete-orphan', back_populates='job_execution')
-    artifacts: List['JobExecutionArtifact'] = relationship('JobExecutionArtifact', cascade='save-update, merge, delete, delete-orphan', back_populates='job_execution')
+    streams: List['JobExecutionStream'] = relationship(
+        'JobExecutionStream',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: desc(JobExecutionStream.updated),
+        back_populates='job_execution'
+    )
+    artifacts: List['JobExecutionArtifact'] = relationship(
+        'JobExecutionArtifact',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: desc(JobExecutionArtifact.created),
+        back_populates='job_execution')
 
 
 class JobExecutionStream(base.Base):

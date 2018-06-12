@@ -5,7 +5,7 @@ from riberry.model.group import Group
 
 def authenticate_user(username: str, password: str) -> str:
     user = model.auth.User.authenticate(username=username, password=password)
-    access_token = model.auth.AuthToken.create(user, expiry_delta=timedelta(days=1))
+    access_token = model.auth.AuthToken.create(user, expiry_delta=timedelta(days=5))
     return access_token.decode()
 
 

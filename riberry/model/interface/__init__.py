@@ -2,7 +2,7 @@ import json
 import mimetypes
 from typing import List
 
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime
+from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime, desc
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, deferred
@@ -61,7 +61,11 @@ class Form(base.Base):
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')
     interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='forms', lazy='joined')
     schedules: List['FormSchedule'] = relationship('FormSchedule', back_populates='form')
-    jobs: List['model.job.Job'] = relationship('Job', cascade='save-update, merge, delete, delete-orphan', back_populates='form')
+    jobs: List['model.job.Job'] = relationship(
+        'Job',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: desc(model.job.Job.created),
+        back_populates='form')
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
         resource_type=model.group.ResourceType.form
@@ -200,6 +204,9 @@ class InputFileInstance(base.Base):
 
     @property
     def content_type(self):
+        if '.log' not in mimetypes.types_map:
+            mimetypes.add_type('text/plain', '.log')  # quick fix for missing .log type on unix systems
+
         return mimetypes.guess_type(self.filename)[0]
 
     @property
