@@ -115,8 +115,8 @@ class ApplicationInstanceSchedule(base.Base):
             if now.format('dd').lower() not in all_days:
                 return False
 
-        start_dt = pendulum.parse(self.start_time, tz=self.timezone)
-        end_dt = pendulum.parse(self.end_time, tz=self.timezone)
+        start_dt = pendulum.parse(self.start_time, tz=self.timezone).replace(year=now.year, month=now.month, day=now.day)
+        end_dt = pendulum.parse(self.end_time, tz=self.timezone).replace(year=now.year, month=now.month, day=now.day)
 
         return end_dt > now > start_dt
 
