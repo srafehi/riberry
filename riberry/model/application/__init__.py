@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import List
 
 import pendulum
-from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime, Integer
+from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime, Integer, desc
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, validates
 
@@ -53,7 +53,15 @@ class ApplicationInstance(base.Base):
     application: 'Application' = relationship('Application', back_populates='instances')
     heartbeat: 'Heartbeat' = relationship('Heartbeat', cascade='save-update, merge, delete, delete-orphan', uselist=False, back_populates='instance')
     schedules: List['ApplicationInstanceSchedule'] = relationship(
-        'ApplicationInstanceSchedule', cascade='save-update, delete, delete-orphan', back_populates='instance')
+        'ApplicationInstanceSchedule',
+        cascade='save-update, delete, delete-orphan',
+        back_populates='instance',
+        order_by=lambda: (
+            ApplicationInstanceSchedule.parameter,
+            desc(ApplicationInstanceSchedule.priority),
+            ApplicationInstanceSchedule.start_time,
+        )
+    )
     forms: List['model.interface.Form'] = relationship('Form', cascade='save-update, merge, delete, delete-orphan', back_populates='instance')
 
     # proxies
