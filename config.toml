@@ -41,6 +41,7 @@ envvar = "RIBERRY_AUTHENTICATION_SECRET"
 
 server = "..."
 ssl = true
+interval = 120
 
 
 [authentication.ldap.credentials]
