@@ -68,10 +68,6 @@ class AuthenticationConfig:
         for provider_name in self.provider_names:
             self[provider_name].on_enabled()
 
-    @classmethod
-    def from_config(cls):
-        pass
-
 
 class EmailNotificationConfig:
 
