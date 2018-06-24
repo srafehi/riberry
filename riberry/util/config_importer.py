@@ -256,12 +256,25 @@ def import_instance(app, internal_name, attributes):
 
     current_schedules = {}
     for schedule in instance.schedules:
-        current_schedules[(schedule.days, schedule.start_time, schedule.end_time, schedule.timezone)] = schedule
+        current_schedules[(
+            schedule.days,
+            schedule.start_time,
+            schedule.end_time,
+            schedule.timezone,
+            schedule.parameter,
+            schedule.value,
+            schedule.priority,
+        )] = schedule
 
-    loaded_schedules = set(
-        (sched['days'], sched['startTime'], sched['endTime'], sched['timeZone'])
-        for sched in attributes.get('schedules', [])
-    )
+    loaded_schedules = set((
+        sched['days'],
+        sched.get('startTime'),
+        sched.get('endTime'),
+        sched['timeZone'],
+        sched['parameter'],
+        str(sched['value']),
+        sched['priority'],
+    ) for sched in attributes.get('schedules', []))
 
     for stale in set(current_schedules) - loaded_schedules:
         model.conn.delete(current_schedules[stale])
@@ -270,13 +283,16 @@ def import_instance(app, internal_name, attributes):
     for schedule in loaded_schedules:
         if schedule in current_schedules:
             continue
-        days, start_time, end_time, timezone = schedule
+        days, start_time, end_time, timezone, parameter, value, priority = schedule
         new_schedules.append(
             dict(
                 days=days,
                 start_time=start_time,
                 end_time=end_time,
                 timezone=timezone,
+                parameter=parameter,
+                value=value,
+                priority=priority,
             )
         )
 

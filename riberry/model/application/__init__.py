@@ -2,9 +2,9 @@ from datetime import datetime
 from typing import List
 
 import pendulum
-from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime
+from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime, Integer
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 
 from riberry import model
 from riberry.model import base
@@ -65,11 +65,8 @@ class ApplicationInstance(base.Base):
     @property
     def status(self):
 
-        schedules = self.schedules
-        if schedules:
-            for schedule in schedules:
-                if not schedule.active():
-                    return 'inactive'
+        if self.parameter('active', default='Y') == 'N':
+            return 'inactive'
 
         if not self.heartbeat:
             return 'created'
@@ -78,6 +75,19 @@ class ApplicationInstance(base.Base):
         if diff.seconds >= 10:
             return 'offline'
         return 'online'
+
+    def parameter(self, name, default=None, current_time=None):
+        schedules = sorted(
+            (s for s in self.schedules if s.parameter == name and s.active(current_time=current_time)),
+            key=lambda s: (-s.priority, s.start_time)
+        )
+
+        for schedule in schedules:
+            return schedule.value
+
+        return default
+
+
 
 
 class Heartbeat(base.Base):
@@ -101,24 +111,64 @@ class ApplicationInstanceSchedule(base.Base):
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
     days = Column(String(27), nullable=False)
-    start_time = Column(String(5), nullable=False)
-    end_time = Column(String(5), nullable=False)
+    start_time = Column(String(8), nullable=False, default='00:00:00')
+    end_time = Column(String(8), nullable=False, default='23:59:59')
     timezone = Column(String(128), nullable=False, default='UTC')
+    parameter = Column(String(32), nullable=False)
+    value = Column(String(512), nullable=False)
+    priority = Column(Integer, default=64, nullable=False)
 
     # associations
     instance: 'ApplicationInstance' = relationship('ApplicationInstance', back_populates='schedules')
 
-    def active(self):
-        now = pendulum.DateTime.now(tz=self.timezone)
+    @validates('priority')
+    def validate_priority(self, _, priority):
+        assert isinstance(priority, int) and 255 >= priority >= 1, (
+            f'ApplicationInstanceSchedule.priority must be an integer between 1 and 255 (received {priority})')
+        return priority
+
+    @validates('start_time')
+    def validate_start_time(self, _, start_time):
+        if start_time is not None:
+            pendulum.DateTime.strptime(start_time, '%H:%M:%S')
+        return start_time
+
+    @validates('end_time')
+    def validate_end_time(self, _, end_time):
+        if end_time is not None:
+            pendulum.DateTime.strptime(end_time, '%H:%M:%S')
+        return end_time
+
+    @validates('timezone')
+    def validate_timezone(self, _, timezone):
+        pendulum.timezone(timezone)
+        return timezone
+
+    @validates('days')
+    def validate_days(self, _, days):
+        if days in (None, '*'):
+            return '*'
+
+        days = [o.strip() for o in str(days).lower().split(',')]
+        invalid_days = set(days) - {'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'}
+        if invalid_days:
+            raise ValueError(f'Invalid days received: {", ".join(invalid_days)}')
+        return ','.join(days)
+
+    def active(self, current_time=None):
+        now: pendulum.DateTime = pendulum.instance(current_time) \
+            if current_time else pendulum.DateTime.now(tz=self.timezone)
+        now = now.replace(microsecond=0)
+
         if self.days != '*':
             all_days = self.days.lower().split(',')
             if now.format('dd').lower() not in all_days:
                 return False
 
-        start_dt = pendulum.parse(self.start_time, tz=self.timezone).replace(year=now.year, month=now.month, day=now.day)
-        end_dt = pendulum.parse(self.end_time, tz=self.timezone).replace(year=now.year, month=now.month, day=now.day)
+        start_dt = pendulum.parse(self.start_time, tz=self.timezone)\
+            .replace(year=now.year, month=now.month, day=now.day)
 
-        return end_dt > now > start_dt
+        end_dt = pendulum.parse(self.end_time, tz=self.timezone)\
+            .replace(year=now.year, month=now.month, day=now.day)
 
-
-
+        return end_dt >= now >= start_dt

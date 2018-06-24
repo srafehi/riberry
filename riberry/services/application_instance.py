@@ -43,7 +43,10 @@ def create_application_instance_schedules(attributes_dict):
             days=schedule['days'],
             start_time=schedule['start_time'],
             end_time=schedule['end_time'],
-            timezone=schedule['timezone']
+            timezone=schedule['timezone'],
+            parameter=schedule['parameter'],
+            value=schedule['value'],
+            priority=schedule['priority'],
         ) for schedule in attributes_dict
     ]
 
