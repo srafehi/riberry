@@ -7,7 +7,7 @@ import pendulum
 from croniter import croniter
 from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index, Enum, desc
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import relationship, deferred
+from sqlalchemy.orm import relationship, deferred, validates
 
 from riberry import model
 from riberry.model import base
@@ -117,6 +117,7 @@ class JobExecution(base.Base):
     started: datetime = Column(DateTime(timezone=True))
     completed: datetime = Column(DateTime(timezone=True))
     updated: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
+    priority = Column(Integer, default=64, nullable=False)
 
     # associations
     creator: 'model.auth.User' = relationship('User')
@@ -132,6 +133,13 @@ class JobExecution(base.Base):
         cascade='save-update, merge, delete, delete-orphan',
         order_by=lambda: desc(JobExecutionArtifact.created),
         back_populates='job_execution')
+
+    # validations
+    @validates('priority')
+    def validate_priority(self, _, priority):
+        assert isinstance(priority, int) and 255 >= priority >= 1, (
+            f'ApplicationInstanceSchedule.priority must be an integer between 1 and 255 (received {priority})')
+        return priority
 
 
 class JobExecutionStream(base.Base):

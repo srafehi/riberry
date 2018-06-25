@@ -129,6 +129,7 @@ class ApplicationInstanceSchedule(base.Base):
     # associations
     instance: 'ApplicationInstance' = relationship('ApplicationInstance', back_populates='schedules')
 
+    # validations
     @validates('priority')
     def validate_priority(self, _, priority):
         assert isinstance(priority, int) and 255 >= priority >= 1, (
