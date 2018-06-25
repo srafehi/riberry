@@ -267,9 +267,9 @@ def import_instance(app, internal_name, attributes):
         )] = schedule
 
     loaded_schedules = set((
-        sched['days'],
-        sched.get('startTime'),
-        sched.get('endTime'),
+        sched['days'].lower() if isinstance(sched['days'], str) else sched['days'],
+        sched.get('startTime', '00:00:00'),
+        sched.get('endTime', '23:59:59'),
         sched['timeZone'],
         sched['parameter'],
         str(sched['value']),

@@ -100,6 +100,7 @@ class InputFileDefinition(base.Base):
     internal_name: str = Column(String(256), nullable=False)
     description: str = Column(String(128))
     type: str = Column(String(64), nullable=False)
+    accept: str = Column(String(256))
     required: bool = Column(Boolean, nullable=False, default=True)
 
     # associations

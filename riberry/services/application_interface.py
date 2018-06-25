@@ -66,7 +66,7 @@ def update_file_definition(definition: model.interface.InputFileDefinition, attr
     form_ids = [f.id for f in definition.interface.forms]
     has_jobs = bool(model.job.Job.query().filter(model.job.Job.form_id.in_(form_ids)).count())
 
-    for attr in {'required', 'type', 'name', 'description'} & set(attributes):
+    for attr in {'required', 'type', 'name', 'description', 'accept'} & set(attributes):
         if has_jobs and attr in {'required', 'type'}:
             if attributes[attr] != getattr(definition, attr):
                 raise Exception(f'Cannot change value {attr!r} for interface input which already has jobs')
