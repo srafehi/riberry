@@ -53,8 +53,8 @@ class Job(base.Base):
     instance: 'model.application.ApplicationInstance' = association_proxy('form', 'instance')
     interface: 'model.interface.ApplicationInterface' = association_proxy('form', 'interface')
 
-    def execute(self):
-        model.conn.add(instance=JobExecution(job=self))
+    def execute(self, creator_id):
+        model.conn.add(instance=JobExecution(job=self, creator_id=creator_id))
 
 
 class JobSchedule(base.Base):
@@ -63,13 +63,17 @@ class JobSchedule(base.Base):
     # columns
     id = base.id_builder.build()
     job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
-    job: 'Job' = relationship('Job', back_populates='schedules')
+    creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     enabled: bool = Column(Boolean, default=True, nullable=False)
     cron: str = Column(String(24), nullable=False)
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
     last_run: datetime = Column(DateTime(timezone=True), default=None)
-    limit: int = Column(Integer)
+    limit: int = Column(Integer, default=0)
     total_runs: int = Column(Integer, default=0)
+
+    # associations
+    job: 'Job' = relationship('Job', back_populates='schedules')
+    creator: 'model.auth.User' = relationship('User')
 
     def run(self):
         if not self.enabled:
@@ -88,7 +92,7 @@ class JobSchedule(base.Base):
             if self.limit and self.total_runs >= self.limit:
                 self.enabled = False
 
-            self.job.execute()
+            self.job.execute(creator_id=self.creator_id)
 
     @property
     def next_run(self):
