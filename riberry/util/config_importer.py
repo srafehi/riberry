@@ -268,12 +268,12 @@ def import_instance(app, internal_name, attributes):
 
     loaded_schedules = set((
         sched['days'].lower() if isinstance(sched['days'], str) else sched['days'],
-        sched.get('startTime', '00:00:00'),
-        sched.get('endTime', '23:59:59'),
+        sched.get('startTime') or model.application.ApplicationInstanceSchedule.start_time.default.arg,
+        sched.get('endTime') or model.application.ApplicationInstanceSchedule.end_time.default.arg,
         sched['timeZone'],
         sched['parameter'],
         str(sched['value']),
-        sched['priority'],
+        sched.get('priority') or model.application.ApplicationInstanceSchedule.priority.default.arg,
     ) for sched in attributes.get('schedules', []))
 
     for stale in set(current_schedules) - loaded_schedules:
