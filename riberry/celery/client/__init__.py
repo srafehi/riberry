@@ -123,15 +123,32 @@ def bypass(func, **task_kwargs):
     return inner
 
 
+def patch_task(task):
+    def stream_start(stream):
+        return wf.s(task, stream=stream)
+
+    def stream_end(stream):
+        return wf.e(task, stream=stream)
+
+    def step(step, stream=None):
+        return wf.b(task, step=step, stream=stream)
+
+    task.stream_start = stream_start
+    task.stream_end = stream_end
+    task.step = step
+
+    return task
+
+
 def patch_app(app):
     def task_deco(*args, **kwargs):
         if len(args) == 1:
             if callable(args[0]):
-                return Celery.task(app, bypass(*args, **kwargs), **kwargs)
+                return patch_task(Celery.task(app, bypass(*args, **kwargs), **kwargs))
             raise TypeError('argument 1 to @task() must be a callable')
 
         def inner(func):
-            return Celery.task(app, **kwargs)(bypass(func, **kwargs))
+            return patch_task(Celery.task(app, **kwargs)(bypass(func, **kwargs)))
 
         return inner
 

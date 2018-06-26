@@ -1,4 +1,5 @@
-from celery import current_task
+from celery import current_task, current_app
+from celery.canvas import Signature
 
 from riberry.celery.client.tasks import create_event
 
@@ -22,17 +23,22 @@ class TaskWrap:
         return self.func.delay(*args, **self._mixin_kw(kwargs=kwargs))
 
 
-def b(task, step, stream=None):
+def step(task, step, stream=None):
     stream = stream if stream else current_task.stream
     return TaskWrap(task, __sb__=(stream, step))
 
 
-def s(task, stream):
+def stream_start(task, stream):
     return TaskWrap(task, __ss__=stream)
 
 
-def e(task, stream):
+def stream_end(task, stream):
     return TaskWrap(task, __se__=stream)
+
+
+s = stream_start
+e = stream_end
+b = step
 
 
 def artifact(name, type, category, filename, content, data=None, stream=None, step=None):
