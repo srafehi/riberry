@@ -138,15 +138,22 @@ class ApplicationInstanceSchedule(base.Base):
 
     @validates('start_time')
     def validate_start_time(self, _, start_time):
-        if start_time is not None:
-            pendulum.DateTime.strptime(start_time, '%H:%M:%S')
-        return start_time
+        return self.cleanse_time(time_=start_time)
 
     @validates('end_time')
     def validate_end_time(self, _, end_time):
-        if end_time is not None:
-            pendulum.DateTime.strptime(end_time, '%H:%M:%S')
-        return end_time
+        return self.cleanse_time(time_=end_time)
+
+    @staticmethod
+    def cleanse_time(time_):
+        if isinstance(time_, int):
+            now = pendulum.now()
+            date = pendulum.DateTime(now.year, now.month, now.day) + pendulum.duration(seconds=time_)
+            time_ = date.strftime('%H:%M:%S')
+
+        if isinstance(time_, str):
+            pendulum.DateTime.strptime(time_, '%H:%M:%S')
+        return time_
 
     @validates('timezone')
     def validate_timezone(self, _, timezone):
