@@ -76,7 +76,7 @@ class JobSchedule(base.Base):
     creator: 'model.auth.User' = relationship('User')
 
     def run(self):
-        if not self.enabled:
+        if not self.enabled or self.job.instance.status != 'online':
             return
 
         ready_run = None
