@@ -5,6 +5,7 @@ import traceback
 
 import pendulum
 from celery import shared_task
+from sqlalchemy import desc, asc
 
 from riberry import model
 from riberry.celery import client
@@ -20,7 +21,10 @@ def poll():
 
     execution: model.job.JobExecution = model.job.JobExecution.query().filter(
         model.job.JobExecution.status == 'RECEIVED'
-    ).join(model.job.Job).filter_by(instance=app_instance).first()
+    ).join(model.job.Job).order_by(
+        desc(model.job.JobExecution.priority),
+        asc(model.job.JobExecution.created)
+    ).filter_by(instance=app_instance).first()
 
     if execution:
         application_name = app_instance.application.internal_name
