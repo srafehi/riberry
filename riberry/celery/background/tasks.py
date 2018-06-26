@@ -12,10 +12,12 @@ def process_events(event_limit=None):
 
 @app.task
 def job_schedules():
-    for schedule in model.job.JobSchedule.query().filter_by(enabled=True).all():
-        schedule.run()
+    with model.conn:
+        for schedule in model.job.JobSchedule.query().filter_by(enabled=True).all():
+            print(schedule)
+            schedule.run()
 
-    model.conn.commit()
+        model.conn.commit()
 
 
 @app.task
