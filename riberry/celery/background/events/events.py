@@ -164,9 +164,9 @@ def handle_streams(events: List[model.misc.Event]):
                 status = event_data['state']
                 stream.status = status
                 stream.updated = event_time
-                if status == 'ACTIVE':
+                if status == 'ACTIVE' and stream.started is None:
                     stream.started = event_time
-                elif status in ('SUCCESS', 'FAILURED'):
+                elif status in ('SUCCESS', 'FAILURE'):
                     stream.completed = event_time
         except:
             pass
