@@ -10,6 +10,7 @@ from celery.result import AsyncResult
 
 from riberry import model
 from riberry.celery.client import tasks
+from riberry.celery.client.dynamic import DynamicParameters
 from . import wf, signals, scale, dynamic
 
 IGNORE_EXCEPTIONS = (
@@ -168,7 +169,7 @@ class WorkflowEntry:
 class Workflow:
     __registered__ = {}
 
-    def __init__(self, name, app, beat_queue):
+    def __init__(self, name, app, beat_queue, dynamic_parameters=None):
         self.name = name
         self.beat_queue = beat_queue
         self.__registered__[name] = self
@@ -176,6 +177,11 @@ class Workflow:
         self.form_entries: Dict[Tuple[str, str], WorkflowEntry] = {}
         self.entry_point = self._make_entry_point(self.app, self.form_entries)
         self._configure_beat_queues(app, self.beat_queue)
+        self.dynamic_parameters = DynamicParameters(
+            riberry_workflow=self,
+            handlers=dynamic_parameters,
+            beat_queue=self.beat_queue
+        )
 
     @staticmethod
     def _configure_beat_queues(app, beat_queue):
