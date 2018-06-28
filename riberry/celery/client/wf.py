@@ -52,13 +52,13 @@ def artifact(name, type, category, filename, content, data=None, stream=None, st
         root_id=root_id,
         task_id=task_id,
         data={
-            'name': name,
-            'type': type,
-            'category': category,
-            'data': data or {},
-            'stream': stream,
-            'step': step,
-            'filename': filename,
+            'name': str(name),
+            'type': str(type),
+            'category': str(category),
+            'data': data if isinstance(data, dict) else {},
+            'stream': str(stream) if stream else None,
+            'step': str(step) if stream else None,
+            'filename': str(filename),
         },
         binary=content
     )

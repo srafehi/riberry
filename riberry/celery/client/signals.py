@@ -24,7 +24,7 @@ def before_task_publish(sender, headers, body, **_):
             root_id=root_id,
             task_id=task_id,
             data={
-                'stream': kwargs['__ss__'],
+                'stream': str(kwargs['__ss__']),
                 'state': 'QUEUED'
             }
         )
@@ -36,8 +36,8 @@ def before_task_publish(sender, headers, body, **_):
             root_id=root_id,
             task_id=task_id,
             data={
-                'stream': stream,
-                'step': step,
+                'stream': str(stream),
+                'step': str(step),
                 'state': 'QUEUED'
             }
         )
@@ -52,14 +52,13 @@ def task_prerun(sender, kwargs, **_):
 
     if '__ss__' in kwargs:
         stream = kwargs['__ss__']
-        print(f'{current_task.stream} {stream}')
         current_task.stream = stream
         tasks.create_event(
             name='stream',
             root_id=root_id,
             task_id=task_id,
             data={
-                'stream': stream,
+                'stream': str(stream),
                 'state': 'ACTIVE'
             }
         )
@@ -77,8 +76,8 @@ def task_prerun(sender, kwargs, **_):
             root_id=root_id,
             task_id=task_id,
             data={
-                'stream': stream,
-                'step': step,
+                'stream': str(stream),
+                'step': str(step),
                 'state': 'ACTIVE'
             }
         )
@@ -96,7 +95,7 @@ def task_postrun(sender, state, kwargs, **_):
             root_id=root_id,
             task_id=task_id,
             data={
-                'stream': stream,
+                'stream': str(stream),
                 'state': state or 'SS_UK'
             }
         )
@@ -108,7 +107,7 @@ def task_postrun(sender, state, kwargs, **_):
             root_id=root_id,
             task_id=task_id,
             data={
-                'stream': stream,
+                'stream': str(stream),
                 'state': state or 'SS_SE'
             }
         )
@@ -122,8 +121,8 @@ def task_postrun(sender, state, kwargs, **_):
             root_id=root_id,
             task_id=task_id,
             data={
-                'stream': stream,
-                'step': step,
+                'stream': str(stream),
+                'step': str(step),
                 'state': 'SUCCESS' if state == 'IGNORED' else state or 'FAILURE'
             }
         )
