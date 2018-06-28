@@ -205,8 +205,8 @@ class InputFileInstance(base.Base):
 
     @property
     def content_type(self):
-        if '.log' not in mimetypes.types_map:
-            mimetypes.add_type('text/plain', '.log')  # quick fix for missing .log type on unix systems
+        if self.filename.endswith('.log'):  # quick fix for missing .log type on unix systems
+            return 'text/plain'
 
         return mimetypes.guess_type(self.filename)[0]
 
