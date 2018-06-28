@@ -95,6 +95,11 @@ class ApplicationInstance(base.Base):
 
         return default
 
+    @property
+    def parameters(self):
+        parameters = {s.parameter for s in self.schedules}
+        return {param: self.parameter(name=param) for param in parameters}
+
 
 
 
