@@ -57,7 +57,7 @@ def artifact(name, type, category, filename, content, data=None, stream=None, st
             'category': str(category),
             'data': data if isinstance(data, dict) else {},
             'stream': str(stream) if stream else None,
-            'step': str(step) if stream else None,
+            'step': str(step) if step else None,
             'filename': str(filename),
         },
         binary=content
