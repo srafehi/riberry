@@ -49,7 +49,6 @@ def workflow_complete(task, status, primary_stream):
         )
 
     model.conn.commit()
-    model.conn.close()
     wf.notify(notification_type='workflow_complete', data=dict(status=status))
 
 
@@ -79,7 +78,6 @@ def workflow_started(task, job_id, primary_stream):
     task.stream = primary_stream
 
     model.conn.commit()
-    model.conn.close()
     wf.notify(notification_type='workflow_started')
 
 
@@ -109,17 +107,18 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
 def bypass(func, **task_kwargs):
     @functools.wraps(func)
     def inner(*args, **kwargs):
-        if is_workflow_complete(current_task):
-            AsyncResult(current_task.request.id).revoke()
-            raise Exception('Workflow already cancelled')
+        with model.conn:
+            if is_workflow_complete(current_task):
+                AsyncResult(current_task.request.id).revoke()
+                raise Exception('Workflow already cancelled')
 
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k not in BYPASS_ARGS}
-        return execute_task(
-            func=func,
-            func_args=args,
-            func_kwargs=filtered_kwargs,
-            task_kwargs=task_kwargs
-        )
+            filtered_kwargs = {k: v for k, v in kwargs.items() if k not in BYPASS_ARGS}
+            return execute_task(
+                func=func,
+                func_args=args,
+                func_kwargs=filtered_kwargs,
+                task_kwargs=task_kwargs
+            )
 
     return inner
 
@@ -206,9 +205,10 @@ class Workflow:
     def _make_entry_point(app, form_entries: Dict[Tuple[str, str], WorkflowEntry]):
         @app.task(bind=True)
         def entry_point(task, execution_id, name: str, version: str, values: Dict, files: Dict):
-            workflow_entry = form_entries[(name, version)]
-            workflow_started(task, execution_id, workflow_entry.primary_stream)
-            workflow_entry.func(task, **values, **files)
+            with model.conn:
+                workflow_entry = form_entries[(name, version)]
+                workflow_started(task, execution_id, workflow_entry.primary_stream)
+                workflow_entry.func(task, **values, **files)
 
         return entry_point
 

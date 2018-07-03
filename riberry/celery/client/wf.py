@@ -1,5 +1,4 @@
-from celery import current_task, current_app
-from celery.canvas import Signature
+from celery import current_task
 
 from riberry.celery.client.tasks import create_event
 
