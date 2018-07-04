@@ -85,7 +85,7 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
     # noinspection PyBroadException
     try:
         return func(*func_args, **func_kwargs)
-    except list(IGNORE_EXCEPTIONS) + task_kwargs.get('autoretry_for', []):
+    except tuple(list(IGNORE_EXCEPTIONS) + task_kwargs.get('autoretry_for', [])):
         raise
     except:
         wf.artifact(
