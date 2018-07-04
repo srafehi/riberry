@@ -17,6 +17,9 @@ class DynamicParameter:
 def make_dynamic_parameters_task(handlers: List[DynamicParameter]):
 
     def dynamic_parameters_task():
+        if not handlers:
+            return
+        
         with model.conn:
             instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
                 internal_name=os.environ['RIBERRY_INSTANCE']
