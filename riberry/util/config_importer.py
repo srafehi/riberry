@@ -1,5 +1,6 @@
 import json
 import os
+from string import Formatter
 
 import yaml
 from sqlalchemy.inspection import inspect
@@ -12,17 +13,45 @@ class Loader(yaml.SafeLoader):
     """ https://stackoverflow.com/a/9577670 """
 
     def __init__(self, stream):
-
         self._root = os.path.split(stream.name)[0]
-
         super(Loader, self).__init__(stream)
 
-    def include(self, node):
+    @staticmethod
+    def extract_formatter_keys(filename):
+        return [tup[1] for tup in Formatter().parse(filename) if tup[1]]
 
-        filename = os.path.join(self._root, self.construct_scalar(node))
+    @staticmethod
+    def find_values_for_formatter_keys(keys, input_values=None):
+        mapping = {}
+        input_values = input_values or {}
+
+        for key in keys:
+            if key in input_values:
+                mapping[key] = input_values[key]
+            elif key in os.environ:
+                mapping[key] = os.environ[key]
+            else:
+                raise ValueError(f'Config template value {key!r} not provided')
+
+        return mapping
+
+    @classmethod
+    def expand_filename(cls, filename: str):
+        try:
+            return filename.format(
+                **cls.find_values_for_formatter_keys(
+                    keys=cls.extract_formatter_keys(filename=filename),
+                    input_values=None,
+                )
+            )
+        except ValueError as exc:
+            raise ValueError(f'Filename expansion failed for filename {filename!r}. Encountered error: {exc}')
+
+    def include(self, node):
+        filename = self.expand_filename(filename=os.path.join(self._root, self.construct_scalar(node)))
 
         with open(filename, 'r') as f:
-            if filename.endswith('.yaml'):
+            if filename.endswith('.yaml') or filename.endswith('.yml'):
                 return yaml.load(f, Loader)
             else:
                 return f.read()
