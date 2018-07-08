@@ -54,7 +54,7 @@ def poll():
                     name='Error on Startup',
                     type='error',
                     category='Fatal',
-                    filename='startup-error.txt',
+                    filename='startup-error.log',
                     size=len(message),
                     binary=model.job.JobExecutionArtifactBinary(
                         binary=message

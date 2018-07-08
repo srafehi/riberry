@@ -221,6 +221,9 @@ class JobExecutionArtifact(base.Base):
 
     @property
     def content_type(self):
+        if self.filename.endswith('.log'):  # quick fix for missing .log type on unix systems
+            return 'text/plain'
+
         return mimetypes.guess_type(self.filename)[0]
 
     @property

@@ -92,7 +92,7 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
             name=f'Exception {current_task.name}',
             type='error',
             category='Intercepted' if 'rib_fallback' in task_kwargs else 'Fatal',
-            filename=f'{current_task.name}-{current_task.request.id}.txt',
+            filename=f'{current_task.name}-{current_task.request.id}.log',
             content=traceback.format_exc().encode()
         )
 
