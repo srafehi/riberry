@@ -172,3 +172,7 @@ def summary_overall():
     ).group_by(model.job.JobExecution.status).all()
 
     return dict(summary)
+
+
+def input_file_instance_by_id(input_file_instance_id) -> model.interface.InputFileInstance:
+    return model.interface.InputFileInstance.query().filter_by(id=input_file_instance_id).one()
