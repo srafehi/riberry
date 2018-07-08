@@ -17,6 +17,7 @@ def poll():
         app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
             internal_name=os.environ['RIBERRY_INSTANCE']
         ).first()
+        
         if not app_instance or app_instance.status != 'online':
             return
 
@@ -85,6 +86,9 @@ def echo():
 
 
 def create_event(name, root_id, task_id, data=None, binary=None):
+    if not root_id:
+        return
+
     event.delay(
         name=name,
         time=pendulum.DateTime.utcnow().timestamp(),
