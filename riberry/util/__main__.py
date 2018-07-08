@@ -14,8 +14,9 @@ def cli():
 @click.option('--config-path', '-p', prompt='Configuration path', help='YAML file containing application references.')
 @click.option('--commit/--rollback', '-c/-r', prompt='Dry run', is_flag=True,
               help='Gathers all database changes without commits.', default=False)
-def importer(config_path, commit):
-    changes = config_importer.import_from_file(config_path, dry_run=not commit)
+@click.option('--app', '-a', 'apps', help='Restricts the import to the specified app', multiple=True)
+def importer(config_path, commit, apps):
+    changes = config_importer.import_from_file(config_path, dry_run=not commit, restrict_apps=apps)
     print(json.dumps(changes, indent=2))
 
 

@@ -85,14 +85,17 @@ def session_diff():
     return diff
 
 
-def import_applications(applications):
+def import_applications(applications, restrict=None):
     existing_apps = {a.internal_name: a for a in model.application.Application.query().all()}
 
-    for stale in set(existing_apps) - set(applications):
-        model.conn.delete(existing_apps[stale])
+    if not restrict:
+        for stale in set(existing_apps) - set(applications):
+            model.conn.delete(existing_apps[stale])
 
     apps = []
     for application, properties in applications.items():
+        if restrict and application not in restrict:
+            continue
         app = import_application(internal_name=application, attributes=properties)
         apps.append(app)
     return apps
@@ -410,9 +413,9 @@ def json_diff(diff):
     return output
 
 
-def import_config(config, formatter=None):
+def import_config(config, formatter=None, restrict_apps=None):
     applications = config.get('applications') or {}
-    import_applications(applications=applications)
+    import_applications(applications=applications, restrict=restrict_apps)
 
     diff = session_diff()
     model.conn.flush()
@@ -429,12 +432,12 @@ def import_config(config, formatter=None):
     return formatter(diff) if formatter else diff
 
 
-def import_from_file(config_path, dry_run=True, formatter=json_diff):
+def import_from_file(config_path, dry_run=True, formatter=json_diff, restrict_apps=None):
     with open(config_path) as f:
         config = yaml.load(f, Loader) or {}
 
     with model.conn.no_autoflush, policy.context.disabled_scope():
-        output = import_config(config, formatter=formatter)
+        output = import_config(config, formatter=formatter, restrict_apps=restrict_apps)
 
     if dry_run:
         model.conn.rollback()
