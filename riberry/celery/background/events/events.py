@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 from typing import List
 
 import pendulum
+from sqlalchemy.orm.exc import NoResultFound
 
 from riberry import model, config
 
@@ -51,7 +52,12 @@ def handle_artifacts(events: List[model.misc.Event]):
             )
 
             if event.root_id not in job_executions:
-                job_executions[event.root_id] = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+                try:
+                    job_executions[event.root_id] = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+                except NoResultFound:
+                    to_delete.append(event)
+                    continue
+
             job_execution = job_executions[event.root_id]
             artifact.job_execution = job_executions[event.root_id]
 
@@ -85,7 +91,11 @@ def handle_steps(events: List[model.misc.Event]):
             stream_name = event_data['stream']
 
             if event.root_id not in job_executions:
-                job_executions[event.root_id] = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+                try:
+                    job_executions[event.root_id] = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+                except NoResultFound:
+                    to_delete.append(event)
+                    continue
             job_execution = job_executions[event.root_id]
 
             if (stream_name, event.root_id) not in streams:
@@ -141,7 +151,11 @@ def handle_streams(events: List[model.misc.Event]):
             event_time = pendulum.from_timestamp(event.time, tz='utc')
             stream_name = event_data['stream']
             if event.root_id not in job_executions:
-                job_executions[event.root_id] = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+                try:
+                    job_executions[event.root_id] = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+                except NoResultFound:
+                    to_delete.append(event)
+                    continue
             job_execution = job_executions[event.root_id]
             try:
                 if (stream_name, event.root_id) not in streams:

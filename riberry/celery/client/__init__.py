@@ -65,6 +65,8 @@ def workflow_started(task, job_id, primary_stream):
     job.started = job.updated = pendulum.DateTime.utcnow()
     job.status = 'ACTIVE'
     job.task_id = root_id
+    task.stream = primary_stream
+    model.conn.commit()
 
     tasks.create_event(
         name='stream',
@@ -75,9 +77,7 @@ def workflow_started(task, job_id, primary_stream):
             'state': 'ACTIVE'
         }
     )
-    task.stream = primary_stream
 
-    model.conn.commit()
     wf.notify(notification_type='workflow_started')
 
 
