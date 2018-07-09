@@ -224,7 +224,7 @@ class Workflow:
 
     def start(self, execution_id, input_name, input_version, input_values, input_files):
         if (input_name, input_version) not in self.form_entries:
-            raise ValueError(f'Application {self.name:!r} does not have an entry point with '
+            raise ValueError(f'Application {self.name!r} does not have an entry point with '
                              f'name {input_name!r} and version {input_version} registered.')
 
         workflow_entry: WorkflowEntry = self.form_entries[(input_name, input_version)]
