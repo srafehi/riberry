@@ -20,7 +20,7 @@ class User(base.Base):
     id = base.id_builder.build()
     username = Column(String(48), nullable=False, unique=True)
     password = Column(String(512))
-    auth_provider = Column(String(32), nullable=False, default=config.authentication.default_provider_name)
+    auth_provider = Column(String(32), nullable=False, default=config.authentication.providers.default)
     details: 'UserDetails' = relationship('UserDetails', uselist=False, back_populates='user')
 
     # associations
@@ -73,7 +73,7 @@ class User(base.Base):
 
     @classmethod
     def secure_password(cls, password: str, provider_name=None) -> bytes:
-        provider = config.authentication[provider_name or config.authentication.default_provider_name]
+        provider = config.authentication[provider_name or config.authentication.providers.default]
         password = provider.secure_password(password=password)
         return password
 
