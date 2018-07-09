@@ -18,16 +18,16 @@ interval = 5
 [database.connection]
 
 envvar = "RIBERRY_CONNECTION_STRING"
-
+echo = false
 
 [database.arguments]
 
 timeout = 60
 
 
-[authentication]
+[authentication.providers]
 
-providers = ["default", "ldap"]
+supported = ["default", "ldap"]
 default = "default"
 
 

@@ -14,7 +14,6 @@ CONF_DEFAULT_DB_CONN_PATH = (pathlib.Path(os.path.expanduser('~')) / '.riberry')
 CONF_DEFAULT_DB_CONN_STRING = f'sqlite:///{CONF_DEFAULT_DB_CONN_PATH}'
 
 CONF_DEFAULT_PROVIDER = 'default'
-CONF_DEFAULT_PROVIDERS = [CONF_DEFAULT_PROVIDER]
 CONF_DEFAULT_AUTH_TOKEN_PROVIDER = 'jwt'
 CONF_DEFAULT_AUTH_TOKEN_PATH = (pathlib.Path(os.path.expanduser('~')) / '.riberry') / 'auth.key'
 CONF_DEFAULT_AUTH_TOKEN_SIZE = 256
@@ -82,12 +81,19 @@ class AuthenticationTokenConfig:
             return f.read().decode()
 
 
+class AuthenticationProviderConfig:
+
+    def __init__(self, config_dict):
+        self.raw_config = config_dict or {}
+        self.default = self.raw_config.get('default') or CONF_DEFAULT_PROVIDER
+        self.supported = self.raw_config.get('supported') or [self.default]
+
+
 class AuthenticationConfig:
 
     def __init__(self, config_dict):
         self.raw_config = config_dict or {}
-        self.provider_names = self.raw_config.get('providers') or CONF_DEFAULT_PROVIDERS
-        self.default_provider_name = self.raw_config.get('default') or CONF_DEFAULT_PROVIDER
+        self.providers = AuthenticationProviderConfig(self.raw_config.get('providers'))
         self.token = AuthenticationTokenConfig(self.raw_config.get('token'))
         self._config_cache = {}
 
@@ -104,10 +110,10 @@ class AuthenticationConfig:
 
     @property
     def default_provider(self):
-        return self[self.default_provider_name]
+        return self[self.providers.default]
 
     def enable(self):
-        for provider_name in self.provider_names:
+        for provider_name in self.providers.supported:
             self[provider_name].on_enabled()
 
 
