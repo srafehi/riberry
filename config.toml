@@ -17,7 +17,7 @@ interval = 5
 
 [database.connection]
 
-envvar = "RIBERRY_CONNECTION_STRING"
+envvar = "RIBERRY_DATABASE_URL"
 echo = false
 
 [database.arguments]

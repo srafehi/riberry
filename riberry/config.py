@@ -11,7 +11,7 @@ CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT = 1000
 
 CONF_DEFAULT_DB_ECHO = False
 CONF_DEFAULT_DB_CONN_PATH = (pathlib.Path(os.path.expanduser('~')) / '.riberry') / 'model.db'
-CONF_DEFAULT_DB_CONN_STRING = f'sqlite:///{CONF_DEFAULT_DB_CONN_PATH}'
+CONF_DEFAULT_DB_CONN_URL = f'sqlite:///{CONF_DEFAULT_DB_CONN_PATH}'
 
 CONF_DEFAULT_PROVIDER = 'default'
 CONF_DEFAULT_AUTH_TOKEN_PROVIDER = 'jwt'
@@ -44,17 +44,17 @@ class DatabaseConfig:
     def __init__(self, config_dict):
         self.raw_config = config_dict or {}
         connection_config = self.raw_config.get('connection') or {}
-        self.connection_string = load_config_value(connection_config)
-        if not self.connection_string:
+        self.connection_url = load_config_value(connection_config)
+        if not self.connection_url:
             CONF_DEFAULT_DB_CONN_PATH.parent.mkdir(exist_ok=True)
-            self.connection_string = CONF_DEFAULT_DB_CONN_STRING
+            self.connection_url = CONF_DEFAULT_DB_CONN_URL
 
         self.echo = connection_config.get('echo', CONF_DEFAULT_DB_ECHO)
         self.connection_arguments = self.raw_config.get('arguments', {})
 
     def enable(self):
         riberry.model.init(
-            url=self.connection_string,
+            url=self.connection_url,
             echo=self.echo,
             connection_arguments=self.connection_arguments
         )
