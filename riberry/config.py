@@ -1,27 +1,56 @@
 import riberry
 import toml
 import os
+import binascii
+import pathlib
+import warnings
+
+CONF_DEFAULT_BG_SCHED_INTERVAL = 10
+CONF_DEFAULT_BG_EVENT_INTERVAL = 2
+CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT = 1000
+
+CONF_DEFAULT_DB_ECHO = False
+CONF_DEFAULT_DB_CONN_PATH = (pathlib.Path(os.path.expanduser('~')) / '.riberry') / 'model.db'
+CONF_DEFAULT_DB_CONN_STRING = f'sqlite:///{CONF_DEFAULT_DB_CONN_PATH}'
+
+CONF_DEFAULT_PROVIDER = 'default'
+CONF_DEFAULT_PROVIDERS = [CONF_DEFAULT_PROVIDER]
+CONF_DEFAULT_AUTH_TOKEN_PROVIDER = 'jwt'
+CONF_DEFAULT_AUTH_TOKEN_PATH = (pathlib.Path(os.path.expanduser('~')) / '.riberry') / 'auth.key'
+CONF_DEFAULT_AUTH_TOKEN_SIZE = 256
 
 
-_config = toml.load(os.environ['RIBERRY_CONFIG_PATH'])
+if 'RIBERRY_CONFIG_PATH' in os.environ:
+    _config = toml.load(os.environ['RIBERRY_CONFIG_PATH'])
+else:
+    warnings.warn(message=f'Environment variable \'RIBERRY_CONFIG_PATH\' not declared, defaulting to '
+                          f'default configuration')
+    _config = {}
 
 
-def load_config_value(config):
-    if 'path' in config:
-        with open(config['path']) as f:
+def load_config_value(raw_config, default=None):
+    if 'path' in raw_config:
+        with open(raw_config['path']) as f:
             return f.read()
-    elif 'envvar' in config:
-        return os.getenv(config['envvar'])
-    elif 'value' in config:
-        return config['value']
+    elif 'envvar' in raw_config:
+        return os.getenv(raw_config['envvar'])
+    elif 'value' in raw_config:
+        return raw_config['value']
+    else:
+        return default
 
 
 class DatabaseConfig:
 
     def __init__(self, config_dict):
-        self.raw_config = config_dict
-        self.connection_string = load_config_value(self.raw_config['connection'])
-        self.echo = self.raw_config['connection'].get('echo', False)
+        self.raw_config = config_dict or {}
+        connection_config = self.raw_config.get('connection') or {}
+        self.connection_string = load_config_value(connection_config)
+        if not self.connection_string:
+            CONF_DEFAULT_DB_CONN_PATH.parent.mkdir(exist_ok=True)
+            self.connection_string = CONF_DEFAULT_DB_CONN_STRING
+
+        self.echo = connection_config.get('echo', CONF_DEFAULT_DB_ECHO)
         self.connection_arguments = self.raw_config.get('arguments', {})
 
     def enable(self):
@@ -35,18 +64,31 @@ class DatabaseConfig:
 class AuthenticationTokenConfig:
 
     def __init__(self, config_dict):
-        self.raw_config = config_dict
-        self.provider = self.raw_config['provider']
+        self.raw_config = config_dict or {}
+        self.provider = self.raw_config.get('provider') or CONF_DEFAULT_AUTH_TOKEN_PROVIDER
+
         self.secret = load_config_value(self.raw_config)
+        if not self.secret:
+            self.secret = self.make_secret()
+
+    @staticmethod
+    def make_secret():
+        CONF_DEFAULT_AUTH_TOKEN_PATH.parent.mkdir(exist_ok=True)
+        if not CONF_DEFAULT_AUTH_TOKEN_PATH.is_file():
+            with open(CONF_DEFAULT_AUTH_TOKEN_PATH, 'wb') as f:
+                f.write(binascii.hexlify(os.urandom(CONF_DEFAULT_AUTH_TOKEN_SIZE)))
+
+        with open(CONF_DEFAULT_AUTH_TOKEN_PATH, 'rb') as f:
+            return f.read().decode()
 
 
 class AuthenticationConfig:
 
     def __init__(self, config_dict):
-        self.raw_config = config_dict
-        self.provider_names = self.raw_config['providers']
-        self.default_provider_name = self.raw_config['default']
-        self.token = AuthenticationTokenConfig(self.raw_config['token'])
+        self.raw_config = config_dict or {}
+        self.provider_names = self.raw_config.get('providers') or CONF_DEFAULT_PROVIDERS
+        self.default_provider_name = self.raw_config.get('default') or CONF_DEFAULT_PROVIDER
+        self.token = AuthenticationTokenConfig(self.raw_config.get('token'))
         self._config_cache = {}
 
     def __getitem__(self, item):
@@ -94,23 +136,23 @@ class BackgroundTaskEventsConfig:
 
     def __init__(self, config_dict):
         self.raw_config = config_dict or {}
-        self.interval = config_dict.get('interval', 2)
-        self.processing_limit = config_dict.get('limit', 1000)
+        self.interval = config_dict.get('interval', CONF_DEFAULT_BG_EVENT_INTERVAL)
+        self.processing_limit = config_dict.get('limit', CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT)
 
 
 class BackgroundTaskScheduleConfig:
 
     def __init__(self, config_dict):
         self.raw_config = config_dict or {}
-        self.interval = config_dict.get('interval', 10)
+        self.interval = config_dict.get('interval', CONF_DEFAULT_BG_SCHED_INTERVAL)
 
 
 class RiberryConfig:
 
     def __init__(self, config_dict):
         self.raw_config = config_dict
-        self.authentication = AuthenticationConfig(self.raw_config['authentication'])
-        self.database = DatabaseConfig(self.raw_config['database'])
+        self.authentication = AuthenticationConfig(self.raw_config.get('authentication') or {})
+        self.database = DatabaseConfig(self.raw_config.get('database') or {})
         if 'notification' in self.raw_config and isinstance(self.raw_config['notification'], dict):
             email_config = self.raw_config['notification'].get('email') or {}
         else:
