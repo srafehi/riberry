@@ -172,11 +172,12 @@ class WorkflowEntry:
 class Workflow:
     __registered__ = {}
 
-    def __init__(self, name, app, beat_queue, dynamic_parameters=None):
+    def __init__(self, name, app, beat_queue, scalable_queues=None, dynamic_parameters=None):
         self.name = name
         self.beat_queue = beat_queue
         self.__registered__[name] = self
         self.app = patch_app(app)
+        self.scale = scale.ConcurrencyScale(self.app, target_queues=scalable_queues) if scalable_queues else None
         self.form_entries: Dict[Tuple[str, str], WorkflowEntry] = {}
         self.entry_point = self._make_entry_point(self.app, self.form_entries)
         self._configure_beat_queues(app, self.beat_queue)

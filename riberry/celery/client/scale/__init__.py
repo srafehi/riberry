@@ -15,6 +15,10 @@ class ConcurrencyScale:
         self.initial_queues = set()
         self.current_concurrency = None
 
+    @property
+    def target_worker_queues(self):
+        return self.initial_queues & self.target_queues
+
     def scale_down(self, consumer):
         current_concurrency = consumer.pool.num_processes
 
@@ -105,14 +109,8 @@ def scale_to(state, concurrency):
 
 @control.control_command()
 def worker_task_count(state):
-    consumer = state.consumer
-
     scale = ConcurrencyScale.instance()
-    if not scale:
-        return 0
-
-    queue_names = {q.name for q in consumer.task_consumer.queues}
-    if not set(queue_names) & scale.target_queues:
+    if not scale or not scale.target_worker_queues:
         return 0
 
     return sum([len(control.scheduled(state)), len(control.active(state)), len(control.reserved(state))])

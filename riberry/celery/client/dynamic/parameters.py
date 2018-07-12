@@ -7,16 +7,17 @@ from riberry.celery.client.dynamic import DynamicParameter
 
 class DynamicWorkers(DynamicParameter):
 
-    def __init__(self, scale: ConcurrencyScale, parameter='active'):
+    def __init__(self, parameter='active'):
         super(DynamicWorkers, self).__init__(parameter=parameter)
-        self.scale = scale
 
     def on_received(self, instance, value):
+        scale = ConcurrencyScale.instance()
         value = str(value).upper()
+
         if value == 'N':
             logger.info('DynamicWorkers: app down')
             current_app.control.broadcast('scale_down')
-        elif redis_queues_empty_workers_idle(self.scale.target_queues):
+        elif scale and redis_queues_empty_workers_idle(scale.target_queues):
             logger.info('DynamicWorkers: empty queues')
             current_app.control.broadcast('scale_down')
         elif value == 'Y':
