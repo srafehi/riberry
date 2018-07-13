@@ -5,23 +5,23 @@ from riberry.celery.client.scale import redis_queues_empty_workers_idle, Concurr
 from riberry.celery.client.dynamic import DynamicParameter
 
 
-class DynamicWorkers(DynamicParameter):
+class DynamicQueues(DynamicParameter):
 
     def __init__(self, parameter='active'):
-        super(DynamicWorkers, self).__init__(parameter=parameter)
+        super(DynamicQueues, self).__init__(parameter=parameter)
 
     def on_received(self, instance, value):
         scale = ConcurrencyScale.instance()
         value = str(value).upper()
 
         if value == 'N':
-            logger.info('DynamicWorkers: app down')
+            logger.info('DynamicQueues: app down')
             current_app.control.broadcast('scale_down')
         elif scale and redis_queues_empty_workers_idle(scale.target_queues):
-            logger.info('DynamicWorkers: empty queues')
+            logger.info('DynamicQueues: empty queues')
             current_app.control.broadcast('scale_down')
         elif value == 'Y':
-            logger.info('DynamicWorkers: scaling up')
+            logger.info('DynamicQueues: scaling up')
             current_app.control.broadcast('scale_up')
 
 
