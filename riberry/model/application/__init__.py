@@ -74,16 +74,16 @@ class ApplicationInstance(base.Base):
 
     @property
     def status(self):
-
-        if self.parameter('active', default='Y') == 'N':
-            return 'inactive'
-
         if not self.heartbeat:
             return 'created'
 
         diff = base.utc_now() - pendulum.instance(self.heartbeat.updated)
         if diff.seconds >= 10:
             return 'offline'
+
+        if self.parameter('active', default='Y') == 'N':
+            return 'inactive'
+
         return 'online'
 
     def parameter(self, name, default=None, current_time=None):
