@@ -198,8 +198,12 @@ def handle_notifications(events: List[model.misc.Event]):
         notification_type = event_data['type']
         notification_data = event_data['data']
 
-        execution: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
-        user = execution.creator
+        try:
+            execution: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+            user = execution.creator
+        except NoResultFound:
+            to_delete.append(event)
+            continue
 
         if notification_type == 'workflow_complete':
             status = str(notification_data['status']).lower()

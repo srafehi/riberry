@@ -101,8 +101,6 @@ class ApplicationInstance(base.Base):
         return {param: self.parameter(name=param) for param in parameters}
 
 
-
-
 class Heartbeat(base.Base):
     __tablename__ = 'heartbeat_app_instance'
     __reprattrs__ = ['instance_id', 'updated']
