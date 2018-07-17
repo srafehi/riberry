@@ -23,6 +23,14 @@ class ArtifactType(enum.Enum):
 
 
 class Job(base.Base):
+    """
+    A Job is an object which represents a set of inputs provided to a form. A Job can have one or more JobExecutions
+    which represent the execution of the linked ApplicationInterface on the linked ApplicationInstance for the given
+    input stored against this Job.
+
+    Jobs are immutable. If we require a different set of values, we'll need to create a new Job.
+    """
+
     __tablename__ = 'job'
     __reprattrs__ = ['name']
     __table_args__ = (
@@ -34,7 +42,7 @@ class Job(base.Base):
     id = base.id_builder.build()
     form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
-    name: str = Column(String(64), nullable=False, unique=True)
+    name: str = Column(String(64), nullable=False, unique=True, comment='The unique name of our job.')
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
 
     # associations
@@ -58,18 +66,26 @@ class Job(base.Base):
 
 
 class JobSchedule(base.Base):
+    """
+    A JobSchedule object defines a schedule which will trigger an execution for the linked Job.
+
+    Note that a JobExecution will only be created for an ApplicationInstance which has a status of "online".
+    Applications which are offline or inactive due to an ApplicationInstanceSchedule will not have JobExecutions
+    created.
+    """
+
     __tablename__ = 'sched_job'
 
     # columns
     id = base.id_builder.build()
     job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
-    enabled: bool = Column(Boolean, default=True, nullable=False)
-    cron: str = Column(String(24), nullable=False)
-    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
-    last_run: datetime = Column(DateTime(timezone=True), default=None)
-    limit: int = Column(Integer, default=0)
-    total_runs: int = Column(Integer, default=0)
+    enabled: bool = Column(Boolean, default=True, nullable=False, comment='Whether or not this schedule is active.')
+    cron: str = Column(String(24), nullable=False, comment='The cron expression which defines our schedule.')
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False, comment='The time our schedule was created.')
+    last_run: datetime = Column(DateTime(timezone=True), default=None, comment='The last time a job execution was created from our schedule.')
+    limit: int = Column(Integer, default=0, comment='The amount of valid runs for this schedule.')
+    total_runs: int = Column(Integer, default=0, comment='The total amount of runs for this schedule.')
 
     # associations
     job: 'Job' = relationship('Job', back_populates='schedules')
@@ -104,6 +120,7 @@ class JobSchedule(base.Base):
 
 
 class JobExecution(base.Base):
+    """A JobExecution represent a single execution of our Job."""
     __tablename__ = 'job_execution'
     __reprattrs__ = ['job_id', 'task_id', 'status']
     __table_args__ = (
@@ -115,13 +132,13 @@ class JobExecution(base.Base):
     id = base.id_builder.build()
     job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
-    task_id: str = Column(String(36), unique=True)
-    status: str = Column(String(24), default='RECEIVED')
+    task_id: str = Column(String(36), unique=True, comment='The internal identifier of our job execution. This is usually the Celery root ID.')
+    status: str = Column(String(24), default='RECEIVED', comment='The current status of our job execution.')
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
     started: datetime = Column(DateTime(timezone=True))
     completed: datetime = Column(DateTime(timezone=True))
     updated: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
-    priority = Column(Integer, default=64, nullable=False)
+    priority = Column(Integer, default=64, nullable=False, comment='The priority of this execution. This only applies to tasks in the RECEIVED state.')
 
     # associations
     creator: 'model.auth.User' = relationship('User')

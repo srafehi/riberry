@@ -19,11 +19,11 @@ class Application(base.Base):
     # columns
     id = base.id_builder.build()
     document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
-    name: str = Column(String(64), nullable=False, unique=True, comment='The name of the application.')
+    name: str = Column(String(64), nullable=False, unique=True, comment='The human-readable name of the application.')
     internal_name: str = Column(String(256), nullable=False, unique=True, comment='The internal name or secondary identifier of the application.')
     description: str = Column(String(256), name='A brief description of the application\'s purpose.')
     type: str = Column(String(64), nullable=False, comment='The type of application.')
-    enabled: bool = Column(Boolean, default=True, comment='Whether or not this application and it\'s instances are enabled')
+    enabled: bool = Column(Boolean, default=True, comment='Whether or not this application and its instances are enabled (TODO).')
 
     # associations
     instances: List['ApplicationInstance'] = relationship(
@@ -42,14 +42,23 @@ class Application(base.Base):
 
 
 class ApplicationInstance(base.Base):
+    """
+    An ApplicationInstance represents a running instance of an Application. Multiple ApplicationInstances are useful
+    when we want to separate out different types of executions for the same Application.
+
+    An example of this is when we have an application which can support both long-running and short-running executions.
+    We can spin up a separate instance with separate scheduling to ensure that the long-running jobs don't consume block
+    the short-running jobs.
+    """
+
     __tablename__ = 'app_instance'
     __reprattrs__ = ['name', 'internal_name']
 
     # columns
     id = base.id_builder.build()
     application_id = Column(base.id_builder.type, ForeignKey(column='application.id'), nullable=False)
-    name: str = Column(String(64), nullable=False, unique=True)
-    internal_name: str = Column(String(256), nullable=False, unique=True)
+    name: str = Column(String(64), nullable=False, unique=True, comment='The human-readable name of the application.')
+    internal_name: str = Column(String(256), nullable=False, unique=True, comment='The internal name or secondary identifier of the application instance.')
 
     # associations
     application: 'Application' = relationship('Application', back_populates='instances')
@@ -104,32 +113,48 @@ class ApplicationInstance(base.Base):
 
 
 class Heartbeat(base.Base):
+    """
+    The Heartbeat object is used by running ApplicationInstances to report back that they're alive. If an
+    ApplicationInstance's last heartbeat was over 10 seconds ago, we assume that it is offline.
+    """
+
     __tablename__ = 'heartbeat_app_instance'
     __reprattrs__ = ['instance_id', 'updated']
 
     # columns
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
-    created: datetime = Column(DateTime(timezone=True), default=base.utc_now)
-    updated: datetime = Column(DateTime(timezone=True), default=base.utc_now)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, comment='The first heartbeat we received for the instance.')
+    updated: datetime = Column(DateTime(timezone=True), default=base.utc_now, comment='The last heartbeat we received for the instance.')
 
     # associations
     instance: 'ApplicationInstance' = relationship('ApplicationInstance', back_populates='heartbeat')
 
 
 class ApplicationInstanceSchedule(base.Base):
+    """
+    The ApplicationInstanceSchedule is a time-based schedule for dynamic parameters. It allows us to define parameters
+    which change depending on the time of the day.
+
+    There are currently two core parameters: `active` and `concurrency`. These allow us to automatically
+    activate/de-activate and scale up/down our applications during different times of the day.
+
+    Any custom parameter can be defined and consumed by our Celery application as long as we have a custom parameter
+    handler in place which can interpret the parameter's values.
+    """
+
     __tablename__ = 'sched_app_instance'
 
     # columns
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
-    days = Column(String(27), nullable=False)
-    start_time = Column(String(8), nullable=False, default='00:00:00')
-    end_time = Column(String(8), nullable=False, default='23:59:59')
-    timezone = Column(String(128), nullable=False, default='UTC')
-    parameter = Column(String(32), nullable=False)
-    value = Column(String(512), nullable=False)
-    priority = Column(Integer, default=64, nullable=False)
+    days = Column(String(27), nullable=False, comment='Comma-separated list of specific days ("MON,WED"), or "*" for every day.')
+    start_time = Column(String(8), nullable=False, default='00:00:00', comment='The time when this schedule activates.')
+    end_time = Column(String(8), nullable=False, default='23:59:59', comment='The time when this schedule de-activates.')
+    timezone = Column(String(128), nullable=False, default='UTC', comment='The timezone of for the given start and end times.')
+    parameter = Column(String(32), nullable=False, comment='The parameter which this schedule applies to.')
+    value = Column(String(512), nullable=False, comment='The value of the given parameter.')
+    priority = Column(Integer, default=64, nullable=False, comment='Priority of the schedule, where higher values mean higher priority.')
 
     # associations
     instance: 'ApplicationInstance' = relationship('ApplicationInstance', back_populates='schedules')

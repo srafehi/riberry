@@ -13,6 +13,14 @@ from riberry.model import base
 
 
 class ApplicationInterface(base.Base):
+    """
+    An ApplicationInterface defines a supported interface for an Application. An interface contains input file and
+    value definitions which can be consumed.
+
+    ApplicationInterfaces are versioned, meaning you can have multiple interfaces with the same internal_name only
+    if they have different versions.
+    """
+
     __tablename__ = 'app_interface'
     __reprattrs__ = ['name', 'version']
     __table_args__ = (
@@ -23,10 +31,10 @@ class ApplicationInterface(base.Base):
     id = base.id_builder.build()
     application_id = Column(base.id_builder.type, ForeignKey('application.id'), nullable=False)
     document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
-    name: str = Column(String(64), nullable=False)
-    internal_name: str = Column(String(256), nullable=False)
-    version: int = Column(Integer, nullable=False, default=1)
-    description: str = Column(String(256))
+    name: str = Column(String(64), nullable=False, comment='The human-readable name of the interface.')
+    internal_name: str = Column(String(256), nullable=False, comment='The internal name or secondary identifier of the interface.')
+    version: int = Column(Integer, nullable=False, default=1, comment='The version of the interface.')
+    description: str = Column(String(256), comment='A brief description of the interface\'s purpose.')
 
     # associations
     application: 'model.application.Application' = relationship('Application', back_populates='interfaces')
@@ -45,6 +53,13 @@ class ApplicationInterface(base.Base):
 
 
 class Form(base.Base):
+    """
+    A Form is an implementation of an ApplicationInterface for a given ApplicationInstance.
+
+    All inputs a form accepts are defined by the ApplicationInterface it's linked to, and all Jobs created by
+    the form belong to the linked ApplicationInstance.
+    """
+
     __tablename__ = 'form'
     __reprattrs__ = ['instance_id', 'interface_id']
     __table_args__ = (
@@ -55,7 +70,7 @@ class Form(base.Base):
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
     interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'), nullable=False)
-    enabled: bool = Column(Boolean, nullable=False, default=True)
+    enabled: bool = Column(Boolean, nullable=False, default=True, comment='Whether or not this form is enabled (TODO).')
 
     # associations
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')
@@ -89,6 +104,8 @@ class FormSchedule(base.Base):
 
 
 class InputFileDefinition(base.Base):
+    """The InputFileDefinition object defines the properties of an input file."""
+
     __tablename__ = 'input_file_definition'
     __reprattrs__ = ['name', 'type']
 
@@ -110,6 +127,8 @@ class InputFileDefinition(base.Base):
 
 
 class InputValueDefinition(base.Base):
+    """The InputFileDefinition object defines the properties of an input value."""
+
     __tablename__ = 'input_value_definition'
     __reprattrs__ = ['name', 'type']
 
@@ -152,6 +171,8 @@ class InputValueDefinition(base.Base):
 
 
 class InputValueEnum(base.Base):
+    """The InputValueEnum object defines a valid enumeration for a given InputValueInstance."""
+
     __tablename__ = 'input_value_enum'
     __reprattrs__ = ['value']
 
@@ -166,6 +187,8 @@ class InputValueEnum(base.Base):
 
 
 class InputValueInstance(base.Base):
+    """The InputValueInstance object contains data for a InputValueDefinition and is linked to a Job."""
+
     __tablename__ = 'input_value_instance'
 
     # columns
@@ -188,6 +211,8 @@ class InputValueInstance(base.Base):
 
 
 class InputFileInstance(base.Base):
+    """The InputFileInstance object contains data for a InputFileDefinition and is linked to a Job."""
+
     __tablename__ = 'input_file_instance'
     __reprattrs__ = ['filename', 'size']
 
