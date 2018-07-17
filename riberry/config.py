@@ -22,8 +22,7 @@ CONF_DEFAULT_AUTH_TOKEN_SIZE = 256
 if 'RIBERRY_CONFIG_PATH' in os.environ:
     _config = toml.load(os.environ['RIBERRY_CONFIG_PATH'])
 else:
-    warnings.warn(message=f'Environment variable \'RIBERRY_CONFIG_PATH\' not declared, defaulting to '
-                          f'default configuration')
+    warnings.warn(message=f'Environment variable \'RIBERRY_CONFIG_PATH\' not declared, defaulting to default configuration')
     _config = {}
 
 
