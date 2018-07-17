@@ -11,17 +11,19 @@ from riberry.model import base
 
 
 class Application(base.Base):
+    """Contains basic metadata related to an application."""
+
     __tablename__ = 'application'
     __reprattrs__ = ['name', 'enabled']
 
     # columns
     id = base.id_builder.build()
     document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
-    name: str = Column(String(64), nullable=False, unique=True)
-    internal_name: str = Column(String(256), nullable=False, unique=True)
-    description: str = Column(String(256))
-    type: str = Column(String(64), nullable=False)
-    enabled: bool = Column(Boolean, default=True)
+    name: str = Column(String(64), nullable=False, unique=True, comment='The name of the application.')
+    internal_name: str = Column(String(256), nullable=False, unique=True, comment='The internal name or secondary identifier of the application.')
+    description: str = Column(String(256), name='A brief description of the application\'s purpose.')
+    type: str = Column(String(64), nullable=False, comment='The type of application.')
+    enabled: bool = Column(Boolean, default=True, comment='Whether or not this application and it\'s instances are enabled')
 
     # associations
     instances: List['ApplicationInstance'] = relationship(
