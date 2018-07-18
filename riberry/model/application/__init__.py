@@ -21,7 +21,7 @@ class Application(base.Base):
     document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
     name: str = Column(String(64), nullable=False, unique=True, comment='The human-readable name of the application.')
     internal_name: str = Column(String(256), nullable=False, unique=True, comment='The internal name or secondary identifier of the application.')
-    description: str = Column(String(256), name='A brief description of the application\'s purpose.')
+    description: str = Column(String(256), comment='A brief description of the application\'s purpose.')
     type: str = Column(String(64), nullable=False, comment='The type of application.')
     enabled: bool = Column(Boolean, default=True, comment='Whether or not this application and its instances are enabled (TODO).')
 
