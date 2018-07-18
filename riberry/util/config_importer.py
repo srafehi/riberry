@@ -335,6 +335,7 @@ def import_instance(app, internal_name, attributes):
 
 
 def import_groups(applications):
+    created_groups = {}
     for application, properties in applications.items():
         for form_info in properties.get('forms', []):
             groups = form_info.get('groups') or []
@@ -361,7 +362,10 @@ def import_groups(applications):
                     continue
                 group = model.group.Group.query().filter_by(name=group_name).first()
                 if not group:
+                    group = created_groups.get(group_name)
+                if not group:
                     group = services.auth.create_group(name=group_name)
+                    created_groups[group_name] = group
 
                 association = model.group.ResourceGroupAssociation(
                     resource_id=form.id,
