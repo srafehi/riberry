@@ -5,6 +5,8 @@ from contextlib import contextmanager
 from threading import local
 from typing import Set, Union, Optional, Type, Callable
 
+from riberry.exc import AuthorizationError
+
 
 class NotApplicable(Exception):
     pass
@@ -78,7 +80,7 @@ class PolicyContext:
         self['on_deny'] = value
 
     @contextmanager
-    def scope(self, subject, environment, policy_engine, on_deny: Optional[Union[Type, Callable]] = PermissionError):
+    def scope(self, subject, environment, policy_engine, on_deny: Optional[Union[Type, Callable]] = AuthorizationError):
         self.configure(subject=subject, environment=environment, policy_engine=policy_engine, on_deny=on_deny)
         yield
         self.reset()
@@ -91,7 +93,7 @@ class PolicyContext:
         finally:
             self.enabled = True
 
-    def configure(self, subject, environment, policy_engine, on_deny: Optional[Union[Type, Callable]] = PermissionError):
+    def configure(self, subject, environment, policy_engine, on_deny: Optional[Union[Type, Callable]] = AuthorizationError):
         self.enabled = True
         self.subject = subject
         self.environment = environment
