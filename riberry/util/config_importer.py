@@ -1,12 +1,12 @@
 import json
 import os
-from string import Formatter
 
 import yaml
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.exc import NoResultFound
 
 from riberry import model, services, policy
+from riberry.util.common import variable_substitution
 
 
 class Loader(yaml.SafeLoader):
@@ -16,39 +16,8 @@ class Loader(yaml.SafeLoader):
         self._root = os.path.split(stream.name)[0]
         super(Loader, self).__init__(stream)
 
-    @staticmethod
-    def extract_formatter_keys(filename):
-        return [tup[1] for tup in Formatter().parse(filename) if tup[1]]
-
-    @staticmethod
-    def find_values_for_formatter_keys(keys, input_values=None):
-        mapping = {}
-        input_values = input_values or {}
-
-        for key in keys:
-            if key in input_values:
-                mapping[key] = input_values[key]
-            elif key in os.environ:
-                mapping[key] = os.environ[key]
-            else:
-                raise ValueError(f'Config template value {key!r} not provided')
-
-        return mapping
-
-    @classmethod
-    def expand_filename(cls, filename: str):
-        try:
-            return filename.format(
-                **cls.find_values_for_formatter_keys(
-                    keys=cls.extract_formatter_keys(filename=filename),
-                    input_values=None,
-                )
-            )
-        except ValueError as exc:
-            raise ValueError(f'Filename expansion failed for filename {filename!r}. Encountered error: {exc}')
-
     def include(self, node):
-        filename = self.expand_filename(filename=os.path.join(self._root, self.construct_scalar(node)))
+        filename = variable_substitution(os.path.join(self._root, self.construct_scalar(node)))
 
         with open(filename, 'r') as f:
             if filename.endswith('.yaml') or filename.endswith('.yml'):
@@ -438,7 +407,7 @@ def import_config(config, formatter=None, restrict_apps=None):
 
 def import_from_file(config_path, dry_run=True, formatter=json_diff, restrict_apps=None):
     with open(config_path) as f:
-        config = yaml.load(f, Loader) or {}
+        config = variable_substitution(yaml.load(f, Loader) or {})
 
     with model.conn.no_autoflush, policy.context.disabled_scope():
         output = import_config(config, formatter=formatter, restrict_apps=restrict_apps)

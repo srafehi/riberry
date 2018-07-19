@@ -5,6 +5,8 @@ import binascii
 import pathlib
 import warnings
 
+from riberry.util.common import variable_substitution
+
 CONF_DEFAULT_BG_SCHED_INTERVAL = 10
 CONF_DEFAULT_BG_EVENT_INTERVAL = 2
 CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT = 1000
@@ -20,7 +22,7 @@ CONF_DEFAULT_AUTH_TOKEN_SIZE = 256
 
 
 if 'RIBERRY_CONFIG_PATH' in os.environ:
-    _config = toml.load(os.environ['RIBERRY_CONFIG_PATH'])
+    _config = variable_substitution(toml.load(os.environ['RIBERRY_CONFIG_PATH']))
 else:
     warnings.warn(message=f'Environment variable \'RIBERRY_CONFIG_PATH\' not declared, defaulting to default configuration')
     _config = {}
