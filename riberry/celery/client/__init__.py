@@ -181,6 +181,7 @@ class Workflow:
         self.scale = scale.ConcurrencyScale(self.app, target_queues=scalable_queues) if scalable_queues else None
         self.form_entries: Dict[Tuple[str, str], WorkflowEntry] = {}
         self.entry_point = self._make_entry_point(self.app, self.form_entries)
+        self._extend_cli(app)
         self._configure_beat_queues(app, self.beat_queue)
         self._configure_event_queue(app, self.event_queue)
         self.dynamic_parameters = DynamicParameters(
@@ -217,6 +218,24 @@ class Workflow:
         if not app.conf.task_routes:
             app.conf.task_routes = {}
         app.conf.task_routes.update(task_routes)
+
+    @staticmethod
+    def _extend_cli(app):
+
+        def rib_instance_cli(parser):
+            parser.add_argument('--rib-instance', default=None, help='Defines the Riberry instance')
+
+        class RiberryInstanceStep(bootsteps.StartStopStep):
+
+            def __init__(self, worker, rib_instance=None, **options):
+                super(RiberryInstanceStep, self).__init__(worker, **options)
+                self.rib_instance = rib_instance or os.getenv('RIBERRY_INSTANCE')
+
+            def start(self, worker):
+                os.environ['RIBERRY_INSTANCE'] = self.rib_instance
+
+        app.user_options['worker'].add(rib_instance_cli)
+        app.steps['worker'].add(RiberryInstanceStep)
 
     @staticmethod
     def _make_entry_point(app, form_entries: Dict[Tuple[str, str], WorkflowEntry]):
