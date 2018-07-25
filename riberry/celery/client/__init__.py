@@ -3,7 +3,7 @@ import traceback
 from typing import Dict, Tuple
 
 import pendulum
-from celery import Celery
+from celery import Celery, bootsteps
 from celery import current_task
 from celery import exceptions as celery_exc
 from celery.result import AsyncResult
