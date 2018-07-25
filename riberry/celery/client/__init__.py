@@ -172,15 +172,17 @@ class WorkflowEntry:
 class Workflow:
     __registered__ = {}
 
-    def __init__(self, name, app, beat_queue, scalable_queues=None, dynamic_parameters=None):
+    def __init__(self, name, app, beat_queue=None, event_queue=None, scalable_queues=None, dynamic_parameters=None):
         self.name = name
-        self.beat_queue = beat_queue
+        self.beat_queue = beat_queue or 'rib.beat'
+        self.event_queue = event_queue or 'rib.event'
         self.__registered__[name] = self
         self.app = patch_app(app)
         self.scale = scale.ConcurrencyScale(self.app, target_queues=scalable_queues) if scalable_queues else None
         self.form_entries: Dict[Tuple[str, str], WorkflowEntry] = {}
         self.entry_point = self._make_entry_point(self.app, self.form_entries)
         self._configure_beat_queues(app, self.beat_queue)
+        self._configure_event_queue(app, self.event_queue)
         self.dynamic_parameters = DynamicParameters(
             riberry_workflow=self,
             handlers=dynamic_parameters,
@@ -205,6 +207,16 @@ class Workflow:
         if not app.conf.beat_schedule:
             app.conf.beat_schedule = {}
         app.conf.beat_schedule.update(schedule)
+
+    @staticmethod
+    def _configure_event_queue(app, event_queue):
+        task_routes = {
+            'riberry.celery.client.tasks.event': {'queue': event_queue},
+        }
+
+        if not app.conf.task_routes:
+            app.conf.task_routes = {}
+        app.conf.task_routes.update(task_routes)
 
     @staticmethod
     def _make_entry_point(app, form_entries: Dict[Tuple[str, str], WorkflowEntry]):
