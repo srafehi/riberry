@@ -26,6 +26,14 @@ BYPASS_ARGS = (
 )
 
 
+def current_instance_name() -> str:
+    return os.getenv('RIBERRY_INSTANCE')
+
+
+def is_current_instance(instance_name: str) -> bool:
+    return bool(instance_name) and current_instance_name() == instance_name
+
+
 def workflow_complete(task_id, root_id, status, primary_stream):
 
     job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).one()
