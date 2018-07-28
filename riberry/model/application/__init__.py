@@ -148,7 +148,7 @@ class ApplicationInstanceSchedule(base.Base):
     # columns
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
-    days = Column(String(27), nullable=False, comment='Comma-separated list of specific days ("MON,WED"), or "*" for every day.')
+    days = Column(String(27), nullable=False, default='*', comment='Comma-separated list of specific days ("MON,WED"), or "*" for every day.')
     start_time = Column(String(8), nullable=False, default='00:00:00', comment='The time when this schedule activates.')
     end_time = Column(String(8), nullable=False, default='23:59:59', comment='The time when this schedule de-activates.')
     timezone = Column(String(128), nullable=False, default='UTC', comment='The timezone of for the given start and end times.')
