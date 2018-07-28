@@ -34,7 +34,7 @@ def current_instance_name(raise_on_none=False) -> str:
 
 
 def is_current_instance(instance_name: str) -> bool:
-    return bool(instance_name) and current_instance_name() == instance_name
+    return bool(instance_name) and current_instance_name(raise_on_none=False) == instance_name
 
 
 def workflow_complete(task_id, root_id, status, primary_stream):

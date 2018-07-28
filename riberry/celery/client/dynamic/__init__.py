@@ -2,6 +2,7 @@ import os
 from typing import List
 from celery import current_app
 from riberry import model
+from riberry.celery import client
 
 
 class DynamicParameter:
@@ -22,7 +23,7 @@ def make_dynamic_parameters_task(handlers: List[DynamicParameter]):
 
         with model.conn:
             instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
-                internal_name=os.environ['RIBERRY_INSTANCE']
+                internal_name=client.current_instance_name(raise_on_none=True)
             ).one()
             instance_parameters = instance.parameters
 

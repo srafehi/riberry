@@ -5,6 +5,8 @@ from celery import current_app, signals
 from celery.utils.log import logger
 from celery.worker import control
 
+from riberry.celery import client
+
 
 class ConcurrencyScale:
     all_apps = {}
@@ -90,25 +92,32 @@ def scale_down_on_startup(sender, **_):
 
 
 @control.control_command()
-def scale_down(state):
+def scale_down(state, instance):
     scale = ConcurrencyScale.instance()
-    scale and scale.scale_down(consumer=state.consumer)
+    scale and instance and client.is_current_instance(instance_name=instance) and scale.scale_down(
+        consumer=state.consumer)
 
 
 @control.control_command()
-def scale_up(state):
+def scale_up(state, instance):
     scale = ConcurrencyScale.instance()
-    scale and scale.scale_up(consumer=state.consumer)
+    scale and instance and client.is_current_instance(instance_name=instance) and scale.scale_up(
+        consumer=state.consumer)
 
 
 @control.control_command()
-def scale_to(state, concurrency):
+def scale_to(state, concurrency, instance):
     scale = ConcurrencyScale.instance()
-    scale and scale.scale_to(consumer=state.consumer, concurrency=concurrency)
+    scale and instance and client.is_current_instance(instance_name=instance) and scale.scale_to(
+        consumer=state.consumer,
+        concurrency=concurrency)
 
 
 @control.control_command()
-def worker_task_count(state):
+def worker_task_count(state, instance):
+    if not instance or not client.is_current_instance(instance_name=instance):
+        return 0
+
     scale = ConcurrencyScale.instance()
     if not scale or not scale.target_worker_queues:
         return 0
@@ -130,7 +139,15 @@ def redis_queues_empty_workers_idle(queues):
             if queue_length:
                 return False
 
-    if any([sum(r.values()) for r in current_app.control.broadcast('worker_task_count', reply=True)]):
+    all_worker_counts = current_app.control.broadcast(
+        'worker_task_count',
+        reply=True,
+        arguments={
+            'instance': client.current_instance_name()
+        }
+    )
+
+    if any([sum(r.values()) for r in all_worker_counts]):
         return False
 
     return True

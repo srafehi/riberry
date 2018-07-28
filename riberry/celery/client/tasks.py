@@ -15,7 +15,7 @@ from riberry.celery import client
 def poll():
     with model.conn:
         app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
-            internal_name=os.environ['RIBERRY_INSTANCE']
+            internal_name=client.current_instance_name(raise_on_none=True)
         ).first()
 
         if not app_instance or app_instance.status != 'online':
