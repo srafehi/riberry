@@ -40,9 +40,9 @@ e = stream_end
 b = step
 
 
-def artifact(name, type, category, filename, content, data=None, stream=None, step=None):
-    task_id = current_task.request.id
-    root_id = current_task.request.root_id
+def artifact(name, type, category, filename, content, data=None, stream=None, step=None, task_id=None, root_id=None):
+    task_id = task_id or current_task.request.id
+    root_id = root_id or current_task.request.root_id
     stream = stream or getattr(current_task, 'stream', None)
     step = step or getattr(current_task, 'step', None)
 
@@ -63,9 +63,9 @@ def artifact(name, type, category, filename, content, data=None, stream=None, st
     )
 
 
-def notify(notification_type, data=None):
-    task_id = current_task.request.id
-    root_id = current_task.request.root_id
+def notify(notification_type, data=None, task_id=None, root_id=None):
+    task_id = task_id or current_task.request.id
+    root_id = root_id or current_task.request.root_id
 
     create_event(
         'notify',

@@ -26,8 +26,8 @@ BYPASS_ARGS = (
 )
 
 
-def workflow_complete(task, status, primary_stream):
-    root_id = task.request.root_id
+def workflow_complete(task_id, root_id, status, primary_stream):
+
     job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).one()
     job.task_id = root_id
     job.status = status
@@ -50,7 +50,12 @@ def workflow_complete(task, status, primary_stream):
         )
 
     model.conn.commit()
-    wf.notify(notification_type='workflow_complete', data=dict(status=status))
+    wf.notify(
+        notification_type='workflow_complete',
+        data=dict(status=status),
+        task_id=task_id,
+        root_id=root_id
+    )
 
 
 def is_workflow_complete(task):
@@ -105,7 +110,7 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
             fallback = task_kwargs.get('rib_fallback')
             return fallback() if callable(fallback) else fallback
         else:
-            workflow_complete(current_task, status='FAILURE', primary_stream=None)
+            workflow_complete(current_task.request.id, current_task.request.root_id, status='FAILURE', primary_stream=None)
             raise
 
 
