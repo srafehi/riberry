@@ -26,8 +26,11 @@ BYPASS_ARGS = (
 )
 
 
-def current_instance_name() -> str:
-    return os.getenv('RIBERRY_INSTANCE')
+def current_instance_name(raise_on_none=False) -> str:
+    name = os.getenv('RIBERRY_INSTANCE')
+    if name is None and raise_on_none:
+        raise EnvironmentError("Environment variable 'RIBERRY_INSTANCE' not set")
+    return name
 
 
 def is_current_instance(instance_name: str) -> bool:
