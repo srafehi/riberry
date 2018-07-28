@@ -76,7 +76,18 @@ class ConcurrencyScale:
             consumer.pool.grow(process_diff)
         elif process_diff < 0:
             logger.info(f'scale-to: {process_diff} -> new: {current_concurrency + process_diff} target: {concurrency}')
-            consumer.pool.shrink(abs(process_diff))
+
+            consumer.qos.decrement_eventually(consumer.qos.value - 1)
+            consumer.qos.update()
+
+            try:
+                consumer.pool.shrink(abs(process_diff))
+            except Exception as exc:
+                logger.error(exc)
+                return
+        else:
+            prefetch_count = (consumer.pool.num_processes * consumer.prefetch_multiplier) - consumer.qos.value
+            consumer.qos.increment_eventually(n=prefetch_count)
 
         self.current_concurrency = process_diff + current_concurrency
 
