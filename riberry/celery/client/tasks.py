@@ -11,7 +11,7 @@ from riberry import model
 from riberry.celery import client
 
 
-@shared_task
+@shared_task(ignore_result=True)
 def poll():
     with model.conn:
         app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
@@ -67,7 +67,7 @@ def poll():
         model.conn.commit()
 
 
-@shared_task
+@shared_task(ignore_result=True)
 def echo():
     with model.conn:
         app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
@@ -99,7 +99,7 @@ def create_event(name, root_id, task_id, data=None, binary=None):
     )
 
 
-@shared_task
+@shared_task(ignore_result=True)
 def event(name, time, task_id, root_id, data=None, binary=None):
     with model.conn:
         evt = model.misc.Event(
@@ -115,7 +115,7 @@ def event(name, time, task_id, root_id, data=None, binary=None):
         model.conn.commit()
 
 
-@shared_task(queue='event')
+@shared_task(queue='event', ignore_result=True)
 def workflow_step_update(root_id, stream_name, step_name, task_id, status=None, note=None):
     with model.conn:
         job = model.job.JobExecution.query().filter_by(task_id=root_id).one()
@@ -133,7 +133,7 @@ def workflow_step_update(root_id, stream_name, step_name, task_id, status=None, 
         model.conn.commit()
 
 
-@shared_task(queue='event')
+@shared_task(queue='event', ignore_result=True)
 def workflow_stream_update(root_id, stream_name, task_id, status):
     with model.conn:
         job = model.job.JobExecution.query().filter_by(task_id=root_id).one()
@@ -146,7 +146,7 @@ def workflow_stream_update(root_id, stream_name, task_id, status):
         model.conn.commit()
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, ignore_result=True)
 def workflow_complete(task, status, primary_stream):
     with model.conn:
         return client.workflow_complete(task.request.id, task.request.root_id, status, primary_stream)
