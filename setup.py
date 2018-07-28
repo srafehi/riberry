@@ -12,7 +12,7 @@ setup(
         'croniter',
         'pendulum',
         'sqlalchemy',
-        'celery==4.2.0rc4',
+        'celery>=4.2.0',
         'pyyaml',
         'pyjwt',
         'toml',
