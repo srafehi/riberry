@@ -56,6 +56,7 @@ class DynamicPriorityParameter(client.dynamic.DynamicParameter):
         if value == self.last_value:
             return
 
+        self.last_value = value
         values = [
             value.split(self.sep) if self.sep in value else (value, 0)
             for value in value.split(' ')
