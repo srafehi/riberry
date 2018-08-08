@@ -9,7 +9,6 @@ class DynamicParameter:
 
     def __init__(self, parameter):
         self.parameter = parameter
-        self.last_value = None
 
     def on_received(self, instance: model.application.ApplicationInstance, value: str):
         raise NotImplementedError
