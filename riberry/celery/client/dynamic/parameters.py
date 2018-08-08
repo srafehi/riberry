@@ -49,11 +49,22 @@ class DynamicPriorityParameter(client.dynamic.DynamicParameter):
         self.r = r or celery_redis_instance()
         self.sep = sep
         self.queue = queue_cls(r=self.r, key=key or client.current_instance_name(raise_on_none=True))
-        self.queue.clear()
-        self.last_value = None
+
+    @property
+    def last_value_key(self):
+        return self.queue.make_key(self.queue.key, 'raw')
+
+    @property
+    def last_value(self):
+        last_value = self.r.get(self.last_value_key)
+        return last_value.decode() if isinstance(last_value, bytes) else None
+
+    @last_value.setter
+    def last_value(self, value):
+        self.r.set(self.last_value_key, value=value)
 
     def on_received(self, instance, value):
-        if value == self.last_value:
+        if self.last_value is not None and value == self.last_value:
             return
 
         self.last_value = value
@@ -64,6 +75,7 @@ class DynamicPriorityParameter(client.dynamic.DynamicParameter):
 
         member_scores = {k: int(v) for k, v in values}
         self.queue.update(member_scores)
+        logger.info(f'DynamicPriorityParameter: ({self.queue.free_key}) updated {self.parameter} queue with {value!r}')
 
     @contextmanager
     def borrow(self):

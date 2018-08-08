@@ -4,9 +4,15 @@ import functools
 
 class PriorityQueue:
 
-    def __init__(self, r, key):
+    def __init__(self, r, key, prefix='pq', sep=':'):
         self.r: redis.Redis = r
         self.key = key
+        self.prefix = prefix
+        self.sep = sep
+
+    def make_key(self, *args):
+        sub_key = self.sep.join(map(str, args))
+        return f'{self.prefix}{self.sep}{sub_key}'
 
     @property
     def version(self):
@@ -18,7 +24,7 @@ class PriorityQueue:
 
     @property
     def version_key(self):
-        return f'prio:{self.key}:counter'
+        return self.make_key(self.key, 'counter')
 
     @property
     def free_key(self):
@@ -29,10 +35,10 @@ class PriorityQueue:
         return self.generate_lease_key(version=self.version)
 
     def generate_free_key(self, version):
-        return f'prio:{self.key}:{version:09}:free'
+        return self.make_key(self.key, f'{version:09}', 'free')
 
     def generate_lease_key(self, version):
-        return f'prio:{self.key}:{version:09}:lease'
+        return self.make_key(self.key, f'{version:09}', 'lease')
 
     def pop(self):
         version = self.version
