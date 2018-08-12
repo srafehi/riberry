@@ -107,7 +107,7 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
     except Exception as exc:
         wf.artifact(
             name=f'Exception {current_task.name}',
-            type='error',
+            type=model.job.ArtifactType.error,
             category='Intercepted' if 'rib_fallback' in task_kwargs else 'Fatal',
             data={
                 'Error Type': type(exc).__name__,

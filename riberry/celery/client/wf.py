@@ -1,6 +1,9 @@
+from typing import Union
+
 from celery import current_task
 
 from riberry.celery.client.tasks import create_event
+from riberry.model.job import ArtifactType
 
 
 class TaskWrap:
@@ -40,11 +43,29 @@ e = stream_end
 b = step
 
 
-def artifact(name, type, category, filename, content, data=None, stream=None, step=None, task_id=None, root_id=None):
+def artifact(filename: str, content: Union[bytes, str], name: str=None,
+             type: Union[str, ArtifactType]=ArtifactType.output, category='Default', data: dict=None,
+             stream: str=None, step=None, task_id: str=None, root_id: str=None):
+
     task_id = task_id or current_task.request.id
     root_id = root_id or current_task.request.root_id
     stream = stream or getattr(current_task, 'stream', None)
     step = step or getattr(current_task, 'step', None)
+
+    if name is None:
+        name = filename
+
+    if isinstance(content, str):
+        content = content.encode()
+
+    if isinstance(type, ArtifactType):
+        type = type.value
+
+    try:
+        ArtifactType(type)
+    except ValueError as exc:
+        raise ValueError(f'ArtifactType enum has no value {type!r}.'
+                         f'Supported types: {", ".join(ArtifactType.__members__)}') from exc
 
     create_event(
         'artifact',
