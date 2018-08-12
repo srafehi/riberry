@@ -14,7 +14,8 @@ class NotApplicable(Exception):
 
 class AuthorizationEngine:
 
-    def __init__(self, *policy):
+    def __init__(self, name, *policy):
+        self.name = name
         self.policies: Set[Union[PolicySet, Policy]] = set(policy)
 
     def authorize(self, context):

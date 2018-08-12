@@ -20,9 +20,15 @@ interval = 5
 envvar = "RIBERRY_DATABASE_URL"
 echo = false
 
+
 [database.arguments]
 
 timeout = 60
+
+
+[policies]
+
+provider = "default"
 
 
 [authentication.providers]

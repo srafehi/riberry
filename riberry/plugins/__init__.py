@@ -6,6 +6,7 @@ from collections import defaultdict
 
 plugin_register = defaultdict(set)
 plugin_register['authentication'].add(defaults.authentication.DefaultAuthenticationProvider)
+plugin_register['policies'].add(defaults.policies.default_policies)
 
 
 ext_plugins = {
