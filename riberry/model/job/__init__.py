@@ -139,6 +139,7 @@ class JobExecution(base.Base):
     completed: datetime = Column(DateTime(timezone=True))
     updated: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
     priority = Column(Integer, default=64, nullable=False, comment='The priority of this execution. This only applies to tasks in the RECEIVED state.')
+    parent_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), comment='The id of the execution which triggered this execution.')
 
     # associations
     creator: 'model.auth.User' = relationship('User')
@@ -154,6 +155,9 @@ class JobExecution(base.Base):
         cascade='save-update, merge, delete, delete-orphan',
         order_by=lambda: desc(JobExecutionArtifact.created),
         back_populates='job_execution')
+
+    parent_execution: 'JobExecution' = relationship('JobExecution', back_populates='child_executions', remote_side=[id])
+    child_executions: List['JobExecution'] = relationship('JobExecution', back_populates='parent_execution')
 
     # validations
     @validates('priority')
