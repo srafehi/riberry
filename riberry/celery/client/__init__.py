@@ -1,4 +1,5 @@
 import functools
+import json
 import os
 import traceback
 from typing import Dict, Tuple
@@ -9,6 +10,7 @@ from celery import current_task
 from celery import exceptions as celery_exc
 from celery.result import AsyncResult
 
+import riberry
 from riberry import model
 from riberry.celery.client import tasks
 from riberry.celery.client.dynamic import DynamicParameters
@@ -105,6 +107,12 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
     except tuple(list(IGNORE_EXCEPTIONS) + task_kwargs.get('autoretry_for', [])):
         raise
     except Exception as exc:
+
+        if isinstance(exc, riberry.exc.BaseError):
+            error_content = f'{traceback.format_exc()}\n\n{"-"*32}\n\n{json.dumps(exc.output(), indent=2)}'.encode()
+        else:
+            error_content = traceback.format_exc().encode()
+
         wf.artifact(
             name=f'Exception {current_task.name}',
             type=model.job.ArtifactType.error,
@@ -114,7 +122,7 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
                 'Error Message': str(exc)
             },
             filename=f'{current_task.name}-{current_task.request.id}.log',
-            content=traceback.format_exc().encode()
+            content=error_content
         )
 
         if 'rib_fallback' in task_kwargs:

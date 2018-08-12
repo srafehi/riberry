@@ -1,4 +1,4 @@
-from riberry import config, plugins, model, celery, policy, services
+from riberry import config, plugins, model, celery, policy, services, exc
 
 
 config.config.enable()
