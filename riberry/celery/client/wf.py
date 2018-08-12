@@ -1,10 +1,14 @@
+import json
+import sys
+import traceback
+
 from io import BytesIO
 from typing import Union, Optional
-
 from celery import current_task
 
-from riberry.celery.client.tasks import create_event
 from riberry import model, config, policy, services
+from riberry.celery.client.tasks import create_event
+from riberry.exc import BaseError
 from riberry.model.job import ArtifactType
 
 
@@ -83,6 +87,30 @@ def artifact(filename: str, content: Union[bytes, str], name: str=None,
             'filename': str(filename),
         },
         binary=content
+    )
+
+
+def artifact_from_traceback(name=None, filename=None, category='Intercepted', type=model.job.ArtifactType.error):
+    exc_type, exc, tb = sys.exc_info()
+
+    if not exc_type:
+        return
+
+    if isinstance(exc, BaseError):
+        error_content = f'{traceback.format_exc()}\n\n{"-"*32}\n\n{json.dumps(exc.output(), indent=2)}'.encode()
+    else:
+        error_content = traceback.format_exc().encode()
+
+    artifact(
+        name=name if name else f'Exception {current_task.name}',
+        type=type,
+        category=category,
+        data={
+            'Error Type': exc.__class__.__name__,
+            'Error Message': str(exc)
+        },
+        filename=filename if filename else f'{current_task.name}-{current_task.request.id}.log',
+        content=error_content
     )
 
 

@@ -107,23 +107,7 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
     except tuple(list(IGNORE_EXCEPTIONS) + task_kwargs.get('autoretry_for', [])):
         raise
     except Exception as exc:
-
-        if isinstance(exc, riberry.exc.BaseError):
-            error_content = f'{traceback.format_exc()}\n\n{"-"*32}\n\n{json.dumps(exc.output(), indent=2)}'.encode()
-        else:
-            error_content = traceback.format_exc().encode()
-
-        wf.artifact(
-            name=f'Exception {current_task.name}',
-            type=model.job.ArtifactType.error,
-            category='Intercepted' if 'rib_fallback' in task_kwargs else 'Fatal',
-            data={
-                'Error Type': type(exc).__name__,
-                'Error Message': str(exc)
-            },
-            filename=f'{current_task.name}-{current_task.request.id}.log',
-            content=error_content
-        )
+        wf.artifact_from_traceback(category='Intercepted' if 'rib_fallback' in task_kwargs else 'Fatal')
 
         if 'rib_fallback' in task_kwargs:
             fallback = task_kwargs.get('rib_fallback')
