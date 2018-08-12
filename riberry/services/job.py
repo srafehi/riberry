@@ -16,8 +16,11 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
     value_map_definitions: Dict[str, 'model.interface.InputValueDefinition'] = {input_def.name: input_def for input_def in input_value_definitions}
     file_map_definitions: Dict[str, 'model.interface.InputValueDefinition'] = {input_def.name: input_def for input_def in input_file_definitions}
 
-    input_values = dict(input_values)
-    input_files = dict(input_files)
+    value_mapping = {d.internal_name: d.name for d in value_map_definitions.values()}
+    file_mapping = {d.internal_name: d.name for d in file_map_definitions.values()}
+
+    input_values = {value_mapping.get(k, k): v for k, v in input_values.items()}
+    input_files = {file_mapping.get(k, k): v for k, v in input_files.items()}
 
     input_value_mapping = {}
     input_file_mapping = {}
@@ -110,7 +113,7 @@ def create_job(form_id, name, input_values, input_files, execute, parent_executi
 
     for definition, value in files_mapping.items():
         binary = value.read()
-        filename = value.filename or definition.internal_name
+        filename = value.filename if getattr(value, 'filename', None) else definition.internal_name
         input_file_instance = model.interface.InputFileInstance(
             definition=definition,
             filename=filename,
