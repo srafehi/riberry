@@ -1,5 +1,6 @@
 import json
 import smtplib
+import traceback
 from collections import defaultdict
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -9,6 +10,7 @@ import pendulum
 from sqlalchemy.orm.exc import NoResultFound
 
 from riberry import model, config
+from celery.utils.log import logger
 
 
 def email_notification(host, body, subject, sender, recipients: List):
@@ -22,7 +24,7 @@ def email_notification(host, body, subject, sender, recipients: List):
         s.sendmail(sender, recipients, msg.as_string())
         s.quit()
     except:
-        pass
+        logger.warn(f'An error occurred sending email notification: {traceback.format_exc()}')
 
 
 def handle_artifacts(events: List[model.misc.Event]):
@@ -69,9 +71,8 @@ def handle_artifacts(events: List[model.misc.Event]):
                 artifact.stream = stream
 
             model.conn.add(artifact)
-        except Exception as exc:
-            print(exc)
-            pass
+        except:
+            logger.warn(f'An error occurred processing artifact event {event}: {traceback.format_exc()}')
         else:
             to_delete.append(event)
 
@@ -108,7 +109,7 @@ def handle_steps(events: List[model.misc.Event]):
                     steps[(stream_name, event.task_id)] = model.job.JobExecutionStreamStep.query().filter_by(
                         task_id=event.task_id, stream=stream).one()
                 step = steps[(stream_name, event.task_id)]
-            except Exception:
+            except NoResultFound:
                 step = model.job.JobExecutionStreamStep(
                     name=event_data['step'],
                     created=pendulum.from_timestamp(event.time),
@@ -129,11 +130,8 @@ def handle_steps(events: List[model.misc.Event]):
                 elif status in ('SUCCESS', 'FAILURED'):
                     step.completed = event_time
 
-
         except:
-            import traceback
-            print(traceback.format_exc())
-            pass
+            logger.warn(f'An error occurred processing step event {event}: {traceback.format_exc()}')
         else:
             to_delete.append(event)
 
@@ -162,7 +160,18 @@ def handle_streams(events: List[model.misc.Event]):
                     streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(
                         name=stream_name, job_execution=job_execution).one()
                 stream = streams[(stream_name, event.root_id)]
-            except Exception:
+            except NoResultFound:
+                existing_stream = model.job.JobExecutionStream.query().filter_by(task_id=event.task_id).first()
+                if existing_stream:
+                    logger.warn(f'Skipping stream event {event}. Task ID {event.task_id!r} already exists against '
+                                f'an existing stream (id={existing_stream.id}).\n'
+                                f'Details:\n'
+                                f'  root_id: {event.root_id!r}\n'
+                                f'  name: {event_data["stream"]!r}\n'
+                                f'  data: {event_data}\n')
+                    to_delete.append(event)
+                    continue
+
                 stream = model.job.JobExecutionStream(
                     name=event_data['stream'],
                     task_id=event.task_id,
@@ -183,7 +192,7 @@ def handle_streams(events: List[model.misc.Event]):
                 elif status in ('SUCCESS', 'FAILURE'):
                     stream.completed = event_time
         except:
-            pass
+            logger.warn(f'An error occurred processing stream event {event}: {traceback.format_exc()}')
         else:
             to_delete.append(event)
 
@@ -268,7 +277,7 @@ handlers = {
 
 
 def process(event_limit=None):
-    try:
+    with model.conn:
         event_mapping = defaultdict(list)
         query = model.misc.Event.query().order_by(model.misc.Event.time.asc())
         if event_limit:
@@ -288,16 +297,14 @@ def process(event_limit=None):
                 try:
                     to_delete += handlers[handler_name](handler_events)
                 except:
-                    print(f'{handler_name} {handler_events}')
+                    logger.warn(f'Failed to process {handler_name} events: {handler_events}')
                     raise
 
         for event in to_delete:
-            print(event)
+            logger.info(f'Removing processed event {event}')
             model.conn.delete(event)
 
         model.conn.commit()
-    finally:
-        model.conn.remove()
 
 
 if __name__ == '__main__':
