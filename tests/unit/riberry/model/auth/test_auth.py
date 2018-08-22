@@ -19,4 +19,4 @@ class TestAuthToken:
         payload = auth.AuthToken.verify(token)
         iat = pendulum.from_timestamp(payload['iat'])
         exp = pendulum.from_timestamp(payload['exp'])
-        assert exp - iat == expiry_delta
+        assert pendulum.Period(start=iat, end=exp).as_timedelta() == expiry_delta
