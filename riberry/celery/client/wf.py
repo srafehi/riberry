@@ -3,7 +3,7 @@ import sys
 import traceback
 
 from io import BytesIO
-from typing import Union, Optional
+from typing import Union, Optional, List
 from celery import current_task
 
 from riberry import model, config, policy, services
@@ -111,6 +111,24 @@ def artifact_from_traceback(name=None, filename=None, category='Intercepted', ty
         },
         filename=filename if filename else f'{current_task.name}-{current_task.request.id}.log',
         content=error_content
+    )
+
+
+def send_email(subject: str, body: str, mime_type: Optional[str]=None,
+               sender: Optional[str] =None, receivers: Optional[List[str]]=None):
+
+    if isinstance(receivers, str):
+        receivers = [receivers]
+
+    notify(
+        notification_type='custom-email',
+        data={
+            'subject': subject,
+            'mime_type': mime_type,
+            'body': body,
+            'from': sender,
+            'to': receivers or []
+        }
     )
 
 
