@@ -13,18 +13,18 @@ from riberry import model, config
 from celery.utils.log import logger
 
 
-def email_notification(host, body, subject, sender, recipients: List):
+def email_notification(host, body, mime_type, subject, sender, recipients: List):
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = sender
         msg['To'] = ', '.join(recipients)
-        msg.attach(MIMEText(body, 'plain'))
+        msg.attach(MIMEText(body, mime_type))
         s = smtplib.SMTP(host)
         s.sendmail(sender, recipients, msg.as_string())
         s.quit()
     except:
-        logger.warn(f'An error occurred sending email notification: {traceback.format_exc()}')
+        logger.warn(f'An error occurred while sending email notification: {traceback.format_exc()}')
 
 
 def handle_artifacts(events: List[model.misc.Event]):
@@ -214,7 +214,21 @@ def handle_notifications(events: List[model.misc.Event]):
             to_delete.append(event)
             continue
 
-        if notification_type == 'workflow_complete':
+        if notification_type == 'custom-email' and config.config.email.enabled:
+            try:
+                email_notification(
+                    host=config.config.email.smtp_server,
+                    body=notification_data['body'],
+                    mime_type=notification_data.get('mime_type') or 'plain',
+                    subject=notification_data['subject'],
+                    sender=notification_data.get('from') or config.config.email.sender,
+                    recipients=[user.details.email] + notification_data.get('to', []),
+                )
+            except:
+                logger.warn(f'An error occurred processing notification type {notification_type}: '
+                            f'{traceback.format_exc()}')
+
+        elif notification_type == 'workflow_complete':
             status = str(notification_data['status']).lower()
             message = f'Completed execution #{execution.id} for job ' \
                       f'{execution.job.name} with status {str(status).lower()}'
@@ -236,6 +250,7 @@ def handle_notifications(events: List[model.misc.Event]):
                 email_notification(
                     host=config.config.email.smtp_server,
                     body=message,
+                    mime_type='plain',
                     subject=f'Riberry / {status.title()} / {execution.job.name} / execution #{execution.id}',
                     sender=config.config.email.sender,
                     recipients=[user.details.email],
@@ -258,10 +273,13 @@ def handle_notifications(events: List[model.misc.Event]):
                 email_notification(
                     host=config.config.email.smtp_server,
                     body=message,
+                    mime_type='plain',
                     subject=f'Riberry / Started / {execution.job.name} / execution #{execution.id}',
                     sender=config.config.email.sender,
                     recipients=[user.details.email],
                 )
+        else:
+            logger.warn(f'Received unknown notification type {notification_type}')
 
         to_delete.append(event)
 
