@@ -38,18 +38,18 @@ def handle_artifacts(events: List[model.misc.Event]):
             stream_name = event_data['stream']
 
             artifact = model.job.JobExecutionArtifact(
-                name=event_data['name'],
+                name=event_data['name'] or 'Untitled',
                 type=model.job.ArtifactType[event_data['type']],
-                category=event_data['category'],
-                filename=event_data['filename'],
+                category=event_data['category'] or 'Default',
+                filename=event_data['filename'] or 'Untitled',
                 size=len(event.binary),
                 created=pendulum.from_timestamp(event.time),
                 binary=model.job.JobExecutionArtifactBinary(binary=event.binary),
                 data=[
                     model.job.JobExecutionArtifactData(
-                        title=title,
-                        description=description
-                    ) for title, description in event_data['data'].items()
+                        title=str(title),
+                        description=str(description)
+                    ) for title, description in event_data['data'].items() if title and description
                 ]
             )
 
