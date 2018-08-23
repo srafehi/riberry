@@ -86,11 +86,13 @@ def update_value_definition(definition: model.interface.InputValueDefinition, at
         setattr(definition, attr, attributes[attr])
 
     if 'allowed_binaries' in attributes:
-        if has_jobs and tuple(attributes['allowed_binaries']) != tuple(definition.allowed_binaries):
-            raise Exception(f'Cannot change enumerations for interface input which already has jobs')
-        else:
-            for enum in definition.allowed_value_enumerations:
-                model.conn.delete(enum)
-            definition.allowed_binaries = list(attributes['allowed_binaries'])
+        allowed_binaries_match = set(attributes['allowed_binaries']) == set(definition.allowed_binaries)
+        if not allowed_binaries_match:
+            if has_jobs:
+                raise Exception(f'Cannot change enumerations for interface input which already has jobs')
+            else:
+                for enum in definition.allowed_value_enumerations:
+                    model.conn.delete(enum)
+                definition.allowed_binaries = list(attributes['allowed_binaries'])
 
     return definition
