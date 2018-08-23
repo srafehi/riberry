@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2018-08-23
+### Fixed
+- Fixed issue which falsely marked a form's input enumerations as changed
 
 ## [0.2.0] - 2018-08-22
 ### Added
@@ -11,7 +14,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Added `wf.send_email`, can now send custom emails from workflows
 
 ### Fixed
-- Events stop processing when defining empty-string streams and artifacts when using Oracle DB (#3)
+- Fixed issue which caused events to stop processing when defining empty-string streams
+  and artifacts with Oracle DB (#3)
 
 ## [0.1.0] - 2018-08-13
 ### Added
