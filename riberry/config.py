@@ -150,7 +150,7 @@ class EmailNotificationConfig:
 
     @property
     def enabled(self):
-        return self._enabled and self.smtp_server and self.sender
+        return bool(self._enabled and self.smtp_server and self.sender)
 
 
 class BackgroundTaskConfig:

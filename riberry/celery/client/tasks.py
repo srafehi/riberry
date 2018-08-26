@@ -95,7 +95,7 @@ def create_event(name, root_id, task_id, data=None, binary=None):
         root_id=root_id,
         task_id=task_id,
         data=data,
-        binary=base64.b64encode(binary).decode() if binary else None
+        binary=base64.b64encode(binary).decode() if binary is not None else None
     )
 
 
@@ -108,7 +108,7 @@ def event(name, time, task_id, root_id, data=None, binary=None):
             task_id=task_id,
             root_id=root_id,
             data=json.dumps(data),
-            binary=base64.b64decode(binary) if binary else None
+            binary=base64.b64decode(binary) if binary is not None else None
         )
 
         model.conn.add(evt)

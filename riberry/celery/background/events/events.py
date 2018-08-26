@@ -42,7 +42,7 @@ def handle_artifacts(events: List[model.misc.Event]):
                 type=model.job.ArtifactType[event_data['type']],
                 category=event_data['category'] or 'Default',
                 filename=event_data['filename'] or 'Untitled',
-                size=len(event.binary),
+                size=len(event.binary) if event.binary else 0,
                 created=pendulum.from_timestamp(event.time),
                 binary=model.job.JobExecutionArtifactBinary(binary=event.binary),
                 data=[
