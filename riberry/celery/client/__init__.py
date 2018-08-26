@@ -287,8 +287,9 @@ class Workflow:
             def start(self, worker):
                 os.environ['RIBERRY_INSTANCE'] = self.rib_instance
 
-        app.user_options['worker'].add(rib_instance_cli)
-        app.steps['worker'].add(RiberryInstanceStep)
+        if not os.environ.get('RIBERRY_TESTSUITE'):
+            app.user_options['worker'].add(rib_instance_cli)
+            app.steps['worker'].add(RiberryInstanceStep)
 
     @staticmethod
     def _make_entry_point(app, form_entries: Dict[Tuple[str, str], WorkflowEntry]):
