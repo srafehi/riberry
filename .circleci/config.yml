@@ -18,6 +18,6 @@ jobs:
       - run: mkdir test-reports
       - run: . venv/bin/activate && pytest --cov-report xml:test-reports/coverage.xml --cov=riberry ./tests
       - store_test_results:
-        path: test-reports
+          path: test-reports
       - store_artifacts:
-        path: test-reports
+          path: test-reports
