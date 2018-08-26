@@ -15,8 +15,8 @@ jobs:
           paths:
             - ./venv
           key: py-dependencies-{{ checksum "requirements.txt" }}
-      - run: mkdir test-reports
-      - run: . venv/bin/activate && pytest --cov-report xml:test-reports/coverage.xml --cov=riberry ./tests
+      - run: mkdir -p test-reports/pytest test-reports/pycoverage
+      - run: . venv/bin/activate && pytest --junitxml=test-reports/pytest/results.xml --cov-report xml:test-reports/pycoverage/results.xml --cov=riberry ./tests
       - store_test_results:
           path: test-reports
       - store_artifacts:
