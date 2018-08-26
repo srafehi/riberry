@@ -31,40 +31,13 @@ def poll():
         if not execution:
             return
 
-        application_name = app_instance.application.internal_name
-        workflow_app = client.Workflow.__registered__[application_name]
-
-        job = execution.job
-        interface = job.interface
-
         try:
-            task = workflow_app.start(
-                execution_id=execution.id,
-                input_name=interface.internal_name,
-                input_version=interface.version,
-                input_values={v.definition.internal_name: v.value for v in job.values},
-                input_files={v.definition.internal_name: base64.b64encode(v.binary).decode() for v in job.files}
-            )
-            execution.status = 'READY'
+            task = client.queue_job_execution(execution=execution)
         except:
-            execution.status = 'FAILURE'
-            message = traceback.format_exc().encode()
-            execution.artifacts.append(
-                model.job.JobExecutionArtifact(
-                    job_execution=execution,
-                    name='Error on Startup',
-                    type='error',
-                    category='Fatal',
-                    filename='startup-error.log',
-                    size=len(message),
-                    binary=model.job.JobExecutionArtifactBinary(
-                        binary=message
-                    )
-                )
-            )
+            model.conn.rollback()
         else:
             print(task)
-        model.conn.commit()
+            model.conn.commit()
 
 
 @shared_task(ignore_result=True)

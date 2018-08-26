@@ -1,3 +1,4 @@
+import base64
 import functools
 import json
 import os
@@ -37,6 +38,45 @@ def current_instance_name(raise_on_none=False) -> str:
 
 def is_current_instance(instance_name: str) -> bool:
     return bool(instance_name) and current_instance_name(raise_on_none=False) == instance_name
+
+
+def queue_job_execution(execution: model.job.JobExecution):
+
+    job = execution.job
+    interface = job.interface
+    app_instance = job.instance
+
+    application_name = app_instance.application.internal_name
+    workflow_app = Workflow.by_internal_name(internal_name=application_name)
+
+    try:
+        task = workflow_app.start(
+            execution_id=execution.id,
+            input_name=interface.internal_name,
+            input_version=interface.version,
+            input_values={v.definition.internal_name: v.value for v in job.values},
+            input_files={v.definition.internal_name: base64.b64encode(v.binary).decode() for v in job.files}
+        )
+        execution.status = 'READY'
+    except:
+        execution.status = 'FAILURE'
+        message = traceback.format_exc().encode()
+        execution.artifacts.append(
+            model.job.JobExecutionArtifact(
+                job_execution=execution,
+                name='Error on Startup',
+                type='error',
+                category='Fatal',
+                filename='startup-error.log',
+                size=len(message),
+                binary=model.job.JobExecutionArtifactBinary(
+                    binary=message
+                )
+            )
+        )
+        raise
+    else:
+        return task
 
 
 def workflow_complete(task_id, root_id, status, primary_stream):
@@ -198,6 +238,10 @@ class Workflow:
             handlers=dynamic_parameters,
             beat_queue=self.beat_queue
         )
+
+    @classmethod
+    def by_internal_name(cls, internal_name):
+        return Workflow.__registered__[internal_name]
 
     @staticmethod
     def _configure_beat_queues(app, beat_queue):
