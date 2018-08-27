@@ -93,15 +93,16 @@ def handle_steps(events: List[model.misc.Event]):
 
             if event.root_id not in job_executions:
                 try:
-                    job_executions[event.root_id] = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+                    job_executions[event.root_id] = model.job.JobExecution.query().filter_by(
+                        task_id=event.root_id).one()
                 except NoResultFound:
                     to_delete.append(event)
                     continue
             job_execution = job_executions[event.root_id]
 
             if (stream_name, event.root_id) not in streams:
-                streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(name=stream_name,
-                                                                                                       job_execution=job_execution).one()
+                streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(
+                    name=stream_name, job_execution=job_execution).one()
             stream = streams[(stream_name, event.root_id)]
 
             try:
@@ -148,9 +149,16 @@ def handle_streams(events: List[model.misc.Event]):
             event_data = json.loads(event.data)
             event_time = pendulum.from_timestamp(event.time, tz='utc')
             stream_name = event_data['stream']
+
+            if not stream_name:
+                logger.warn('Empty stream name provided, skipping')
+                to_delete.append(event)
+                continue
+
             if event.root_id not in job_executions:
                 try:
-                    job_executions[event.root_id] = model.job.JobExecution.query().filter_by(task_id=event.root_id).one()
+                    job_executions[event.root_id] = model.job.JobExecution.query().filter_by(
+                        task_id=event.root_id).one()
                 except NoResultFound:
                     to_delete.append(event)
                     continue
@@ -167,13 +175,13 @@ def handle_streams(events: List[model.misc.Event]):
                                 f'an existing stream (id={existing_stream.id}).\n'
                                 f'Details:\n'
                                 f'  root_id: {event.root_id!r}\n'
-                                f'  name: {event_data["stream"]!r}\n'
+                                f'  name: {stream_name!r}\n'
                                 f'  data: {event_data}\n')
                     to_delete.append(event)
                     continue
 
                 stream = model.job.JobExecutionStream(
-                    name=event_data['stream'],
+                    name=str(event_data['stream']),
                     task_id=event.task_id,
                     created=pendulum.from_timestamp(event.time, tz='utc'),
                     updated=pendulum.from_timestamp(event.time, tz='utc'),

@@ -31,17 +31,23 @@ class TaskWrap:
         return self.func.delay(*args, **self._mixin_kw(kwargs=kwargs))
 
 
+def _validate_stream_name(stream: str):
+    if not stream:
+        raise ValueError('Stream name cannot be blank')
+    return str(stream)
+
+
 def step(task, step, stream=None):
     stream = stream if stream else current_task.stream
     return TaskWrap(task, __sb__=(stream, step))
 
 
-def stream_start(task, stream):
-    return TaskWrap(task, __ss__=stream)
+def stream_start(task, stream: str):
+    return TaskWrap(task, __ss__=_validate_stream_name(stream))
 
 
-def stream_end(task, stream):
-    return TaskWrap(task, __se__=stream)
+def stream_end(task, stream: str):
+    return TaskWrap(task, __se__=_validate_stream_name(stream))
 
 
 s = stream_start
