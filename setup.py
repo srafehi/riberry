@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='riberry',
-    version='0.2.2',
+    version='0.2.3',
     author='Shady Rafehi',
     url='https://github.com/srafehi/riberry',
     author_email='shadyrafehi@gmail.com',
