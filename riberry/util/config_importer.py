@@ -311,15 +311,28 @@ def import_groups(applications):
             instance_name, interface_name, interface_version = (
                 form_info['instance'], form_info['interface']['internalName'], form_info['interface']['version']
             )
-            instance = model.application.ApplicationInstance.query().filter_by(internal_name=instance_name).one()
+
+            instance = model.application.ApplicationInstance.query().filter_by(internal_name=instance_name).first()
+            if not instance:
+                print(f'import_groups:: Instance {instance_name} not found, skipping {application}')
+                continue
+
             interface = model.interface.ApplicationInterface.query().filter_by(
                 internal_name=interface_name,
                 version=interface_version
-            ).one()
+            ).first()
+            if not instance:
+                print(f'import_groups:: '
+                      f'Interface {interface_name} ({interface_version}) not found, skipping {application}')
+                continue
 
             form: model.interface.Form = model.interface.Form.query().filter_by(
                 instance_id=instance.id, interface_id=interface.id
-            ).one()
+            ).first()
+            if not form:
+                print(f'import_groups:: '
+                      f'Form for instance {instance.id} and interface {interface.id} not found, skipping {application}')
+                continue
 
             associations = {assoc.group.name: assoc for assoc in form.group_associations}
             stale_assocs = set(associations) - set(groups)
