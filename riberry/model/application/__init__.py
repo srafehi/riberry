@@ -218,3 +218,36 @@ class ApplicationInstanceSchedule(base.Base):
             .replace(year=now.year, month=now.month, day=now.day)
 
         return end_dt >= now >= start_dt
+
+
+class CapacityConfiguration(base.Base):
+
+    __tablename__ = 'capacity_config'
+
+    # columns
+    id = base.id_builder.build()
+    weight_parameter = Column(String(32), nullable=False, unique=True, comment='Parameter name which defines the requested capacity weight.')
+    capacity_parameter = Column(String(32), nullable=False, comment='Parameter name which defines the total capacity allocation.')
+    producer_parameter = Column(String(32), nullable=False, comment='Parameter name which defines the capacity producers.')
+
+    # associations
+    producers: List['CapacityProducer'] = relationship(
+        'CapacityProducer',
+        cascade='save-update, merge, delete, delete-orphan',
+        back_populates='configuration'
+    )
+
+
+class CapacityProducer(base.Base):
+
+    __tablename__ = 'capacity_producer'
+
+    # columns
+    id = base.id_builder.build()
+    configuration_id = Column(base.id_builder.type, ForeignKey('capacity_config.id'), nullable=False)
+    name = Column(String(128), nullable=False, comment='The human-readable name of the producer.')
+    internal_name = Column(String(128), nullable=False, comment='The internal name of the producer.')
+    capacity = Column(Integer, nullable=False, comment='The total capacity of the consumer.')
+
+    # associations
+    configuration: 'CapacityConfiguration' = relationship('CapacityConfiguration', back_populates='schedules')
