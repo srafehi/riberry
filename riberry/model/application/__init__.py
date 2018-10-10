@@ -250,4 +250,4 @@ class CapacityProducer(base.Base):
     capacity = Column(Integer, nullable=False, comment='The total capacity of the consumer.')
 
     # associations
-    configuration: 'CapacityConfiguration' = relationship('CapacityConfiguration', back_populates='schedules')
+    configuration: 'CapacityConfiguration' = relationship('CapacityConfiguration', back_populates='producers')
