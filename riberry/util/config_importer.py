@@ -402,6 +402,8 @@ def json_diff(diff):
 def import_config(config, formatter=None, restrict_apps=None):
     applications = config.get('applications') or {}
     import_applications(applications=applications, restrict=restrict_apps)
+    if restrict_apps is None:
+        import_capacities(config.get('capacity-configuration') or {})
 
     diff = session_diff()
     model.conn.flush()
@@ -416,6 +418,48 @@ def import_config(config, formatter=None, restrict_apps=None):
 
     model.conn.flush()
     return formatter(diff) if formatter else diff
+
+
+def import_capacities(capacities):
+    existing = {c.weight_parameter: c for c in model.application.CapacityConfiguration.query().all()}
+
+    for stale in set(existing) - set(capacities):
+        model.conn.delete(existing[stale])
+
+    for weight_name, properties in capacities.items():
+        import_capacity(weight_name, properties)
+
+
+def import_capacity(weight_parameter, properties):
+    capacity_config: model.application.CapacityConfiguration = model.application.CapacityConfiguration.query().filter_by(weight_parameter=weight_parameter).first()
+    if not capacity_config:
+        capacity_config = model.application.CapacityConfiguration(weight_parameter=weight_parameter)
+
+    capacity_config.capacity_parameter = properties['parameters']['capacity']
+    capacity_config.producer_parameter = properties['parameters']['producer']
+
+    new_producers = {p['internalName']: p for p in properties['producers']}
+
+    # Update existing, delete old
+    for producer in capacity_config.producers:
+        if producer.internal_name not in new_producers:
+            model.conn.delete(producer)
+        else:
+            producer_config = new_producers.pop(producer.internal_name)
+            producer.name = producer_config.get('name') or producer.internal_name
+            producer.capacity = producer_config['capacity']
+
+    # Add new
+    for internal_name, producer_config in new_producers.items():
+        capacity_config.producers.append(
+            model.application.CapacityProducer(
+                internal_name=internal_name,
+                name=producer_config.get('name') or internal_name,
+                capacity=producer_config['capacity'],
+            )
+        )
+
+    model.conn.add(capacity_config)
 
 
 def import_from_file(config_path, dry_run=True, formatter=json_diff, restrict_apps=None):
