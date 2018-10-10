@@ -181,7 +181,7 @@ class JobExecutionProgress(base.Base):
     id = base.id_builder.build()
     job_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), nullable=False)
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
-    message: str = Column(String(128), default=None, comment='Message describing the progress of the job execution.')
+    message: str = Column(String(256), default=None, comment='Message describing the progress of the job execution.')
     progress_percentage = Column(Integer, default=None, nullable=True, comment='The progress of the job execution.')
 
     # associations
@@ -191,10 +191,7 @@ class JobExecutionProgress(base.Base):
     @validates('progress_percentage')
     def validate_priority(self, _, progress_percentage):
         if progress_percentage is not None:
-            if progress_percentage < 0:
-                progress_percentage = 0
-            elif progress_percentage > 100:
-                progress_percentage = 100
+            progress_percentage = min(max(progress_percentage, 0), 100)
         return progress_percentage
 
 
