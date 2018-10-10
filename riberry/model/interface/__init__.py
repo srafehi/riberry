@@ -70,7 +70,7 @@ class Form(base.Base):
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
     interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'), nullable=False)
-    enabled: bool = Column(Boolean, nullable=False, default=True, comment='Whether or not this form is enabled (TODO).')
+    enabled: bool = Column(Boolean, nullable=False, default=True, comment='Whether or not this form is enabled.')
 
     # associations
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')

@@ -5,7 +5,7 @@ from typing import List
 
 import pendulum
 from croniter import croniter
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index, Enum, desc
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index, Enum, desc, Float, asc
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, deferred, validates
 
@@ -155,6 +155,12 @@ class JobExecution(base.Base):
         cascade='save-update, merge, delete, delete-orphan',
         order_by=lambda: desc(JobExecutionArtifact.created),
         back_populates='job_execution')
+    progress: List['JobExecutionProgress'] = relationship(
+        'JobExecutionProgress',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: asc(JobExecutionStream.id),
+        back_populates='job_execution'
+    )
 
     parent_execution: 'JobExecution' = relationship('JobExecution', back_populates='child_executions', remote_side=[id])
     child_executions: List['JobExecution'] = relationship('JobExecution', back_populates='parent_execution')
@@ -165,6 +171,28 @@ class JobExecution(base.Base):
         assert isinstance(priority, int) and 255 >= priority >= 1, (
             f'ApplicationInstanceSchedule.priority must be an integer between 1 and 255 (received {priority})')
         return priority
+
+
+class JobExecutionProgress(base.Base):
+    __tablename__ = 'job_progress'
+    __reprattrs__ = ['job_id', 'message']
+
+    # columns
+    id = base.id_builder.build()
+    job_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), nullable=False)
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
+    message: str = Column(String(256), default=None, comment='Message describing the progress of the job execution.')
+    progress_percentage = Column(Integer, default=None, nullable=True, comment='The progress of the job execution.')
+
+    # associations
+    job_execution: 'JobExecution' = relationship('JobExecution', back_populates='progress')
+
+    # validations
+    @validates('progress_percentage')
+    def validate_priority(self, _, progress_percentage):
+        if progress_percentage is not None:
+            progress_percentage = min(max(progress_percentage, 0), 100)
+        return progress_percentage
 
 
 class JobExecutionStream(base.Base):

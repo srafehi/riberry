@@ -1,0 +1,30 @@
+name: Sample Application
+type: Example
+
+instances:
+  sample_app.instance.primary:
+    name: Primary application instance
+    schedules:
+      - parameter: active
+        value: 'Y'
+        priority: 1
+      - parameter: active
+        value: 'N'
+        startTime: 00:00:00
+        endTime: 04:00:00
+        priority: 2
+      - parameter: requested-capacity
+        value: 10
+
+interfaces:
+  sample_app.interface.primary:
+    version: 1
+    name: Sample form
+
+forms:
+  - instance: sample_app.instance.primary
+    interface:
+      internalName: sample_app.interface.primary
+      version: 1
+    groups:
+      - SampleGroup

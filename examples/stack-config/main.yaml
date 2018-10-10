@@ -1,0 +1,18 @@
+applications:
+  sample_app: !include sample_app.yaml
+
+capacity-configuration:
+  requested-capacity:
+    parameters:
+      capacity: capacity
+      producer: producer
+    producers:
+      - name: Producer A
+        internalName: PRODUCER_A
+        capacity: 10
+      - name: Producer B
+        internalName: PRODUCER_B
+        capacity: 10
+      - name: Producer C
+        internalName: PRODUCER_C
+        capacity: 10
