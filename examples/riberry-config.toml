@@ -15,6 +15,11 @@ interval = 2
 interval = 5
 
 
+[background.capacity]
+
+interval = 5
+
+
 [database.connection]
 
 envvar = "RIBERRY_DATABASE_URL"

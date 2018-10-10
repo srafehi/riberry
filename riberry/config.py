@@ -10,6 +10,7 @@ from riberry.util.common import variable_substitution
 CONF_DEFAULT_BG_SCHED_INTERVAL = 10
 CONF_DEFAULT_BG_EVENT_INTERVAL = 2
 CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT = 1000
+CONF_DEFAULT_BG_CAPACITY_INTERVAL = 5
 
 CONF_DEFAULT_DB_ECHO = False
 CONF_DEFAULT_DB_CONN_PATH = (pathlib.Path(os.path.expanduser('~')) / '.riberry') / 'model.db'
@@ -159,6 +160,7 @@ class BackgroundTaskConfig:
         self.raw_config = config_dict or {}
         self.events = BackgroundTaskEventsConfig(self.raw_config.get('events') or {})
         self.schedules = BackgroundTaskScheduleConfig(self.raw_config.get('schedules') or {})
+        self.capacity = BackgroundTaskCapacityConfig(self.raw_config.get('capacity') or {})
 
 
 class BackgroundTaskEventsConfig:
@@ -174,6 +176,13 @@ class BackgroundTaskScheduleConfig:
     def __init__(self, config_dict):
         self.raw_config = config_dict or {}
         self.interval = config_dict.get('interval', CONF_DEFAULT_BG_SCHED_INTERVAL)
+
+
+class BackgroundTaskCapacityConfig:
+
+    def __init__(self, config_dict):
+        self.raw_config = config_dict or {}
+        self.interval = config_dict.get('interval', CONF_DEFAULT_BG_CAPACITY_INTERVAL)
 
 
 class RiberryConfig:

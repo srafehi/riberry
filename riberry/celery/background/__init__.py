@@ -19,6 +19,11 @@ app.conf.beat_schedule.update({
         'schedule': config.config.background.schedules.interval,
         'options': {'queue': 'riberry.background.schedules'}
     },
+    'process:capacity': {
+        'task': 'riberry.celery.background.tasks.update_capacity_parameters',
+        'schedule': config.config.background.capacity.interval,
+        'options': {'queue': 'riberry.background.schedules'}
+    },
 })
 
 app.conf.imports = list(app.conf.imports) + ['riberry.celery.background.tasks']
