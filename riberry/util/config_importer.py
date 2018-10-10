@@ -402,7 +402,7 @@ def json_diff(diff):
 def import_config(config, formatter=None, restrict_apps=None):
     applications = config.get('applications') or {}
     import_applications(applications=applications, restrict=restrict_apps)
-    if restrict_apps is None:
+    if not restrict_apps:
         import_capacities(config.get('capacity-configuration') or {})
 
     diff = session_diff()
