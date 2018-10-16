@@ -69,8 +69,8 @@ class DynamicPriorityParameter(client.dynamic.DynamicParameter):
 
         self.last_value = value
         values = [
-            value.split(self.sep) if self.sep in value else (value, 0)
-            for value in value.split(' ')
+            part.split(self.sep) if self.sep in part else (part, 0)
+            for part in (value or '').split(' ')
         ]
 
         member_scores = {k: int(v) for k, v in values}

@@ -275,7 +275,7 @@ def import_instance(app, internal_name, attributes):
             sched.get('endTime') or model.application.ApplicationInstanceSchedule.end_time.default.arg),
         sched.get('timeZone') or model.application.ApplicationInstanceSchedule.timezone.default.arg,
         sched['parameter'],
-        str(sched['value']),
+        str(sched['value']) if sched['value'] else None,
         sched.get('priority') or model.application.ApplicationInstanceSchedule.priority.default.arg,
     ) for sched in attributes.get('schedules', []))
 

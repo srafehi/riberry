@@ -153,7 +153,7 @@ class ApplicationInstanceSchedule(base.Base):
     end_time = Column(String(8), nullable=False, default='23:59:59', comment='The time when this schedule de-activates.')
     timezone = Column(String(128), nullable=False, default='UTC', comment='The timezone of for the given start and end times.')
     parameter = Column(String(32), nullable=False, comment='The parameter which this schedule applies to.')
-    value = Column(String(512), nullable=False, comment='The value of the given parameter.')
+    value = Column(String(512), comment='The value of the given parameter.')
     priority = Column(Integer, default=64, nullable=False, comment='Priority of the schedule, where higher values mean higher priority.')
 
     # associations
