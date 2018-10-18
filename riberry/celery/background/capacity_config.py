@@ -140,19 +140,22 @@ def update_instance_capacities(
     logger.info(f'[{weight_parameter}] Total capacity: {total_capacity}')
 
     for consumer, capacities in sorted(capacity_distribution.items(), key=lambda x: x[0].name):
-        capacity = round(sum(capacities))
-        allocation = Counter(producer_name_pool[:capacity])
-        producer_name_pool = producer_name_pool[capacity:]
+        raw_capacity = round(sum(capacities))
+        allocated_names = producer_name_pool[:raw_capacity]
+        producer_name_pool = producer_name_pool[raw_capacity:]
+
+        capacity = len(allocated_names)
+        producer_allocations = Counter(allocated_names)
 
         instance = model.application.ApplicationInstance.query().filter_by(internal_name=consumer.name).one()
         update_instance_schedule(
             instance=instance,
             capacity=capacity,
-            producer_allocations=allocation,
+            producer_allocations=producer_allocations,
             allocation_config_name=producer_parameter,
             capacity_config_name=capacity_parameter,
         )
 
-        allocations_formatted = ', '.join([f'{k}: {v:2}' for k, v in sorted(allocation.items())]) or '-'
+        allocations_formatted = ', '.join([f'{k}: {v:2}' for k, v in sorted(producer_allocations.items())]) or '-'
         logger.info(
             f'[{weight_parameter}] {consumer.name} -> capacity: {capacity:2}, allocations: [ {allocations_formatted} ]')
