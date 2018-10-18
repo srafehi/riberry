@@ -3,6 +3,7 @@ applications:
 
 capacity-configuration:
   requested-capacity:
+    strategy: binpack
     parameters:
       capacity: capacity
       producer: producer

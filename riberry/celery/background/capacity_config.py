@@ -68,8 +68,16 @@ class CapacityProducer:
         return sum(p.capacity for p in producers)
 
     @staticmethod
-    def producers_name_pool(producers):
-        name_lists = [[producer.name] * producer.capacity for producer in producers]
+    def producers_name_pool(producers, distribution_strategy: model.application.CapacityDistributionStrategy):
+        name_lists = sorted(
+            [[producer.name] * producer.capacity for producer in producers],
+            key=len,
+            reverse=True
+        )
+
+        if distribution_strategy == model.application.CapacityDistributionStrategy.spread:
+            name_lists = [filter(None, name_list) for name_list in itertools.zip_longest(*name_lists)]
+
         return list(itertools.chain.from_iterable(name_lists))
 
 
@@ -118,13 +126,16 @@ def update_instance_schedule(
     model.conn.add(schedule_allocation)
 
 
-def update_instance_capacities(producers, weight_parameter, capacity_parameter, producer_parameter):
+def update_instance_capacities(
+        producers, weight_parameter, capacity_parameter, producer_parameter, distribution_strategy):
+
     schedules = weighted_schedules(parameter_name=weight_parameter)
     consumers = CapacityConsumer.from_schedules(schedules=schedules)
 
     total_capacity = CapacityProducer.total_capacity(producers=producers)
     capacity_distribution = CapacityConsumer.distribute(consumers=consumers, total_capacity=total_capacity)
-    producer_name_pool = CapacityProducer.producers_name_pool(producers=producers)
+    producer_name_pool = CapacityProducer.producers_name_pool(
+        producers=producers, distribution_strategy=distribution_strategy)
 
     logger.info(f'[{weight_parameter}] Total capacity: {total_capacity}')
 

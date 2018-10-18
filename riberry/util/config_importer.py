@@ -431,12 +431,20 @@ def import_capacities(capacities):
 
 
 def import_capacity(weight_parameter, properties):
-    capacity_config: model.application.CapacityConfiguration = model.application.CapacityConfiguration.query().filter_by(weight_parameter=weight_parameter).first()
+    capacity_config: model.application.CapacityConfiguration = \
+        model.application.CapacityConfiguration.query().filter_by(weight_parameter=weight_parameter).first()
+
     if not capacity_config:
         capacity_config = model.application.CapacityConfiguration(weight_parameter=weight_parameter)
 
     capacity_config.capacity_parameter = properties['parameters']['capacity']
     capacity_config.producer_parameter = properties['parameters']['producer']
+
+    capacity_config.distribution_strategy = (
+        model.application.CapacityDistributionStrategy(properties['strategy'])
+        if 'strategy' in properties
+        else model.application.CapacityConfiguration.distribution_strategy.default.arg
+    )
 
     new_producers = {p['internalName']: p for p in properties['producers']}
 

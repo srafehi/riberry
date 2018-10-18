@@ -34,6 +34,7 @@ def update_capacity_parameters():
                 weight_parameter=capacity_configuration.weight_parameter,
                 capacity_parameter=capacity_configuration.capacity_parameter,
                 producer_parameter=capacity_configuration.producer_parameter,
+                distribution_strategy=capacity_configuration.distribution_strategy,
             )
 
         model.conn.commit()

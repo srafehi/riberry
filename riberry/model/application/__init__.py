@@ -1,8 +1,9 @@
+import enum
 from datetime import datetime
 from typing import List
 
 import pendulum
-from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime, Integer, desc
+from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime, Integer, desc, Enum
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, validates
 
@@ -220,6 +221,14 @@ class ApplicationInstanceSchedule(base.Base):
         return end_dt >= now >= start_dt
 
 
+class CapacityDistributionStrategy(enum.Enum):
+    spread = 'spread'
+    binpack = 'binpack'
+
+    def __repr__(self):
+        return repr(self.value)
+
+
 class CapacityConfiguration(base.Base):
 
     __tablename__ = 'capacity_config'
@@ -229,6 +238,12 @@ class CapacityConfiguration(base.Base):
     weight_parameter = Column(String(32), nullable=False, unique=True, comment='Parameter name which defines the requested capacity weight.')
     capacity_parameter = Column(String(32), nullable=False, comment='Parameter name which defines the total capacity allocation.')
     producer_parameter = Column(String(32), nullable=False, comment='Parameter name which defines the capacity producers.')
+    distribution_strategy = Column(
+        Enum(CapacityDistributionStrategy),
+        nullable=False,
+        default=CapacityDistributionStrategy.binpack,
+        comment='Binpack (fill vertically) or spread (fill horizontally)'
+    )
 
     # associations
     producers: List['CapacityProducer'] = relationship(
