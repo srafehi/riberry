@@ -1,6 +1,6 @@
 from collections import Counter, defaultdict
 from enum import Enum
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Set
 
 import itertools
 from celery.utils.log import logger
@@ -39,16 +39,24 @@ class CapacityConsumer:
         }
 
     @classmethod
-    def from_schedules(cls, schedules):
-        instances = {sched.instance for sched in schedules}
+    def from_weight_parameter(cls, parameter_name: str):
+        schedules: List[model.application.ApplicationInstanceSchedule] = \
+            model.application.ApplicationInstanceSchedule.query().filter_by(parameter=parameter_name).all()
+        instances: Set[model.application.ApplicationInstance] = {sched.instance for sched in schedules}
+        schedule_values = {
+            instance.internal_name: int(instance.active_schedule_value(name=parameter_name, default=0))
+            for instance in instances
+        }
         execution_count = execution_count_for_instances(instances=instances)
-        schedule_values = {sched.instance.internal_name: int(sched.value) for sched in schedules}
+
         return [
             CapacityConsumer(
                 name=instance.internal_name,
-                status=(ConsumerStatus.active
-                        if instance.status == 'online' and execution_count[instance.internal_name]
-                        else ConsumerStatus.inactive),
+                status=(
+                    ConsumerStatus.active
+                    if instance.status == 'online' and execution_count[instance.internal_name]
+                    else ConsumerStatus.inactive
+                ),
                 requested_capacity=schedule_values[instance.internal_name]
             ) for instance in instances
         ]
@@ -131,8 +139,7 @@ def update_instance_schedule(
 def update_instance_capacities(
         producers, weight_parameter, capacity_parameter, producer_parameter, distribution_strategy):
 
-    schedules = weighted_schedules(parameter_name=weight_parameter)
-    consumers = CapacityConsumer.from_schedules(schedules=schedules)
+    consumers = CapacityConsumer.from_weight_parameter(parameter_name=weight_parameter)
 
     total_capacity = CapacityProducer.total_capacity(producers=producers)
     capacity_distribution = CapacityConsumer.distribute(consumers=consumers, total_capacity=total_capacity)
