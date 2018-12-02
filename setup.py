@@ -8,7 +8,7 @@ setup(
     author_email='shadyrafehi@gmail.com',
     packages=find_packages(),
     install_requires=[
-        'redis',
+        'redis>=2.8.0,<3.0.0',
         'croniter',
         'pendulum',
         'sqlalchemy',
