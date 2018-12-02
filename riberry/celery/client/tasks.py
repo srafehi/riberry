@@ -1,14 +1,15 @@
 import base64
 import json
 import os
-import traceback
 
 import pendulum
 from celery import shared_task
+from celery.utils.log import logger
 from sqlalchemy import desc, asc
 
 from riberry import model
 from riberry.celery import client
+from . import tracker
 
 
 @shared_task(ignore_result=True)
@@ -18,7 +19,11 @@ def poll():
             internal_name=client.current_instance_name(raise_on_none=True)
         ).first()
 
-        if not app_instance or app_instance.status != 'online':
+        if not app_instance:
+            return
+
+        tracker.check_stale_execution(app_instance=app_instance)
+        if app_instance.status != 'online':
             return
 
         execution: model.job.JobExecution = model.job.JobExecution.query().filter(
@@ -36,7 +41,7 @@ def poll():
         except:
             model.conn.rollback()
         else:
-            print(task)
+            logger.info(f'poll - queueing task {task}')
             model.conn.commit()
 
 

@@ -1,6 +1,5 @@
 import base64
 import functools
-import json
 import os
 import traceback
 from typing import Dict, Tuple
@@ -11,11 +10,10 @@ from celery import current_task
 from celery import exceptions as celery_exc
 from celery.result import AsyncResult
 
-import riberry
 from riberry import model
 from riberry.celery.client import tasks
 from riberry.celery.client.dynamic import DynamicParameters
-from . import wf, signals, scale, dynamic
+from . import wf, signals, scale, dynamic, tracker
 
 IGNORE_EXCEPTIONS = (
     celery_exc.Ignore,
@@ -58,6 +56,8 @@ def queue_job_execution(execution: model.job.JobExecution):
             input_files={v.definition.internal_name: base64.b64encode(v.binary).decode() for v in job.files}
         )
         execution.status = 'READY'
+        execution.task_id = current_task.request.root_id
+        tracker.start_tracking_execution(root_id=execution.task_id)
     except:
         execution.status = 'FAILURE'
         message = traceback.format_exc().encode()
@@ -85,6 +85,8 @@ def workflow_complete(task_id, root_id, status, primary_stream):
     job.task_id = root_id
     job.status = status
     job.completed = job.updated = pendulum.DateTime.utcnow()
+    if not job.started:
+        job.started = pendulum.DateTime.utcnow()
 
     if primary_stream is None:
         stream = model.job.JobExecutionStream.query().filter_by(task_id=root_id).first()
