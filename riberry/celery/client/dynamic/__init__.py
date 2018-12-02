@@ -1,9 +1,10 @@
-import os
 from typing import List
+
 from celery import current_app
+from celery.utils.log import logger
+
 from riberry import model
 from riberry.celery import client
-from celery.utils.log import logger
 
 
 class DynamicParameter:

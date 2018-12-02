@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-from typing import Optional
 
 from celery import current_app
 from celery.utils.log import logger
