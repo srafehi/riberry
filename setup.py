@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='riberry',
-    version='0.3.2',
+    version='0.4.0',
     author='Shady Rafehi',
     url='https://github.com/srafehi/riberry',
     author_email='shadyrafehi@gmail.com',
@@ -12,7 +12,7 @@ setup(
         'croniter',
         'pendulum',
         'sqlalchemy',
-        'celery>=4.2.0',
+        'celery>=4.2.0,<5.0.0',
         'pyyaml',
         'pyjwt',
         'toml',

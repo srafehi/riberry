@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2018-12-02
+### Added
+- Priority queue now blocks by default when the value returned is
+  empty. This can be disabled by setting the input parameter
+  `DynamicPriorityParameter.blocking` to `False`.
+- Capacity distribution weight parameters can now be scheduled
+- Riberry will track `READY` and `ACTIVE` execution task IDs in Redis.
+  If these executions are still marked as `READY` or `ACTIVE` but their
+  task IDs don't exist in Redis anymore, the execution is cancelled due
+  to the assumption that Redis itself was flushed and all progress for
+  that execution was lost.
+
+### Fixed
+- Application instance schedules now accept `0` as a valid value
+
 ## [0.3.2] - 2018-10-19
 ### Added
 - Added capacity distribution strategies: `binpack` (default) and
