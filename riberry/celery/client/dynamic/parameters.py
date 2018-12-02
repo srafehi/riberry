@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from typing import Optional
 
 from celery import current_app
 from celery.utils.log import logger
@@ -44,11 +45,18 @@ class DynamicConcurrency(DynamicParameter):
 
 class DynamicPriorityParameter(client.dynamic.DynamicParameter):
 
-    def __init__(self, parameter='hosts', key=None, sep='|', queue_cls=PriorityQueue, r=None):
+    def __init__(
+            self, parameter='hosts', key=None, sep='|', queue_cls=PriorityQueue,
+            blocking: bool=True, block_retry: int=0.5, r=None):
         super(DynamicPriorityParameter, self).__init__(parameter=parameter)
         self.r = r or celery_redis_instance()
         self.sep = sep
-        self.queue = queue_cls(r=self.r, key=key or client.current_instance_name(raise_on_none=True))
+        self.queue = queue_cls(
+            r=self.r,
+            key=key or client.current_instance_name(raise_on_none=True),
+            blocking=blocking,
+            block_retry=block_retry,
+        )
 
     @property
     def last_value_key(self):

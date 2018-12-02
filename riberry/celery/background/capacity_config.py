@@ -114,12 +114,14 @@ def update_instance_schedule(
         instance=instance,
         parameter=capacity_config_name,
         value=str(capacity),
+        priority=100,
     )
 
     schedule_allocation = model.application.ApplicationInstanceSchedule(
         instance=instance,
         parameter=allocation_config_name,
         value=' '.join(f'{k}|{v}' for k, v in sorted(producer_allocations.items())),
+        priority=101,
     )
 
     model.conn.add(schedule_capacity)

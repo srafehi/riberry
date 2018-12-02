@@ -3,6 +3,7 @@ from typing import List
 from celery import current_app
 from riberry import model
 from riberry.celery import client
+from celery.utils.log import logger
 
 
 class DynamicParameter:
@@ -24,12 +25,17 @@ def make_dynamic_parameters_task(handlers: List[DynamicParameter]):
             instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
                 internal_name=client.current_instance_name(raise_on_none=True)
             ).one()
-            instance_parameters = instance.parameters
+            active_schedules = instance.active_schedules
 
         handler_mapping = {h.parameter: h for h in handlers}
-        for parameter, value in instance_parameters.items():
+        for parameter, schedule in sorted(active_schedules.items(), key=lambda item: -item[1].priority if item[1] else 0):
             if parameter in handler_mapping:
-                handler_mapping[parameter].on_received(instance=instance, value=value)
+                value = schedule.value if schedule else None
+                logger.info(f'dynamic-parameters: updating dynamic parameter {parameter!r} with value {value!r}')
+                try:
+                    handler_mapping[parameter].on_received(instance=instance, value=value)
+                except:
+                    logger.exception(f'dynamic-parameters: {parameter!r} failed')
 
     dynamic_parameters_task.__name__ = 'dynamic'
     return dynamic_parameters_task

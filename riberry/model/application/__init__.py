@@ -91,26 +91,32 @@ class ApplicationInstance(base.Base):
         if diff.seconds >= 10:
             return 'offline'
 
-        if self.parameter('active', default='Y') == 'N':
+        if self.active_schedule_value('active', default='Y') == 'N':
             return 'inactive'
 
         return 'online'
 
-    def parameter(self, name, default=None, current_time=None):
+    def active_schedule_value(self, name, default=None, current_time=None):
+        schedule = self.active_schedule(name=name, current_time=current_time)
+        return schedule.value if schedule else default
+
+    def active_schedule(self, name, current_time=None) -> 'ApplicationInstanceSchedule':
         schedules = sorted(
             (s for s in self.schedules if s.parameter == name and s.active(current_time=current_time)),
             key=lambda s: (-s.priority, s.start_time)
         )
 
         for schedule in schedules:
-            return schedule.value
-
-        return default
+            return schedule
 
     @property
-    def parameters(self):
+    def active_schedule_values(self):
+        return {name: schedule.value if schedule else None for name, schedule in self.active_schedules.items()}
+
+    @property
+    def active_schedules(self):
         parameters = {s.parameter for s in self.schedules}
-        return {param: self.parameter(name=param) for param in parameters}
+        return {param: self.active_schedule(name=param) for param in parameters}
 
 
 class Heartbeat(base.Base):

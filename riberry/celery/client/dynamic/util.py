@@ -1,14 +1,19 @@
+import time
 import redis
 import functools
+from celery.utils.log import logger
 
 
 class PriorityQueue:
 
-    def __init__(self, r, key, prefix='pq', sep=':'):
+    def __init__(
+            self, r: redis.Redis, key: str, prefix: str='pq', sep: str=':', blocking: bool=True, block_retry: int=0.5):
         self.r: redis.Redis = r
         self.key = key
         self.prefix = prefix
         self.sep = sep
+        self.blocking = blocking
+        self.block_retry = block_retry
 
     def make_key(self, *args):
         sub_key = self.sep.join(map(str, args))
@@ -41,13 +46,22 @@ class PriorityQueue:
         return self.make_key(self.key, f'{version:09}', 'lease')
 
     def pop(self):
-        version = self.version
-        result = self.r.transaction(
-            functools.partial(self.pop_transaction, version=version),
-            self.generate_free_key(version=version),
-            self.generate_lease_key(version=version),
-            value_from_callable=True
-        )
+        while True:
+            version = self.version
+            result = self.r.transaction(
+                functools.partial(self.pop_transaction, version=version),
+                self.generate_free_key(version=version),
+                self.generate_lease_key(version=version),
+                value_from_callable=True
+            )
+            if not result and self.blocking:
+                logger.warn(f'PriorityQueue: ({self.free_key}) encountered blank key, '
+                            f'retrying after {self.block_retry} seconds.')
+                time.sleep(self.block_retry)
+                continue
+            else:
+                break
+
         return result, self.r.zscore(self.generate_free_key(version=version), result), version
 
     def pop_transaction(self, pipe: redis.client.Pipeline, version):
