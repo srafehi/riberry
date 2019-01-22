@@ -63,36 +63,21 @@ def value_definition_by_internal_name(interface, internal_name) -> model.interfa
 
 
 def update_file_definition(definition: model.interface.InputFileDefinition, attributes: Dict):
-    form_ids = [f.id for f in definition.interface.forms]
-    has_jobs = bool(model.job.Job.query().filter(model.job.Job.form_id.in_(form_ids)).count())
-
     for attr in {'required', 'type', 'name', 'description', 'accept'} & set(attributes):
-        if has_jobs and attr in {'required', 'type'}:
-            if attributes[attr] != getattr(definition, attr):
-                raise Exception(f'Cannot change value {attr!r} for interface input which already has jobs')
         setattr(definition, attr, attributes[attr])
 
     return definition
 
 
 def update_value_definition(definition: model.interface.InputValueDefinition, attributes: Dict):
-    form_ids = [f.id for f in definition.interface.forms]
-    has_jobs = bool(model.job.Job.query().filter(model.job.Job.form_id.in_(form_ids)).count())
-
     for attr in {'required', 'type', 'name', 'description', 'default_binary'} & set(attributes):
-        if has_jobs and attr in {'required', 'type', 'default_binary'}:
-            if attributes[attr] != getattr(definition, attr):
-                raise Exception(f'Cannot change value {attr!r} for interface input which already has jobs')
         setattr(definition, attr, attributes[attr])
 
     if 'allowed_binaries' in attributes:
-        allowed_binaries_match = set(attributes['allowed_binaries']) == set(definition.allowed_binaries)
-        if not allowed_binaries_match:
-            if has_jobs:
-                raise Exception(f'Cannot change enumerations for interface input which already has jobs')
-            else:
-                for enum in definition.allowed_value_enumerations:
-                    model.conn.delete(enum)
-                definition.allowed_binaries = list(attributes['allowed_binaries'])
+        current = set(definition.allowed_binaries)
+        present = set(attributes['allowed_binaries'])
+        removed = current - present
+        if current != present:
+            definition.allowed_binaries = [enum for enum in attributes['allowed_binaries'] if enum not in removed]
 
     return definition
