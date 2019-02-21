@@ -37,11 +37,15 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
             errors.append(err)
             continue
 
-        if definition.allowed_binaries and value and value not in definition.allowed_binaries:
-            err = exc.InvalidEnumError(target='job', field=definition.name, allowed_values=definition.allowed_values,
-                                       internal_name=definition.internal_name)
-            errors.append(err)
-            continue
+        if definition.allowed_binaries and value:
+            if (
+                    (isinstance(value, str) and value not in definition.allowed_binaries) or
+                    (isinstance(value, list) and set(value) - set(definition.allowed_binaries))
+            ):
+                err = exc.InvalidEnumError(target='job', field=definition.name, allowed_values=definition.allowed_values,
+                                           internal_name=definition.internal_name)
+                errors.append(err)
+                continue
 
         input_value_mapping[definition] = value
 
