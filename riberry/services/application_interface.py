@@ -79,5 +79,7 @@ def update_value_definition(definition: model.interface.InputValueDefinition, at
         removed = current - present
         if current != present:
             definition.allowed_binaries = [enum for enum in attributes['allowed_binaries'] if enum not in removed]
+    elif definition.allowed_binaries:
+        definition.allowed_binaries = []
 
     return definition
