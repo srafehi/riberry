@@ -1,4 +1,4 @@
-from ..celery.client import workflow_complete
+from riberry.celery import client
 from riberry import model, policy
 
 
@@ -47,4 +47,5 @@ def cancel_job_execution(execution):
         binary=model.job.JobExecutionArtifactBinary(binary=message),
     )
     model.conn.add(artifact)
-    workflow_complete(task_id=execution.task_id, root_id=execution.task_id, status='FAILURE', primary_stream=None)
+    client.workflow_complete(
+        task_id=execution.task_id, root_id=execution.task_id, status='FAILURE', primary_stream=None)
