@@ -189,13 +189,14 @@ def bypass(func, **task_kwargs):
 
 
 def patch_task(task):
-    def stream_start(stream):
+
+    def stream_start(stream: str = None):
         return wf.s(task, stream=stream)
 
-    def stream_end(stream):
+    def stream_end(stream: str = None):
         return wf.e(task, stream=stream)
 
-    def step(step, stream=None):
+    def step(step: str = None, stream: str = None):
         return wf.b(task, step=step, stream=stream)
 
     task.stream_start = stream_start

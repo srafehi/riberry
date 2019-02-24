@@ -13,6 +13,11 @@ def job_artifact_by_id(artifact_id):
 
 
 @policy.context.post_authorize(action='view')
+def job_stream_by_id(stream_id):
+    return model.job.JobExecutionStream.query().filter_by(id=stream_id).one()
+
+
+@policy.context.post_authorize(action='view')
 def delete_job_execution_by_id(execution_id):
     delete_job_execution(execution=job_execution_by_id(execution_id=execution_id))
 
