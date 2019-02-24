@@ -48,7 +48,7 @@ class DynamicParameters:
     def __init__(self, riberry_workflow, handlers, beat_queue):
         self.workflow = riberry_workflow
         self.all_apps[self.workflow.app.main] = self
-        self.workflow.app.task(name='dynamic-parameters')(make_dynamic_parameters_task(handlers=handlers))
+        self.workflow.app.task(name='dynamic-parameters', rib_task=False)(make_dynamic_parameters_task(handlers=handlers))
         self._configure_beat_queues(self.workflow.app, beat_queue)
 
     @staticmethod

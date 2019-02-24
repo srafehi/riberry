@@ -168,6 +168,10 @@ def execute_task(func, func_args, func_kwargs, task_kwargs):
 def bypass(func, **task_kwargs):
     @functools.wraps(func)
     def inner(*args, **kwargs):
+
+        if not task_kwargs.get('rib_task', True):
+            return func(*args, **kwargs)
+
         with model.conn:
             if is_workflow_complete(current_task):
                 AsyncResult(current_task.request.id).revoke()
