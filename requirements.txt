@@ -1,11 +1,12 @@
-redis
+redis>=3.0.0
 croniter
 pendulum
 sqlalchemy
-celery==4.2.0rc4
+celery>=4.3.0rc1,<5.0.0
 pyyaml
 pyjwt
 toml
+click
 
 pytest
 pytest-cov

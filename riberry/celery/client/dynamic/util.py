@@ -70,8 +70,8 @@ class PriorityQueue:
         member = member.decode()
 
         pipe.multi()
-        pipe.zincrby(free_key, member, -1)
-        pipe.zincrby(lease_key, member, 1)
+        pipe.zincrby(free_key, value=member, amount=-1)
+        pipe.zincrby(lease_key, value=member, amount=1)
         return member
 
     def put(self, member, version):
@@ -85,8 +85,8 @@ class PriorityQueue:
         free_key, lease_key = self.generate_free_key(version=version), self.generate_lease_key(version=version)
 
         pipe.multi()
-        pipe.zincrby(free_key, member, 1)
-        pipe.zincrby(lease_key, member, -1)
+        pipe.zincrby(free_key, value=member, amount=1)
+        pipe.zincrby(lease_key, value=member, amount=-1)
 
     def update(self, member_scores: dict):
         func = functools.partial(self.update_transaction, member_scores=member_scores)
@@ -95,7 +95,7 @@ class PriorityQueue:
     def update_transaction(self, pipe: redis.client.Pipeline, member_scores):
         version = self.version + 1
         pipe.multi()
-        pipe.zadd(self.generate_free_key(version=version), **member_scores)
+        pipe.zadd(self.generate_free_key(version=version), mapping=member_scores)
         return version
 
     def items(self):
