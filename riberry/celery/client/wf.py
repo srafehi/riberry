@@ -1,6 +1,8 @@
 import json
 import sys
+import threading
 import traceback
+from contextlib import contextmanager
 
 from io import BytesIO
 from typing import Union, Optional, List
@@ -12,11 +14,19 @@ from riberry.exc import BaseError
 from riberry.model.job import ArtifactType
 
 
+_cxt = threading.local()
+_cxt.stream_name = None
+
+
 class TaskWrap:
 
     def __init__(self, func, **kwargs):
         self.func = func
         self.kwargs = kwargs
+
+    @property
+    def name(self):
+        return self.func.name
 
     def _mixin_kw(self, kwargs):
         return {**self.kwargs, **kwargs}
@@ -31,22 +41,32 @@ class TaskWrap:
         return self.func.delay(*args, **self._mixin_kw(kwargs=kwargs))
 
 
+@contextmanager
+def stream_context(stream: str):
+    _cxt.stream_name = _validate_stream_name(stream)
+    try:
+        yield
+    finally:
+        _cxt.stream_name = None
+
+
 def _validate_stream_name(stream: str):
-    if not stream:
+    if not stream and not _cxt.stream_name:
         raise ValueError('Stream name cannot be blank')
-    return str(stream)
+    return str(stream or _cxt.stream_name)
 
 
-def step(task, step, stream=None):
-    stream = stream if stream else current_task.stream
+def step(task, step: str = None, stream: str = None):
+    step = step if step else task.name
+    stream = _validate_stream_name(stream)
     return TaskWrap(task, __sb__=(stream, step))
 
 
-def stream_start(task, stream: str):
+def stream_start(task, stream: str = None):
     return TaskWrap(task, __ss__=_validate_stream_name(stream))
 
 
-def stream_end(task, stream: str):
+def stream_end(task, stream: str = None):
     return TaskWrap(task, __se__=_validate_stream_name(stream))
 
 
@@ -56,7 +76,7 @@ b = step
 
 
 def artifact(filename: str, content: Union[bytes, str], name: str=None,
-             type: Union[str, ArtifactType]=ArtifactType.output, category='Default', data: dict=None,
+             type: Union[str, ArtifactType] = ArtifactType.output, category='Default', data: dict=None,
              stream: str=None, step=None, task_id: str=None, root_id: str=None):
 
     task_id = task_id or current_task.request.id
