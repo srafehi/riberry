@@ -36,13 +36,8 @@ def poll():
         if not execution:
             return
 
-        try:
-            task = client.queue_job_execution(execution=execution)
-        except:
-            model.conn.rollback()
-        else:
-            logger.info(f'poll - queueing task {task}')
-            model.conn.commit()
+        task = client.queue_job_execution(execution=execution)
+        logger.info(f'poll - queueing task {task}')
 
 
 @shared_task(ignore_result=True)

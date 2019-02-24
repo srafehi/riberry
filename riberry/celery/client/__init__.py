@@ -48,6 +48,10 @@ def queue_job_execution(execution: model.job.JobExecution):
     workflow_app = Workflow.by_internal_name(internal_name=application_name)
 
     try:
+        execution.status = 'READY'
+        execution.task_id = current_task.request.root_id
+        model.conn.commit()
+
         task = workflow_app.start(
             execution_id=execution.id,
             input_name=interface.internal_name,
@@ -55,8 +59,6 @@ def queue_job_execution(execution: model.job.JobExecution):
             input_values={v.definition.internal_name: v.value for v in job.values},
             input_files={v.definition.internal_name: base64.b64encode(v.binary).decode() for v in job.files}
         )
-        execution.status = 'READY'
-        execution.task_id = current_task.request.root_id
         tracker.start_tracking_execution(root_id=execution.task_id)
     except:
         execution.status = 'FAILURE'
@@ -74,6 +76,7 @@ def queue_job_execution(execution: model.job.JobExecution):
                 )
             )
         )
+        model.conn.commit()
         raise
     else:
         return task
