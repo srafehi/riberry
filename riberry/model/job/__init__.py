@@ -158,7 +158,7 @@ class JobExecution(base.Base):
     progress: List['JobExecutionProgress'] = relationship(
         'JobExecutionProgress',
         cascade='save-update, merge, delete, delete-orphan',
-        order_by=lambda: asc(JobExecutionStream.id),
+        order_by=lambda: asc(JobExecutionProgress.id),
         back_populates='job_execution'
     )
 
