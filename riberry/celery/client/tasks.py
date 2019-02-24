@@ -3,7 +3,7 @@ import json
 import os
 
 import pendulum
-from celery import shared_task
+from celery import shared_task, current_app
 from celery.utils.log import logger
 from sqlalchemy import desc, asc
 
@@ -67,7 +67,12 @@ def create_event(name, root_id, task_id, data=None, binary=None):
     if not root_id:
         return
 
-    event.delay(
+    if current_app.main != 'default':
+        event_call = event.delay
+    else:
+        event_call = event
+
+    event_call(
         name=name,
         time=pendulum.DateTime.utcnow().timestamp(),
         root_id=root_id,

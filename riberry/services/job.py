@@ -183,3 +183,12 @@ def summary_overall():
 
 def input_file_instance_by_id(input_file_instance_id) -> model.interface.InputFileInstance:
     return model.interface.InputFileInstance.query().filter_by(id=input_file_instance_id).one()
+
+
+def delete_job_by_id(job_id):
+    delete_job(job=job_by_id(job_id=job_id))
+
+
+@policy.context.post_authorize(action='view')
+def delete_job(job):
+    model.conn.delete(job)

@@ -81,7 +81,10 @@ def queue_job_execution(execution: model.job.JobExecution):
 
 def workflow_complete(task_id, root_id, status, primary_stream):
 
-    job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).one()
+    job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).first()
+    if not job:
+        return
+    
     job.task_id = root_id
     job.status = status
     job.completed = job.updated = pendulum.DateTime.utcnow()
@@ -116,7 +119,7 @@ def workflow_complete(task_id, root_id, status, primary_stream):
 def is_workflow_complete(task):
     root_id = task.request.root_id
     job: model.job.JobExecution = model.job.JobExecution.query().filter_by(task_id=root_id).first()
-    return job.status == 'FAILURE' if job else False
+    return job.status in ('FAILURE', 'SUCCESS') if job else True
 
 
 def workflow_started(task, job_id, primary_stream):
