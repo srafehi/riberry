@@ -1,6 +1,5 @@
 import base64
 import json
-import os
 
 import pendulum
 from celery import shared_task, current_app
@@ -12,39 +11,51 @@ from riberry.celery import client
 from . import tracker
 
 
+def _toggle_external_task_queue(app_instance):
+    active = model.job.JobExecution.query().filter_by(
+        status='ACTIVE'
+    ).join(model.job.Job).filter_by(
+        instance=app_instance,
+    ).join(model.job.JobExecutionExternalTask).filter_by(
+        status='READY'
+    ).count()
+
+    operation = 'add' if active else 'cancel'
+    current_app.control.broadcast('toggle_external_task_queue', reply=False, arguments={'operation': operation})
+
+
 @shared_task(ignore_result=True)
 def poll():
     with model.conn:
         app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
             internal_name=client.current_instance_name(raise_on_none=True)
         ).first()
-
         if not app_instance:
             return
 
         tracker.check_stale_execution(app_instance=app_instance)
+        _toggle_external_task_queue(app_instance=app_instance)
         if app_instance.status != 'online':
             return
 
-        execution: model.job.JobExecution = model.job.JobExecution.query().filter(
+        executions = model.job.JobExecution.query().filter(
             model.job.JobExecution.status == 'RECEIVED'
         ).join(model.job.Job).order_by(
             desc(model.job.JobExecution.priority),
-            asc(model.job.JobExecution.created)
-        ).filter_by(instance=app_instance).first()
+            asc(model.job.JobExecution.created),
+            asc(model.job.JobExecution.id),
+        ).filter_by(instance=app_instance).all()
 
-        if not execution:
-            return
-
-        task = client.queue_job_execution(execution=execution)
-        logger.info(f'poll - queueing task {task}')
+        for execution in executions:
+            task = client.queue_job_execution(execution=execution)
+            logger.info(f'poll - queueing task {task}')
 
 
 @shared_task(ignore_result=True)
 def echo():
     with model.conn:
         app_instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
-            internal_name=os.environ["RIBERRY_INSTANCE"]
+            internal_name=client.current_instance_name(raise_on_none=True)
         ).first()
         if not app_instance:
             return
@@ -128,3 +139,21 @@ def workflow_stream_update(root_id, stream_name, task_id, status):
 def workflow_complete(task, status, primary_stream):
     with model.conn:
         return client.workflow_complete(task.request.id, task.request.root_id, status, primary_stream)
+
+
+def poll_external_task(self, external_task_id):
+    with model.conn:
+        external_task = model.job.JobExecutionExternalTask.query().filter_by(
+            task_id=external_task_id,
+        ).first()
+
+        if external_task:
+            if external_task.status == 'WAITING':
+                raise self.retry(countdown=1)
+            elif external_task.status == 'READY':
+                output_data = external_task.output_data
+                if isinstance(output_data, bytes):
+                    output_data = output_data.decode()
+                external_task.status = 'COMPLETE'
+                model.conn.commit()
+                return output_data

@@ -6,10 +6,10 @@ from contextlib import contextmanager
 
 from io import BytesIO
 from typing import Union, Optional, List
-from celery import current_task
+from celery import current_task, current_app
 
 from riberry import model, config, policy, services
-from riberry.celery.client.tasks import create_event
+from riberry.celery.client.tasks import create_event, poll_external_task
 from riberry.exc import BaseError
 from riberry.model.job import ArtifactType
 
@@ -238,3 +238,21 @@ def create_job(interface_name, interface_version, instance_name, job_name=None, 
 
         model.conn.commit()
         return job
+
+
+def create_external_task(name, task_type, external_task_id, input_data: bytes = None):
+    external_task = model.job.JobExecutionExternalTask(
+        job_execution=current_execution(),
+        stream_id=None,
+        task_id=external_task_id,
+        name=name,
+        type=task_type,
+        input_data=input_data,
+    )
+    model.conn.add(external_task)
+    model.conn.commit()
+    return external_task
+
+
+def poll_external_task_sig(external_task_id):
+    return current_app.tasks['check-external-task'].si(external_task_id=external_task_id)

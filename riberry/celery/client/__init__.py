@@ -2,6 +2,7 @@ import base64
 import functools
 import os
 import traceback
+import uuid
 from typing import Dict, Tuple
 
 import pendulum
@@ -13,7 +14,7 @@ from celery.result import AsyncResult
 from riberry import model
 from riberry.celery.client import tasks
 from riberry.celery.client.dynamic import DynamicParameters
-from . import wf, signals, scale, dynamic, tracker
+from . import wf, signals, scale, dynamic, tracker, control
 
 IGNORE_EXCEPTIONS = (
     celery_exc.Ignore,
@@ -49,11 +50,12 @@ def queue_job_execution(execution: model.job.JobExecution):
 
     try:
         execution.status = 'READY'
-        execution.task_id = current_task.request.root_id
+        execution.task_id = str(uuid.uuid4())
         model.conn.commit()
 
         task = workflow_app.start(
             execution_id=execution.id,
+            root_id=execution.task_id,
             input_name=interface.internal_name,
             input_version=interface.version,
             input_values={v.definition.internal_name: v.value for v in job.values},
@@ -219,6 +221,7 @@ def patch_app(app):
         return inner
 
     app.task = task_deco
+    app.task(name='check-external-task', bind=True, max_retries=None)(wf.poll_external_task)
     return app
 
 
@@ -246,6 +249,7 @@ class Workflow:
         self._extend_cli(app)
         self._configure_beat_queues(app, self.beat_queue)
         self._configure_event_queue(app, self.event_queue)
+        self._configure_manual_task_queue(app)
         self.dynamic_parameters = DynamicParameters(
             riberry_workflow=self,
             handlers=dynamic_parameters,
@@ -279,6 +283,16 @@ class Workflow:
     def _configure_event_queue(app, event_queue):
         task_routes = {
             'riberry.celery.client.tasks.event': {'queue': event_queue},
+        }
+
+        if not app.conf.task_routes:
+            app.conf.task_routes = {}
+        app.conf.task_routes.update(task_routes)
+
+    @staticmethod
+    def _configure_manual_task_queue(app):
+        task_routes = {
+            'check-external-task': {'queue': 'rib.manual'},
         }
 
         if not app.conf.task_routes:
@@ -325,7 +339,7 @@ class Workflow:
 
         return wrapper
 
-    def start(self, execution_id, input_name, input_version, input_values, input_files):
+    def start(self, execution_id, root_id, input_name, input_version, input_values, input_files):
         if (input_name, input_version) not in self.form_entries:
             raise ValueError(f'Application {self.name!r} does not have an entry point with '
                              f'name {input_name!r} and version {input_version} registered.')
@@ -337,11 +351,18 @@ class Workflow:
             name=input_name,
             version=input_version,
             values=input_values,
-            files=input_files
+            files=input_files,
         )
 
         callback_success = tasks.workflow_complete.si(status='SUCCESS', primary_stream=workflow_entry.primary_stream)
         callback_failure = tasks.workflow_complete.si(status='FAILURE', primary_stream=workflow_entry.primary_stream)
+
+        body.options['root_id'] = root_id
+        callback_success.options['root_id'] = root_id
+        callback_failure.options['root_id'] = root_id
+
         task = body.on_error(callback_failure) | callback_success
 
-        return task()
+        task.options['root_id'] = root_id
+
+        return task.apply_async()
