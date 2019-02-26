@@ -1,7 +1,7 @@
 import enum
 import mimetypes
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import pendulum
 from croniter import croniter
@@ -155,6 +155,12 @@ class JobExecution(base.Base):
         cascade='save-update, merge, delete, delete-orphan',
         order_by=lambda: desc(JobExecutionArtifact.created),
         back_populates='job_execution')
+    external_tasks: List['JobExecutionExternalTask'] = relationship(
+        'JobExecutionExternalTask',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: asc(JobExecutionExternalTask.id),
+        back_populates='job_execution'
+    )
     progress: List['JobExecutionProgress'] = relationship(
         'JobExecutionProgress',
         cascade='save-update, merge, delete, delete-orphan',
@@ -217,6 +223,12 @@ class JobExecutionStream(base.Base):
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='streams')
     steps: List['JobExecutionStreamStep'] = relationship('JobExecutionStreamStep', cascade='save-update, merge, delete, delete-orphan', back_populates='stream')
     artifacts: List['JobExecutionArtifact'] = relationship('JobExecutionArtifact', back_populates='stream')
+    external_tasks: List['JobExecutionExternalTask'] = relationship(
+        'JobExecutionExternalTask',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: asc(JobExecutionExternalTask.id),
+        back_populates='stream',
+    )
 
 
 class JobExecutionStreamStep(base.Base):
@@ -303,3 +315,29 @@ class JobExecutionArtifactBinary(base.Base):
 
     # associations
     artifact: 'JobExecutionArtifact' = relationship('JobExecutionArtifact', back_populates='binary')
+
+
+class JobExecutionExternalTask(base.Base):
+    __tablename__ = 'job_external_task'
+    __reprattrs__ = ['name', 'type']
+    __table_args__ = (
+        Index('j_e__idx_job_execution_id', 'job_execution_id'),
+        Index('j_e__idx_stream_id', 'stream_id'),
+    )
+
+    # columns
+    id = base.id_builder.build()
+    job_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), nullable=False)
+    stream_id = Column(base.id_builder.type, ForeignKey('job_stream.id'))
+    user_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=True)
+    group_id = Column(base.id_builder.type, ForeignKey('groups.id'), nullable=True)
+    task_id: str = Column(String(64), unique=True)
+    name: str = Column(String(128), nullable=False)
+    type: str = Column(String(24), nullable=False)
+    status: str = Column(String(24), default='WAITING', comment='The current status of the manual task.')
+    input_data: Optional[bytes] = deferred(Column(Binary, nullable=True))
+    output_data: Optional[bytes] = deferred(Column(Binary, nullable=True))
+
+    # associations
+    job_execution: 'JobExecution' = relationship('JobExecution', back_populates='external_tasks')
+    stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='external_tasks')
