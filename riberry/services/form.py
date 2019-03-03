@@ -16,6 +16,23 @@ def form_by_id(form_id) -> model.interface.Form:
     return model.interface.Form.query().filter_by(id=form_id).one()
 
 
+@policy.context.post_authorize(action='view')
+def form_by_interface_and_instance_names(interface_name, interface_version, instance_name) -> model.interface.Form:
+    interface: model.interface.ApplicationInterface = model.interface.ApplicationInterface.query().filter_by(
+        internal_name=interface_name,
+        version=interface_version,
+    ).one()
+
+    instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
+        internal_name=instance_name,
+    ).one()
+
+    return model.interface.Form.query().filter_by(
+        instance=instance,
+        interface=interface,
+    ).one()
+
+
 def create_form(instance, interface) -> model.interface.Form:
     assert instance.application.id == interface.application.id, \
         'Instance and interface do not belong to the same application'

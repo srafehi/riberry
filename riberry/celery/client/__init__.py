@@ -227,11 +227,12 @@ def patch_app(app):
 
 class WorkflowEntry:
 
-    def __init__(self, name, version, func, primary_stream):
+    def __init__(self, name, version, func, primary_stream, primary_step):
         self.name = name
         self.version = version
         self.func = func
         self.primary_stream = primary_stream
+        self.primary_step = primary_step
 
 
 class Workflow:
@@ -329,13 +330,15 @@ class Workflow:
 
         return entry_point
 
-    def entry(self, name, version, primary_stream='Overall'):
+    def entry(self, name, version, primary_stream='Overall', primary_step='Entry'):
         def wrapper(func):
             self.form_entries[(name, version)] = WorkflowEntry(
                 name=name,
                 version=version,
                 func=func,
-                primary_stream=primary_stream)
+                primary_stream=primary_stream,
+                primary_step=primary_step,
+            )
 
         return wrapper
 
@@ -346,13 +349,14 @@ class Workflow:
 
         workflow_entry: WorkflowEntry = self.form_entries[(input_name, input_version)]
 
-        body = self.entry_point.si(
-            execution_id=execution_id,
-            name=input_name,
-            version=input_version,
-            values=input_values,
-            files=input_files,
-        )
+        with wf.stream_context(stream=workflow_entry.primary_stream):
+            body = wf.b(self.entry_point, step=workflow_entry.primary_step).si(
+                execution_id=execution_id,
+                name=input_name,
+                version=input_version,
+                values=input_values,
+                files=input_files,
+            )
 
         callback_success = tasks.workflow_complete.si(status='SUCCESS', primary_stream=workflow_entry.primary_stream)
         callback_failure = tasks.workflow_complete.si(status='FAILURE', primary_stream=workflow_entry.primary_stream)

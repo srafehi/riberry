@@ -74,7 +74,7 @@ class ConcurrencyScale:
         if process_diff > 0:
             logger.info(f'scale-to: +{process_diff} -> new: {current_concurrency + process_diff} target: {concurrency}')
             consumer.pool.grow(process_diff)
-        elif process_diff < 0:
+        elif process_diff < 0 and concurrency:
             logger.info(f'scale-to: {process_diff} -> new: {current_concurrency + process_diff} target: {concurrency}')
 
             consumer.qos.decrement_eventually(consumer.qos.value - 1)
