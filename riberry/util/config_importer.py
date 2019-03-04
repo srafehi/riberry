@@ -1,5 +1,6 @@
 import json
 import os
+import uuid
 
 import yaml
 from sqlalchemy.inspection import inspect
@@ -93,45 +94,9 @@ def import_application(internal_name, attributes):
             app.document = None
 
     import_instances(app, attributes.get('instances') or {})
-    import_interfaces(app, attributes.get('interfaces') or {})
-    import_forms(app, attributes.get('forms') or [])
+    import_forms(app, attributes.get('forms') or {})
 
     return app
-
-
-def import_forms(app: model.application.Application, forms):
-    existing_forms = {
-        (form.instance.internal_name, form.interface.internal_name, form.interface.version): form
-        for form in app.forms
-    }
-    instance_mapping = {i.internal_name: i for i in app.instances}
-    interface_mapping = {(i.internal_name, i.version): i for i in app.interfaces}
-    new_forms = []
-
-    for form in forms:
-        key = instance_name, interface_name, interface_version = (
-            form['instance'], form['interface']['internalName'], form['interface']['version']
-        )
-
-        if instance_name not in instance_mapping:
-            raise Exception(f'Instance not found for form {key}')
-
-        if (interface_name, interface_version) not in interface_mapping:
-            raise Exception(f'Interface not found for form {key}')
-
-        if key in existing_forms:
-            new_forms.append(existing_forms[key])
-        else:
-            instance = instance_mapping[instance_name]
-            interface = interface_mapping[(interface_name, interface_version)]
-            new_forms.append(
-                services.form.create_form(instance=instance, interface=interface)
-            )
-
-    for stale in set(existing_forms.values()) - set(new_forms):
-        for group_association in stale.group_associations:
-            model.conn.delete(group_association)
-        model.conn.delete(stale)
 
 
 def import_instances(app, instances):
@@ -145,24 +110,31 @@ def import_instances(app, instances):
     )
 
 
-def import_interfaces(app, interfaces):
+def import_forms(app, forms):
     return collection_diff(
         obj=app,
-        collection_name='interfaces',
+        collection_name='forms',
         loader=lambda: {
-            import_interface(app, name, attrs)
-            for name, attrs in interfaces.items()
+            import_form(app, name, attrs)
+            for name, attrs in forms.items()
         }
     )
 
 
-def import_interface(app, internal_name, attributes):
+def import_form(app, internal_name, attributes):
     try:
-        interface = services.application_interface.application_interface_by_internal_name(internal_name=internal_name)
-        interface = services.application_interface.update_application_interface(interface, attributes)
+        form = services.form.form_by_internal_name(internal_name=internal_name)
+        form = services.form.update_form(form, attributes)
     except NoResultFound:
-        interface = services.application_interface.create_application_interface(
+        instance_internal_name = attributes['instance']
+        instances = [instance for instance in app.instances if instance.internal_name == instance_internal_name]
+
+        if not instances:
+            raise ValueError(f'Could not find instance {instance_internal_name} for form {internal_name}')
+
+        form = services.form.create_form(
             application=app,
+            instance=instances[0],
             name=attributes.get('name'),
             internal_name=internal_name,
             version=attributes.get('version'),
@@ -172,28 +144,27 @@ def import_interface(app, internal_name, attributes):
         )
 
     if attributes.get('document'):
-        if not interface.document:
-            interface.document = model.misc.Document()
-            model.conn.add(interface.document)
-        interface.document.content = attributes['document'].encode()
+        if not form.document:
+            form.document = model.misc.Document()
+            model.conn.add(form.document)
+        form.document.content = attributes['document'].encode()
     else:
-        if interface.document:
-            interface.document = None
+        if form.document:
+            form.document = None
 
-    import_interface_inputs(
-        interface=interface,
+    import_form_inputs(
+        form=form,
         input_files=attributes.get('inputFiles') or {},
         input_values=attributes.get('inputValues') or {},
     )
 
-    return interface
+    return form
 
 
-def import_input_file_definition(interface, internal_name, attributes):
+def import_input_file_definition(form, internal_name, attributes):
     try:
-        definition = services.application_interface.file_definition_by_internal_name(interface=interface,
-                                                                                     internal_name=internal_name)
-        definition = services.application_interface.update_file_definition(definition, attributes)
+        definition = services.form.file_definition_by_internal_name(form=form, internal_name=internal_name)
+        definition = services.form.update_file_definition(definition, attributes)
     except NoResultFound:
         definition = model.interface.InputFileDefinition(internal_name=internal_name, **attributes)
         model.conn.add(definition)
@@ -201,7 +172,7 @@ def import_input_file_definition(interface, internal_name, attributes):
     return definition
 
 
-def import_input_value_definition(interface, internal_name, attributes):
+def import_input_value_definition(form, internal_name, attributes):
     mapping = {
         'enumerations': ('allowed_binaries', lambda values: [json.dumps(v).encode() for v in values]),
         'default': ('default_binary', lambda v: json.dumps(v).encode()),
@@ -213,9 +184,8 @@ def import_input_value_definition(interface, internal_name, attributes):
     )
 
     try:
-        definition = services.application_interface.value_definition_by_internal_name(interface=interface,
-                                                                                      internal_name=internal_name)
-        definition = services.application_interface.update_value_definition(definition, attributes)
+        definition = services.form.value_definition_by_internal_name(form=form, internal_name=internal_name)
+        definition = services.form.update_value_definition(definition, attributes)
     except NoResultFound:
         definition = model.interface.InputValueDefinition(internal_name=internal_name, **attributes)
         model.conn.add(definition)
@@ -223,21 +193,21 @@ def import_input_value_definition(interface, internal_name, attributes):
     return definition
 
 
-def import_interface_inputs(interface, input_files, input_values):
+def import_form_inputs(form, input_files, input_values):
     collection_diff(
-        obj=interface,
+        obj=form,
         collection_name='input_file_definitions',
         loader=lambda: {
-            import_input_file_definition(interface, name, attrs)
+            import_input_file_definition(form, name, attrs)
             for name, attrs in input_files.items()
         }
     )
 
     collection_diff(
-        obj=interface,
+        obj=form,
         collection_name='input_value_definitions',
         loader=lambda: {
-            import_input_value_definition(interface, name, attrs)
+            import_input_value_definition(form, name, attrs)
             for name, attrs in input_values.items()
         }
     )
@@ -303,35 +273,21 @@ def import_instance(app, internal_name, attributes):
     return instance
 
 
-def import_groups(applications):
+def import_groups(applications, restrict):
     created_groups = {}
     for application, properties in applications.items():
-        for form_info in properties.get('forms', []):
+        if restrict and application not in restrict:
+            continue
+
+        for form_internal_name, form_info in properties.get('forms', {}).items():
             groups = form_info.get('groups') or []
-            instance_name, interface_name, interface_version = (
-                form_info['instance'], form_info['interface']['internalName'], form_info['interface']['version']
-            )
-
-            instance = model.application.ApplicationInstance.query().filter_by(internal_name=instance_name).first()
-            if not instance:
-                print(f'import_groups:: Instance {instance_name} not found, skipping {application}')
-                continue
-
-            interface = model.interface.ApplicationInterface.query().filter_by(
-                internal_name=interface_name,
-                version=interface_version
-            ).first()
-            if not instance:
-                print(f'import_groups:: '
-                      f'Interface {interface_name} ({interface_version}) not found, skipping {application}')
-                continue
 
             form: model.interface.Form = model.interface.Form.query().filter_by(
-                instance_id=instance.id, interface_id=interface.id
+                internal_name=form_internal_name,
             ).first()
+
             if not form:
-                print(f'import_groups:: '
-                      f'Form for instance {instance.id} and interface {interface.id} not found, skipping {application}')
+                print(f'import_groups:: Form {form_internal_name} not found, skipping {application}')
                 continue
 
             associations = {assoc.group.name: assoc for assoc in form.group_associations}
@@ -399,6 +355,32 @@ def json_diff(diff):
     return output
 
 
+def import_menu_for_forms(menu):
+    for item in model.misc.MenuItem.query().all():
+        model.conn.delete(item)
+
+    for item in menu:
+        menu_item = import_menu_item(item, menu_type='forms', parent=None)
+        model.conn.add(menu_item)
+
+
+def import_menu_item(item, menu_type, parent=None):
+    menu_item = model.misc.MenuItem(parent=parent, menu_type=menu_type)
+    if isinstance(item, dict):
+        menu_item.key = str(uuid.uuid4())
+        menu_item.type = 'branch'
+        menu_item.label = list(item.keys())[0]
+        menu_item.children = [
+            import_menu_item(child, menu_type, menu_item)
+            for child in list(item.values())[0]
+        ]
+    elif isinstance(item, str):
+        menu_item.key = item
+        menu_item.type = 'leaf'
+    return menu_item
+
+
+
 def import_config(config, formatter=None, restrict_apps=None):
     applications = config.get('applications') or {}
     import_applications(applications=applications, restrict=restrict_apps)
@@ -408,7 +390,8 @@ def import_config(config, formatter=None, restrict_apps=None):
     diff = session_diff()
     model.conn.flush()
 
-    import_groups(applications=applications)
+    import_menu_for_forms(menu=config.get('menues', {}).get('forms', {}))
+    import_groups(applications=applications, restrict=restrict_apps)
 
     for k, v in session_diff().items():
         if k in diff:

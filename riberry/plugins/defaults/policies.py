@@ -105,39 +105,6 @@ class ViewApplicationInstanceUsingFormRelationshipRule(policy.Rule):
         return False
 
 
-class ApplicationInterfacePolicySet(policy.PolicySet):
-
-    def target_clause(self, context: AttributeContext) -> bool:
-        return isinstance(context.resource, model.interface.ApplicationInterface)
-
-    def condition(self, context: AttributeContext) -> bool:
-        return True
-
-
-class ApplicationInterfaceViewPolicy(policy.Policy):
-
-    def target_clause(self, context: AttributeContext) -> bool:
-        return context.action == 'view'
-
-    def condition(self, context: AttributeContext) -> bool:
-        return True
-
-
-class ViewApplicationInstanceUsingInterfaceRelationshipRule(policy.Rule):
-
-    def target_clause(self, context: AttributeContext) -> bool:
-        return True
-
-    def condition(self, context: AttributeContext) -> bool:
-        user: model.auth.User = context.subject
-        application_interface: model.interface.ApplicationInterface = context.resource
-
-        for form in application_interface.forms:
-            if set(user.groups) & set(form.groups):
-                return True
-        return False
-
-
 class ApplicationFormPolicySet(policy.PolicySet):
 
     def target_clause(self, context: AttributeContext) -> bool:
@@ -281,14 +248,6 @@ default_policies = policy.AuthorizationEngine(
             ApplicationInstancePolicySet(
                 ApplicationInstanceViewPolicy(
                     ViewApplicationInstanceUsingFormRelationshipRule()
-                ),
-                GenericCreatePolicy(
-                    RejectCreateRule()
-                )
-            ),
-            ApplicationInterfacePolicySet(
-                ApplicationInterfacePolicySet(
-                    ViewApplicationInstanceUsingInterfaceRelationshipRule()
                 ),
                 GenericCreatePolicy(
                     RejectCreateRule()

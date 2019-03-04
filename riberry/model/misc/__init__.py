@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import Binary, String, Column, Float, ForeignKey, Boolean, DateTime, Index, Enum
 from sqlalchemy.orm import relationship
@@ -83,3 +83,19 @@ class NotificationTarget(base.Base):
 
     # associations
     notification: 'Notification' = relationship('Notification', back_populates='targets')
+
+
+class MenuItem(base.Base):
+    __tablename__ = 'menu_item'
+
+    # columns
+    id = base.id_builder.build()
+    parent_id = Column(base.id_builder.type, ForeignKey('menu_item.id'))
+    menu_type = Column(String(128), nullable=False)
+    type = Column(String(128), nullable=False)
+    key = Column(String(128), nullable=False)
+    label: Optional[str] = Column(String(128), nullable=True)
+
+    # associations
+    parent: 'MenuItem' = relationship('MenuItem', back_populates='children', remote_side=[id])
+    children: List['MenuItem'] = relationship('MenuItem', back_populates='parent')

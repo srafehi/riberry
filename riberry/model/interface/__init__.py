@@ -6,75 +6,33 @@ from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, Dat
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, deferred
-from sqlalchemy.schema import UniqueConstraint
 
 from riberry import model
 from riberry.model import base
 
 
-class ApplicationInterface(base.Base):
-    """
-    An ApplicationInterface defines a supported interface for an Application. An interface contains input file and
-    value definitions which can be consumed.
-
-    ApplicationInterfaces are versioned, meaning you can have multiple interfaces with the same internal_name only
-    if they have different versions.
-    """
-
-    __tablename__ = 'app_interface'
-    __reprattrs__ = ['name', 'version']
-    __table_args__ = (
-        UniqueConstraint('internal_name', 'version', name='uc_name_version'),
-    )
-
-    # columns
-    id = base.id_builder.build()
-    application_id = Column(base.id_builder.type, ForeignKey('application.id'), nullable=False)
-    document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
-    name: str = Column(String(64), nullable=False, comment='The human-readable name of the interface.')
-    internal_name: str = Column(String(256), nullable=False, comment='The internal name or secondary identifier of the interface.')
-    version: int = Column(Integer, nullable=False, default=1, comment='The version of the interface.')
-    description: str = Column(String(256), comment='A brief description of the interface\'s purpose.')
-
-    # associations
-    application: 'model.application.Application' = relationship('Application', back_populates='interfaces')
-    input_value_definitions: List['InputValueDefinition'] = relationship(
-        'InputValueDefinition', cascade='save-update, merge, delete, delete-orphan', back_populates='interface')
-    input_file_definitions: List['InputFileDefinition'] = relationship(
-        'InputFileDefinition', cascade='save-update, merge, delete, delete-orphan', back_populates='interface')
-    forms: List['Form'] = relationship('Form', cascade='save-update, merge, delete, delete-orphan', back_populates='interface')
-    document: 'model.misc.Document' = relationship('Document', cascade='save-update, merge, delete, delete-orphan', single_parent=True)
-
-    # proxies
-    application_instances: List['model.application.ApplicationInstance'] = association_proxy(
-        'forms',
-        'instance'
-    )
-
-
 class Form(base.Base):
     """
-    A Form is an implementation of an ApplicationInterface for a given ApplicationInstance.
-
-    All inputs a form accepts are defined by the ApplicationInterface it's linked to, and all Jobs created by
-    the form belong to the linked ApplicationInstance.
+    A Form is an interface to creating jobs for a given ApplicationInstance.
     """
 
     __tablename__ = 'form'
-    __reprattrs__ = ['instance_id', 'interface_id']
-    __table_args__ = (
-        UniqueConstraint('instance_id', 'interface_id', name='uc_form'),
-    )
+    __reprattrs__ = ['internal_name', 'version']
 
     # columns
     id = base.id_builder.build()
     instance_id = Column(base.id_builder.type, ForeignKey('app_instance.id'), nullable=False)
-    interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'), nullable=False)
+    application_id = Column(base.id_builder.type, ForeignKey('application.id'), nullable=False)
+    document_id = Column(base.id_builder.type, ForeignKey(column='document.id'))
+    name: str = Column(String(64), unique=True, nullable=False, comment='The human-readable name of the form.')
+    internal_name: str = Column(String(256), unique=True, nullable=False, comment='The internal name or secondary identifier of the form.')
+    description: str = Column(String(256), comment='A brief description of the form\'s purpose.')
+    version: int = Column(Integer, nullable=False, default=1, comment='The version of the form.')
     enabled: bool = Column(Boolean, nullable=False, default=True, comment='Whether or not this form is enabled.')
 
     # associations
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')
-    interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='forms', lazy='joined')
+    application: 'model.application.Application' = relationship('Application', back_populates='forms')
     schedules: List['FormSchedule'] = relationship('FormSchedule', back_populates='form')
     jobs: List['model.job.Job'] = relationship(
         'Job',
@@ -85,6 +43,11 @@ class Form(base.Base):
         resource_id=id,
         resource_type=model.group.ResourceType.form
     )
+    input_value_definitions: List['InputValueDefinition'] = relationship(
+        'InputValueDefinition', cascade='save-update, merge, delete, delete-orphan', back_populates='form')
+    input_file_definitions: List['InputFileDefinition'] = relationship(
+        'InputFileDefinition', cascade='save-update, merge, delete, delete-orphan', back_populates='form')
+    document: 'model.misc.Document' = relationship('Document', cascade='save-update, merge, delete, delete-orphan', single_parent=True)
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
@@ -111,7 +74,7 @@ class InputFileDefinition(base.Base):
 
     # columns
     id = base.id_builder.build()
-    application_interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'), nullable=False)
+    form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
 
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
@@ -121,9 +84,7 @@ class InputFileDefinition(base.Base):
     required: bool = Column(Boolean, nullable=False, default=True)
 
     # associations
-    instances: List['InputFileInstance'] = relationship(
-        'InputFileInstance', cascade='save-update, merge, delete, delete-orphan', back_populates='definition')
-    interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='input_file_definitions')
+    form: 'Form' = relationship('Form', back_populates='input_file_definitions')
 
 
 class InputValueDefinition(base.Base):
@@ -134,7 +95,7 @@ class InputValueDefinition(base.Base):
 
     # columns
     id = base.id_builder.build()
-    application_interface_id = Column(base.id_builder.type, ForeignKey('app_interface.id'), nullable=False)
+    form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
 
     name: str = Column(String(64), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
@@ -144,9 +105,7 @@ class InputValueDefinition(base.Base):
     default_binary = Column('defaults', Binary)
 
     # associations
-    instances: List['InputValueInstance'] = relationship(
-        'InputValueInstance', cascade='save-update, merge, delete, delete-orphan', back_populates='definition')
-    interface: 'ApplicationInterface' = relationship('ApplicationInterface', back_populates='input_value_definitions')
+    form: 'Form' = relationship('Form', back_populates='input_value_definitions')
     allowed_value_enumerations: List['InputValueEnum'] = relationship(
         'InputValueEnum', cascade='save-update, merge, delete, delete-orphan', back_populates='definition')
 
@@ -193,13 +152,17 @@ class InputValueInstance(base.Base):
 
     # columns
     id = base.id_builder.build()
-    definition_id = Column(base.id_builder.type, ForeignKey('input_value_definition.id'), nullable=False)
     job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
+    name: str = Column(String(256), nullable=False)
+    internal_name: str = Column(String(256), nullable=False)
     raw_value: bytes = Column('value', Binary)
 
     # associations
     job: 'model.job.Job' = relationship('Job', back_populates='values')
-    definition: 'InputValueDefinition' = relationship('InputValueDefinition', back_populates='instances')
+
+    @property
+    def definition(self):
+        return self.job.form
 
     @hybrid_property
     def value(self):
@@ -218,15 +181,15 @@ class InputFileInstance(base.Base):
 
     # columns
     id = base.id_builder.build()
-    filename: str = Column(String(512), nullable=False)
-    definition_id = Column(base.id_builder.type, ForeignKey('input_file_definition.id'), nullable=False)
     job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
+    name: str = Column(String(256), nullable=False)
+    internal_name: str = Column(String(256), nullable=False)
+    filename: str = Column(String(512), nullable=False)
     size: int = Column(Integer, nullable=False)
     binary: bytes = deferred(Column(Binary))
 
     # associations
     job: 'model.job.Job' = relationship('Job', back_populates='files')
-    definition: 'InputFileDefinition' = relationship('InputFileDefinition', back_populates='instances')
 
     @property
     def content_type(self):

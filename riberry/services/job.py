@@ -1,11 +1,7 @@
+import json
 from typing import Dict
 
-from sqlalchemy import func
-
-import pendulum
-from datetime import timedelta
 from riberry import model, services, policy, exc
-import json
 
 
 def jobs_by_form_id(form_id):
@@ -79,8 +75,8 @@ def create_job(form_id, name, input_values, input_files, execute, parent_executi
     form = services.form.form_by_id(form_id=form_id)
     policy.context.authorize(form, action='view')
 
-    input_file_definitions = form.interface.input_file_definitions
-    input_value_definitions = form.interface.input_value_definitions
+    input_file_definitions = form.input_file_definitions
+    input_value_definitions = form.input_value_definitions
 
     errors = []
     if not name:
@@ -110,7 +106,8 @@ def create_job(form_id, name, input_values, input_files, execute, parent_executi
 
     for definition, value in values_mapping.items():
         input_value_instance = model.interface.InputValueInstance(
-            definition=definition,
+            name=definition.name,
+            internal_name=definition.internal_name,
             raw_value=value
         )
         input_value_instances.append(input_value_instance)
@@ -119,7 +116,8 @@ def create_job(form_id, name, input_values, input_files, execute, parent_executi
         binary = value.read()
         filename = value.filename if getattr(value, 'filename', None) else definition.internal_name
         input_file_instance = model.interface.InputFileInstance(
-            definition=definition,
+            name=definition.name,
+            internal_name=definition.internal_name,
             filename=filename,
             binary=binary,
             size=len(binary) if binary else 0
@@ -165,20 +163,6 @@ def create_job_execution(job, parent_execution=None):
     model.conn.add(execution)
 
     return execution
-
-
-def summary_overall():
-    now = pendulum.DateTime.utcnow()
-    from_date = now - timedelta(days=7)
-
-    summary = model.conn.query(
-        model.job.JobExecution.status,
-        func.count(model.job.JobExecution.status)
-    ).filter(
-        model.job.JobExecution.created >= from_date
-    ).group_by(model.job.JobExecution.status).all()
-
-    return dict(summary)
 
 
 def input_file_instance_by_id(input_file_instance_id) -> model.interface.InputFileInstance:

@@ -1,5 +1,5 @@
 from riberry import policy as rib_policy
-from . import application, application_instance, application_interface, form, auth, job, job_executions, self, policy
+from . import application, application_instance, form, auth, job, job_executions, self, policy
 
 
 def fetch_relationship(model_object, attribute, action):

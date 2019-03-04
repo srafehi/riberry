@@ -180,31 +180,10 @@ def current_execution() -> Optional[model.job.JobExecution]:
     ).first()
 
 
-def create_job(interface_name, interface_version, instance_name, job_name=None, input_values=None, input_files=None):
-    interface: model.interface.ApplicationInterface = model.interface.ApplicationInterface.query().filter_by(
-        internal_name=interface_name,
-        version=interface_version
-    ).first()
-
-    instance: model.application.ApplicationInstance = model.application.ApplicationInstance.query().filter_by(
-        internal_name=instance_name
-    ).first()
-
-    if not interface:
-        raise ValueError(f'wf.create_job:: could not find ApplicationInterface with internal_name '
-                         f'{interface_name!r} and version {interface_version!r}')
-
-    if not instance:
-        raise ValueError(f'wf.create_job:: could not find ApplicationInstance with internal_name '
-                         f'{instance_name!r}')
-
+def create_job(form_internal_name, job_name=None, input_values=None, input_files=None):
     form: model.interface.Form = model.interface.Form.query().filter_by(
-        instance=instance,
-        interface=interface,
+        internal_name=form_internal_name,
     ).first()
-
-    if not form:
-        raise ValueError(f'wf.create_job:: could not find Form with interface {interface} and instance {instance}')
 
     if not input_files:
         input_files = {}

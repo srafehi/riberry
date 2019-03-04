@@ -29,17 +29,9 @@ class Application(base.Base):
     # associations
     instances: List['ApplicationInstance'] = relationship(
         'ApplicationInstance', cascade='save-update, merge, delete, delete-orphan', back_populates='application')
-    interfaces: List['model.interface.ApplicationInterface'] = relationship(
-        'ApplicationInterface', cascade='save-update, merge, delete, delete-orphan', back_populates='application')
-    document: 'model.misc.Document' = relationship('Document', cascade='save-update, merge, delete, delete-orphan', single_parent=True)
-
     forms: List['model.interface.Form'] = relationship(
-        'Form',
-        secondary=lambda: ApplicationInstance.__table__,
-        primaryjoin=lambda: Application.id == ApplicationInstance.application_id,
-        secondaryjoin=lambda: ApplicationInstance.id == model.interface.Form.instance_id,
-        viewonly=True,
-    )
+        'Form', cascade='save-update, merge, delete, delete-orphan', back_populates='application')
+    document: 'model.misc.Document' = relationship('Document', cascade='save-update, merge, delete, delete-orphan', single_parent=True)
 
 
 class ApplicationInstance(base.Base):
@@ -75,12 +67,6 @@ class ApplicationInstance(base.Base):
         )
     )
     forms: List['model.interface.Form'] = relationship('Form', cascade='save-update, merge, delete, delete-orphan', back_populates='instance')
-
-    # proxies
-    interfaces: List['model.interface.ApplicationInterface'] = association_proxy(
-        target_collection='forms',
-        attr='interface'
-    )
 
     @property
     def status(self):

@@ -42,7 +42,7 @@ def is_current_instance(instance_name: str) -> bool:
 def queue_job_execution(execution: model.job.JobExecution):
 
     job = execution.job
-    interface = job.interface
+    form = job.form
     app_instance = job.instance
 
     application_name = app_instance.application.internal_name
@@ -56,10 +56,9 @@ def queue_job_execution(execution: model.job.JobExecution):
         task = workflow_app.start(
             execution_id=execution.id,
             root_id=execution.task_id,
-            input_name=interface.internal_name,
-            input_version=interface.version,
-            input_values={v.definition.internal_name: v.value for v in job.values},
-            input_files={v.definition.internal_name: base64.b64encode(v.binary).decode() for v in job.files}
+            input_name=form.internal_name,
+            input_values={v.internal_name: v.value for v in job.values},
+            input_files={v.internal_name: base64.b64encode(v.binary).decode() for v in job.files}
         )
         tracker.start_tracking_execution(root_id=execution.task_id)
     except:
@@ -227,9 +226,8 @@ def patch_app(app):
 
 class WorkflowEntry:
 
-    def __init__(self, name, version, func, primary_stream, primary_step):
+    def __init__(self, name, func, primary_stream, primary_step):
         self.name = name
-        self.version = version
         self.func = func
         self.primary_stream = primary_stream
         self.primary_step = primary_step
@@ -322,19 +320,18 @@ class Workflow:
     @staticmethod
     def _make_entry_point(app, form_entries: Dict[Tuple[str, str], WorkflowEntry]):
         @app.task(bind=True)
-        def entry_point(task, execution_id, name: str, version: str, values: Dict, files: Dict):
+        def entry_point(task, execution_id, name: str, values: Dict, files: Dict):
             with model.conn:
-                workflow_entry = form_entries[(name, version)]
+                workflow_entry = form_entries[name]
                 workflow_started(task, execution_id, workflow_entry.primary_stream)
                 workflow_entry.func(task, **values, **files)
 
         return entry_point
 
-    def entry(self, name, version, primary_stream='Overall', primary_step='Entry'):
+    def entry(self, name, primary_stream='Overall', primary_step='Entry'):
         def wrapper(func):
-            self.form_entries[(name, version)] = WorkflowEntry(
+            self.form_entries[name] = WorkflowEntry(
                 name=name,
-                version=version,
                 func=func,
                 primary_stream=primary_stream,
                 primary_step=primary_step,
@@ -342,18 +339,17 @@ class Workflow:
 
         return wrapper
 
-    def start(self, execution_id, root_id, input_name, input_version, input_values, input_files):
-        if (input_name, input_version) not in self.form_entries:
+    def start(self, execution_id, root_id, input_name, input_values, input_files):
+        if input_name not in self.form_entries:
             raise ValueError(f'Application {self.name!r} does not have an entry point with '
-                             f'name {input_name!r} and version {input_version} registered.')
+                             f'name {input_name!r} registered.')
 
-        workflow_entry: WorkflowEntry = self.form_entries[(input_name, input_version)]
+        workflow_entry: WorkflowEntry = self.form_entries[input_name]
 
         with wf.stream_context(stream=workflow_entry.primary_stream):
             body = wf.b(self.entry_point, step=workflow_entry.primary_step).si(
                 execution_id=execution_id,
                 name=input_name,
-                version=input_version,
                 values=input_values,
                 files=input_files,
             )

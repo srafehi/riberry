@@ -59,7 +59,6 @@ class Job(base.Base):
 
     # proxies
     instance: 'model.application.ApplicationInstance' = association_proxy('form', 'instance')
-    interface: 'model.interface.ApplicationInterface' = association_proxy('form', 'interface')
 
     def execute(self, creator_id):
         model.conn.add(instance=JobExecution(job=self, creator_id=creator_id))
@@ -212,6 +211,7 @@ class JobExecutionStream(base.Base):
     id = base.id_builder.build()
     job_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), nullable=False)
     task_id: str = Column(String(36), unique=True)
+    parent_stream_id = Column(base.id_builder.type, ForeignKey('job_stream.id'))
     name: str = Column(String(64))
     status: str = Column(String(24), default='QUEUED')
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
@@ -229,6 +229,8 @@ class JobExecutionStream(base.Base):
         order_by=lambda: asc(JobExecutionExternalTask.id),
         back_populates='stream',
     )
+    parent_stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='child_streams', remote_side=[id])
+    child_streams: List['JobExecutionStream'] = relationship('JobExecutionStream', back_populates='parent_stream')
 
 
 class JobExecutionStreamStep(base.Base):
