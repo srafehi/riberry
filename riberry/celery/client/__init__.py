@@ -51,6 +51,7 @@ def queue_job_execution(execution: model.job.JobExecution):
     try:
         execution.status = 'READY'
         execution.task_id = str(uuid.uuid4())
+        tracker.start_tracking_execution(root_id=execution.task_id)
         model.conn.commit()
 
         task = workflow_app.start(
@@ -60,7 +61,6 @@ def queue_job_execution(execution: model.job.JobExecution):
             input_values={v.internal_name: v.value for v in job.values},
             input_files={v.internal_name: base64.b64encode(v.binary).decode() for v in job.files}
         )
-        tracker.start_tracking_execution(root_id=execution.task_id)
     except:
         execution.status = 'FAILURE'
         message = traceback.format_exc().encode()

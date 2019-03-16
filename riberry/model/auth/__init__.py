@@ -6,7 +6,7 @@ import jwt
 import pendulum
 from sqlalchemy import Column, String, ForeignKey, DateTime, desc
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import relationship, validates
+from sqlalchemy.orm import relationship, validates, joinedload
 
 from riberry import model, exc
 from riberry.model import base
@@ -45,12 +45,22 @@ class User(base.Base):
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
 
     @property
-    def forms(self):
+    def forms(self) -> List['model.interface.Form']:
         return model.interface.Form.query().filter(
             (model.group.ResourceGroupAssociation.group_id.in_(o.group_id for o in self.group_associations)) &
             (model.group.ResourceGroupAssociation.resource_type == model.group.ResourceType.form) &
             (model.interface.Form.id == model.group.ResourceGroupAssociation.resource_id)
         ).all()
+
+    @property
+    def applications(self) -> List['model.application.Application']:
+        forms = model.interface.Form.query().filter(
+            model.interface.Form.id.in_(form.id for form in self.forms)
+        ).options(
+            joinedload(model.interface.Form.application)
+        ).all()
+
+        return [form.application for form in forms]
 
     @classmethod
     def authenticate(cls, username, password):
