@@ -101,8 +101,12 @@ def handle_steps(events: List[model.misc.Event]):
             job_execution = job_executions[event.root_id]
 
             if (stream_name, event.root_id) not in streams:
-                streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(
-                    name=stream_name, job_execution=job_execution).one()
+                try:
+                    streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(
+                        name=stream_name, job_execution=job_execution).one()
+                except NoResultFound:
+                    to_delete.append(event)
+                    continue
             stream = streams[(stream_name, event.root_id)]
 
             try:
@@ -305,7 +309,7 @@ handlers = {
 def process(event_limit=None):
     with model.conn:
         event_mapping = defaultdict(list)
-        query = model.misc.Event.query().order_by(model.misc.Event.time.asc())
+        query = model.misc.Event.query().order_by(model.misc.Event.time.asc(), model.misc.Event.id.asc())
         if event_limit:
             query = query.limit(event_limit)
         events = query.all()
