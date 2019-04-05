@@ -1,13 +1,17 @@
 import enum
+import functools
+import json
 import mimetypes
 from datetime import datetime
 from typing import List, Optional
 
 import pendulum
 from croniter import croniter
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index, Enum, desc, Float, asc
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index, Enum, desc, Float, asc, \
+    UniqueConstraint, select, func, sql
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.orm import relationship, deferred, validates
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship, deferred, validates, foreign, remote
 
 from riberry import model
 from riberry.model import base
@@ -53,9 +57,14 @@ class Job(base.Base):
         cascade='save-update, merge, delete, delete-orphan',
         order_by=lambda: desc(JobExecution.updated),
         back_populates='job')
-    schedules: List['JobSchedule'] = relationship('JobSchedule', cascade='save-update, merge, delete, delete-orphan', back_populates='job')
-    values: List['model.interface.InputValueInstance'] = relationship('InputValueInstance', cascade='save-update, merge, delete, delete-orphan', back_populates='job')
-    files: List['model.interface.InputFileInstance'] = relationship('InputFileInstance', cascade='save-update, merge, delete, delete-orphan', back_populates='job')
+    schedules: List['JobSchedule'] = relationship('JobSchedule', cascade='save-update, merge, delete, delete-orphan',
+                                                  back_populates='job')
+    values: List['model.interface.InputValueInstance'] = relationship('InputValueInstance',
+                                                                      cascade='save-update, merge, delete, delete-orphan',
+                                                                      back_populates='job')
+    files: List['model.interface.InputFileInstance'] = relationship('InputFileInstance',
+                                                                    cascade='save-update, merge, delete, delete-orphan',
+                                                                    back_populates='job')
 
     # proxies
     instance: 'model.application.ApplicationInstance' = association_proxy('form', 'instance')
@@ -81,8 +90,10 @@ class JobSchedule(base.Base):
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     enabled: bool = Column(Boolean, default=True, nullable=False, comment='Whether or not this schedule is active.')
     cron: str = Column(String(24), nullable=False, comment='The cron expression which defines our schedule.')
-    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False, comment='The time our schedule was created.')
-    last_run: datetime = Column(DateTime(timezone=True), default=None, comment='The last time a job execution was created from our schedule.')
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False,
+                               comment='The time our schedule was created.')
+    last_run: datetime = Column(DateTime(timezone=True), default=None,
+                                comment='The last time a job execution was created from our schedule.')
     limit: int = Column(Integer, default=0, comment='The amount of valid runs for this schedule.')
     total_runs: int = Column(Integer, default=0, comment='The total amount of runs for this schedule.')
 
@@ -118,6 +129,27 @@ class JobSchedule(base.Base):
         return pendulum.instance(next(instance))
 
 
+def memoize(func):
+    result = []
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        if result:
+            return result[0]
+        result.append(func(*args, **kwargs))
+        return result[0]
+    return inner
+
+
+@memoize
+def _job_execution_select_latest_progress():
+    return select([
+        func.max(JobExecutionProgress.id).label('id'),
+        JobExecutionProgress.job_execution_id
+    ]).group_by(
+        JobExecutionProgress.job_execution_id
+    ).alias()
+
+
 class JobExecution(base.Base):
     """A JobExecution represent a single execution of our Job."""
     __tablename__ = 'job_execution'
@@ -131,14 +163,17 @@ class JobExecution(base.Base):
     id = base.id_builder.build()
     job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
-    task_id: str = Column(String(36), unique=True, comment='The internal identifier of our job execution. This is usually the Celery root ID.')
+    task_id: str = Column(String(36), unique=True,
+                          comment='The internal identifier of our job execution. This is usually the Celery root ID.')
     status: str = Column(String(24), default='RECEIVED', comment='The current status of our job execution.')
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
     started: datetime = Column(DateTime(timezone=True))
     completed: datetime = Column(DateTime(timezone=True))
     updated: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
-    priority = Column(Integer, default=64, nullable=False, comment='The priority of this execution. This only applies to tasks in the RECEIVED state.')
-    parent_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), comment='The id of the execution which triggered this execution.')
+    priority = Column(Integer, default=64, nullable=False,
+                      comment='The priority of this execution. This only applies to tasks in the RECEIVED state.')
+    parent_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'),
+                                 comment='The id of the execution which triggered this execution.')
 
     # associations
     creator: 'model.auth.User' = relationship('User')
@@ -146,13 +181,13 @@ class JobExecution(base.Base):
     streams: List['JobExecutionStream'] = relationship(
         'JobExecutionStream',
         cascade='save-update, merge, delete, delete-orphan',
-        order_by=lambda: desc(JobExecutionStream.updated),
+        order_by=lambda: asc(JobExecutionStream.id),
         back_populates='job_execution'
     )
     artifacts: List['JobExecutionArtifact'] = relationship(
         'JobExecutionArtifact',
         cascade='save-update, merge, delete, delete-orphan',
-        order_by=lambda: desc(JobExecutionArtifact.created),
+        order_by=lambda: asc(JobExecutionArtifact.id),
         back_populates='job_execution')
     external_tasks: List['JobExecutionExternalTask'] = relationship(
         'JobExecutionExternalTask',
@@ -160,11 +195,30 @@ class JobExecution(base.Base):
         order_by=lambda: asc(JobExecutionExternalTask.id),
         back_populates='job_execution'
     )
+    reports: List['JobExecutionReport'] = relationship(
+        'JobExecutionReport',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: asc(JobExecutionReport.id),
+        back_populates='job_execution'
+    )
     progress: List['JobExecutionProgress'] = relationship(
         'JobExecutionProgress',
         cascade='save-update, merge, delete, delete-orphan',
-        order_by=lambda: asc(JobExecutionProgress.id),
+        order_by=lambda: JobExecutionProgress.id.asc(),
         back_populates='job_execution'
+    )
+    data: List['model.misc.ResourceData'] = model.misc.ResourceData.make_relationship(
+        resource_id=id,
+        resource_type=model.misc.ResourceType.job_execution,
+    )
+
+    latest_progress: 'JobExecutionProgress' = relationship(
+        'JobExecutionProgress',
+        secondary=lambda: _job_execution_select_latest_progress(),
+        primaryjoin=lambda: JobExecution.id == _job_execution_select_latest_progress().c.job_execution_id,
+        secondaryjoin=lambda: JobExecutionProgress.id == _job_execution_select_latest_progress().c.id,
+        viewonly=True,
+        uselist=False,
     )
 
     parent_execution: 'JobExecution' = relationship('JobExecution', back_populates='child_executions', remote_side=[id])
@@ -177,10 +231,23 @@ class JobExecution(base.Base):
             f'ApplicationInstanceSchedule.priority must be an integer between 1 and 255 (received {priority})')
         return priority
 
+    @property
+    def stream_status_summary(self):
+        summary = model.conn.query(
+            model.job.JobExecutionStream.status,
+            func.count(model.job.JobExecutionStream.status)
+        ).filter_by(
+            job_execution=self,
+        ).group_by(
+            model.job.JobExecutionStream.status,
+        ).all()
+
+        return dict(summary)
+
 
 class JobExecutionProgress(base.Base):
     __tablename__ = 'job_progress'
-    __reprattrs__ = ['job_id', 'message']
+    __reprattrs__ = ['message']
 
     # columns
     id = base.id_builder.build()
@@ -212,7 +279,8 @@ class JobExecutionStream(base.Base):
     job_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), nullable=False)
     task_id: str = Column(String(36), unique=True)
     parent_stream_id = Column(base.id_builder.type, ForeignKey('job_stream.id'))
-    name: str = Column(String(64))
+    name: str = Column(String(64), nullable=False)
+    category: str = Column(String(64), nullable=False, default='Overall')
     status: str = Column(String(24), default='QUEUED')
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
     started: datetime = Column(DateTime(timezone=True))
@@ -221,7 +289,12 @@ class JobExecutionStream(base.Base):
 
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='streams')
-    steps: List['JobExecutionStreamStep'] = relationship('JobExecutionStreamStep', cascade='save-update, merge, delete, delete-orphan', back_populates='stream')
+    steps: List['JobExecutionStreamStep'] = relationship(
+        'JobExecutionStreamStep',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: asc(JobExecutionStreamStep.id),
+        back_populates='stream',
+    )
     artifacts: List['JobExecutionArtifact'] = relationship('JobExecutionArtifact', back_populates='stream')
     external_tasks: List['JobExecutionExternalTask'] = relationship(
         'JobExecutionExternalTask',
@@ -229,7 +302,8 @@ class JobExecutionStream(base.Base):
         order_by=lambda: asc(JobExecutionExternalTask.id),
         back_populates='stream',
     )
-    parent_stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='child_streams', remote_side=[id])
+    parent_stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='child_streams',
+                                                       remote_side=[id])
     child_streams: List['JobExecutionStream'] = relationship('JobExecutionStream', back_populates='parent_stream')
 
 
@@ -278,7 +352,8 @@ class JobExecutionArtifact(base.Base):
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='artifacts')
     stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='artifacts')
     binary: 'JobExecutionArtifactBinary' = relationship(
-        'JobExecutionArtifactBinary', cascade='save-update, merge, delete, delete-orphan', back_populates='artifact', uselist=False)
+        'JobExecutionArtifactBinary', cascade='save-update, merge, delete, delete-orphan', back_populates='artifact',
+        uselist=False)
     data: List['JobExecutionArtifactData'] = relationship(
         'JobExecutionArtifactData', cascade='save-update, merge, delete, delete-orphan', back_populates='artifact')
 
@@ -343,3 +418,32 @@ class JobExecutionExternalTask(base.Base):
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='external_tasks')
     stream: 'JobExecutionStream' = relationship('JobExecutionStream', back_populates='external_tasks')
+
+
+class JobExecutionReport(base.Base):
+    __tablename__ = 'job_report'
+    __reprattrs__ = ['internal_name']
+
+    # columns
+    id = base.id_builder.build()
+    job_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), nullable=False)
+    name: str = Column(String(128), nullable=False)
+    renderer: str = Column(String(24), nullable=False, default='unspecified')
+    title: str = Column(String(128), nullable=True)
+    category: str = Column(String(128), nullable=True)
+    key: str = Column(String(128), nullable=True)
+    raw_input_data: Optional[bytes] = deferred(Column('input_data', Binary, nullable=True))
+    report: Optional[bytes] = deferred(Column(Binary, nullable=True))
+    marked_for_refresh: bool = Column(Boolean, nullable=False, default=False)
+
+    # associations
+    job_execution: 'JobExecution' = relationship('JobExecution', back_populates='reports')
+
+    @hybrid_property
+    def input_data(self):
+        return json.loads(self.raw_input_data.decode()) if self.raw_input_data else None
+
+    @input_data.setter
+    def input_data(self, value):
+        self.raw_input_data = json.dumps(value).encode()
+

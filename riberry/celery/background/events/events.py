@@ -65,8 +65,12 @@ def handle_artifacts(events: List[model.misc.Event]):
 
             if stream_name:
                 if (stream_name, event.root_id) not in streams:
-                    streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(
-                        name=stream_name, job_execution=job_execution).one()
+                    try:
+                        streams[(stream_name, event.root_id)] = model.job.JobExecutionStream.query().filter_by(
+                            name=stream_name, job_execution=job_execution).one()
+                    except NoResultFound:
+                        to_delete.append(event)
+                        continue
                 stream = streams[(stream_name, event.root_id)]
                 artifact.stream = stream
 

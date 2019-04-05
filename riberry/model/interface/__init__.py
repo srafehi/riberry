@@ -38,15 +38,24 @@ class Form(base.Base):
         'Job',
         cascade='save-update, merge, delete, delete-orphan',
         order_by=lambda: desc(model.job.Job.created),
-        back_populates='form')
+        back_populates='form'
+    )
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
-        resource_type=model.group.ResourceType.form
+        resource_type=model.misc.ResourceType.form
     )
     input_value_definitions: List['InputValueDefinition'] = relationship(
-        'InputValueDefinition', cascade='save-update, merge, delete, delete-orphan', back_populates='form')
+        'InputValueDefinition',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: InputValueDefinition.id.asc(),
+        back_populates='form'
+    )
     input_file_definitions: List['InputFileDefinition'] = relationship(
-        'InputFileDefinition', cascade='save-update, merge, delete, delete-orphan', back_populates='form')
+        'InputFileDefinition',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: InputFileDefinition.id.asc(),
+        back_populates='form'
+    )
     document: 'model.misc.Document' = relationship('Document', cascade='save-update, merge, delete, delete-orphan', single_parent=True)
 
     # proxies

@@ -3,6 +3,7 @@ import functools
 import os
 import traceback
 import uuid
+import warnings
 from typing import Dict, Tuple
 
 import pendulum
@@ -15,6 +16,14 @@ from riberry import model
 from riberry.celery.client import tasks
 from riberry.celery.client.dynamic import DynamicParameters
 from . import wf, signals, scale, dynamic, tracker, control
+
+
+warnings.warn(
+    'The module riberry.celery.client is deprecated. Please use riberry.celery.app instead',
+    DeprecationWarning,
+    stacklevel=2
+)
+
 
 IGNORE_EXCEPTIONS = (
     celery_exc.Ignore,
@@ -57,7 +66,7 @@ def queue_job_execution(execution: model.job.JobExecution):
         task = workflow_app.start(
             execution_id=execution.id,
             root_id=execution.task_id,
-            input_name=form.internal_name,
+            form=form.internal_name,
             input_values={v.internal_name: v.value for v in job.values},
             input_files={v.internal_name: base64.b64encode(v.binary).decode() for v in job.files}
         )

@@ -1,7 +1,30 @@
 import json
+from io import BytesIO
 from typing import Dict
 
 from riberry import model, services, policy, exc
+
+
+class InputFileProxy(BytesIO):
+
+    def __init__(self, obj, filename=None):
+        self.filename = filename
+        super().__init__(obj)
+
+    @classmethod
+    def from_object(cls, obj, filename='input'):
+        if isinstance(obj, bytes):
+            binary = obj
+        elif isinstance(obj, str):
+            binary = obj.encode()
+            if not filename.endswith('.txt'):
+                filename += '.txt'
+        else:
+            binary = json.dumps(obj).encode()
+            if not filename.endswith('.json'):
+                filename += '.json'
+
+        return cls(binary, filename)
 
 
 def jobs_by_form_id(form_id):
@@ -34,16 +57,28 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
             continue
 
         if definition.allowed_binaries and value:
-            if (
-                    (isinstance(value, str) and value not in definition.allowed_binaries) or
-                    (isinstance(value, list) and set(value) - set(definition.allowed_binaries))
-            ):
-                err = exc.InvalidEnumError(target='job', field=definition.name, allowed_values=definition.allowed_values,
-                                           internal_name=definition.internal_name)
+            values = value
+            if isinstance(value, str):
+                values = [value]
+
+            if isinstance(values, list):
+                values = [json.dumps(v).encode() if v else v for v in values]
+
+            if set(values) - set(definition.allowed_binaries) or definition.type != 'text-multiple' and len(values) > 1:
+                err = exc.InvalidEnumError(
+                    target='job',
+                    field=definition.name,
+                    allowed_values=definition.allowed_values,
+                    internal_name=definition.internal_name
+                )
                 errors.append(err)
                 continue
 
         input_value_mapping[definition] = value
+
+    for name in list(input_values):
+        if name in file_mapping and name not in input_files:
+            input_files[file_mapping[name]] = input_values.pop(name)
 
     for name, definition in file_map_definitions.items():
         if name in input_files:
@@ -71,12 +106,8 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
 
 
 def create_job(form_id, name, input_values, input_files, execute, parent_execution=None):
-    input_values = {k: (json.dumps(v).encode() if v else v) for k, v in input_values.items()}
     form = services.form.form_by_id(form_id=form_id)
     policy.context.authorize(form, action='view')
-
-    input_file_definitions = form.input_file_definitions
-    input_value_definitions = form.input_value_definitions
 
     errors = []
     if not name:
@@ -89,10 +120,10 @@ def create_job(form_id, name, input_values, input_files, execute, parent_executi
 
     try:
         values_mapping, files_mapping = verify_inputs(
-            input_value_definitions,
-            input_file_definitions,
-            input_values,
-            input_files
+            input_value_definitions=form.input_value_definitions,
+            input_file_definitions=form.input_file_definitions,
+            input_values=input_values,
+            input_files=input_files
         )
     except exc.InputErrorGroup as e:
         e.extend(errors)
@@ -104,6 +135,11 @@ def create_job(form_id, name, input_values, input_files, execute, parent_executi
     input_value_instances = []
     input_file_instances = []
 
+    values_mapping = {
+        k: (json.dumps(v).encode() if v and not isinstance(v, bytes) else v)
+        for k, v in values_mapping.items()
+    }
+
     for definition, value in values_mapping.items():
         input_value_instance = model.interface.InputValueInstance(
             name=definition.name,
@@ -113,8 +149,16 @@ def create_job(form_id, name, input_values, input_files, execute, parent_executi
         input_value_instances.append(input_value_instance)
 
     for definition, value in files_mapping.items():
+        filename = definition.internal_name
+        if not hasattr(value, 'read'):
+            value = InputFileProxy.from_object(obj=value, filename=filename)
+
         binary = value.read()
-        filename = value.filename if getattr(value, 'filename', None) else definition.internal_name
+        if isinstance(binary, str):
+            binary = binary.encode()
+        if hasattr(value, 'filename'):
+            filename = value.filename
+
         input_file_instance = model.interface.InputFileInstance(
             name=definition.name,
             internal_name=definition.internal_name,

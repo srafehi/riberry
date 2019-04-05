@@ -28,19 +28,19 @@ def forms_for_group_id(group_id):
 
 
 def remove_user_from_group(group_id, user_id):
-    _remove_resource_from_group(group_id, user_id, model.group.ResourceType.user)
+    _remove_resource_from_group(group_id, user_id, model.misc.ResourceType.user)
 
 
 def add_user_to_group(group_id, user_id):
-    _add_resource_to_group(group_id, user_id, model.group.ResourceType.user)
+    _add_resource_to_group(group_id, user_id, model.misc.ResourceType.user)
 
 
 def remove_form_from_group(group_id, form_id):
-    _remove_resource_from_group(group_id, form_id, model.group.ResourceType.form)
+    _remove_resource_from_group(group_id, form_id, model.misc.ResourceType.form)
 
 
 def add_form_to_group(group_id, form_id):
-    _add_resource_to_group(group_id, form_id, model.group.ResourceType.form)
+    _add_resource_to_group(group_id, form_id, model.misc.ResourceType.form)
 
 
 def _find_group_association(group_id, resource_id, resource_type):

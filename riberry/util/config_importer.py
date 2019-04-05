@@ -307,7 +307,7 @@ def import_groups(applications, restrict):
 
                 association = model.group.ResourceGroupAssociation(
                     resource_id=form.id,
-                    resource_type=model.group.ResourceType.form,
+                    resource_type=model.misc.ResourceType.form,
                     group=group
                 )
                 model.conn.add(association)

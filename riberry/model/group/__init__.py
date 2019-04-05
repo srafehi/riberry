@@ -8,14 +8,6 @@ from riberry import model
 from riberry.model import base
 
 
-class ResourceType(enum.Enum):
-    form = 'Form'
-    user = 'User'
-
-    def __repr__(self):
-        return repr(self.value)
-
-
 class ResourceGroupAssociation(base.Base):
     __tablename__ = 'resource_group'
     __reprattrs__ = ['group_id', 'resource_id', 'resource_type']
@@ -24,7 +16,7 @@ class ResourceGroupAssociation(base.Base):
     id = base.id_builder.build()
     group_id = Column(ForeignKey('groups.id'), nullable=False)
     resource_id = Column(base.id_builder.type, nullable=False)
-    resource_type = Column(Enum(ResourceType), nullable=False)
+    resource_type = Column(Enum(model.misc.ResourceType), nullable=False)
 
     # associations
     group: 'Group' = relationship('Group', back_populates='resource_associations')
@@ -59,14 +51,14 @@ class Group(base.Base):
         'ResourceGroupAssociation',
         primaryjoin=lambda: sql.and_(
             ResourceGroupAssociation.group_id == Group.id,
-            ResourceGroupAssociation.resource_type == ResourceType.user
+            ResourceGroupAssociation.resource_type == model.misc.ResourceType.user
         )
     )
     form_associations: List['ResourceGroupAssociation'] = relationship(
         'ResourceGroupAssociation',
         primaryjoin=lambda: sql.and_(
             ResourceGroupAssociation.group_id == Group.id,
-            ResourceGroupAssociation.resource_type == ResourceType.form
+            ResourceGroupAssociation.resource_type == model.misc.ResourceType.form
         )
     )
 
@@ -78,7 +70,7 @@ class Group(base.Base):
     def users(self):
         return model.auth.User.query().filter(
             (ResourceGroupAssociation.group_id == self.id) &
-            (ResourceGroupAssociation.resource_type == ResourceType.user) &
+            (ResourceGroupAssociation.resource_type == model.misc.ResourceType.user) &
             (model.auth.User.id == ResourceGroupAssociation.resource_id)
         ).all()
 
@@ -86,7 +78,7 @@ class Group(base.Base):
     def forms(self):
         return model.interface.Form.query().filter(
             (ResourceGroupAssociation.group_id == self.id) &
-            (ResourceGroupAssociation.resource_type == ResourceType.form) &
+            (ResourceGroupAssociation.resource_type == model.misc.ResourceType.form) &
             (model.interface.Form.id == ResourceGroupAssociation.resource_id)
         ).all()
 

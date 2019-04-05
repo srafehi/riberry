@@ -26,7 +26,7 @@ class User(base.Base):
     # associations
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
-        resource_type=model.group.ResourceType.user
+        resource_type=model.misc.ResourceType.user
     )
     jobs: List['model.job.Job'] = relationship(
         'Job',
@@ -48,7 +48,7 @@ class User(base.Base):
     def forms(self) -> List['model.interface.Form']:
         return model.interface.Form.query().filter(
             (model.group.ResourceGroupAssociation.group_id.in_(o.group_id for o in self.group_associations)) &
-            (model.group.ResourceGroupAssociation.resource_type == model.group.ResourceType.form) &
+            (model.group.ResourceGroupAssociation.resource_type == model.misc.ResourceType.form) &
             (model.interface.Form.id == model.group.ResourceGroupAssociation.resource_id)
         ).all()
 
