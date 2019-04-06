@@ -8,7 +8,7 @@ class BackgroundTasks(Addon):
         class ConcreteBackgroundTasksStep(BackgroundTasksStep):
             rib = riberry_app
 
-        riberry_app.celery_app.steps['worker'].add(ConcreteBackgroundTasksStep)
+        riberry_app.backend.steps['worker'].add(ConcreteBackgroundTasksStep)
 
 
 class BackgroundTasksStep(AddonStartStopStep):

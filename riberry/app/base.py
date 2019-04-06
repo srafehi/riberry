@@ -11,8 +11,8 @@ class RiberryApplication:
     ENTRY_POINT_TASK_NAME = 'riberry.core.app.entry_point'
     CHECK_EXTERNAL_TASK_NAME = 'riberry.core.app.check_external_task'
 
-    def __init__(self, celery_app, name=None, addons=None):
-        self.celery_app: celery.Celery = celery_app
+    def __init__(self, backend, name=None, addons=None):
+        self.backend: celery.Celery = backend
         self.name = name
         self.context: riberry.app.context.Context = riberry.app.context.Context()
         self.executor = riberry.app.executor.TaskExecutor(riberry_app=self)
@@ -63,7 +63,7 @@ class RiberryApplication:
             return functools.partial(self.task, **options)
 
     def register_task(self, func, **kwargs):
-        return self.celery_app.task(**kwargs)(func)
+        return self.backend.task(**kwargs)(func)
 
     def start(self, execution_id, root_id, form):
         if form not in self.entry_points:
@@ -72,7 +72,7 @@ class RiberryApplication:
 
         entry_point: EntryPoint = self.entry_points[form]
         with self.context.flow.stream_scope(stream=entry_point.stream):
-            body = self.celery_app.tasks[self.ENTRY_POINT_TASK_NAME].si(
+            body = self.backend.tasks[self.ENTRY_POINT_TASK_NAME].si(
                 execution_id=execution_id,
                 form=form
             )

@@ -29,8 +29,8 @@ class Scale(Addon):
             conf = self.conf
             rib = riberry_app
 
-        riberry_app.celery_app.steps['worker'].add(ConcreteScaleStep)
-        riberry_app.celery_app.user_options['worker'].add(self.regiser_user_options)
+        riberry_app.backend.steps['worker'].add(ConcreteScaleStep)
+        riberry_app.backend.user_options['worker'].add(self.regiser_user_options)
 
     @staticmethod
     def regiser_user_options(parser):

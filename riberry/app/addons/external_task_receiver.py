@@ -10,15 +10,15 @@ class ExternalTaskReceiver(Addon):
         class ConcreteExternalTaskReceiverStep(ExternalTaskReceiverStep):
             rib = riberry_app
 
-        riberry_app.celery_app.steps['worker'].add(ConcreteExternalTaskReceiverStep)
-        riberry_app.celery_app.user_options['worker'].add(self.regiser_user_options)
+        riberry_app.backend.steps['worker'].add(ConcreteExternalTaskReceiverStep)
+        riberry_app.backend.user_options['worker'].add(self.regiser_user_options)
         task_routes = {
             riberry_app.CHECK_EXTERNAL_TASK_NAME: {'queue': self.RECEIVER_QUEUE},
         }
 
-        if not riberry_app.celery_app.conf.task_routes:
-            riberry_app.celery_app.conf.task_routes = {}
-        riberry_app.celery_app.conf.task_routes.update(task_routes)
+        if not riberry_app.backend.conf.task_routes:
+            riberry_app.backend.conf.task_routes = {}
+        riberry_app.backend.conf.task_routes.update(task_routes)
         for addon in riberry_app.addons.values():
             if isinstance(addon, riberry.app.addons.Scale):
                 addon.conf.ignore_queues.add(self.RECEIVER_QUEUE)

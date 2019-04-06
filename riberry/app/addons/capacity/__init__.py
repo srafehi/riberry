@@ -43,7 +43,7 @@ class Capacity(Addon):
         if self.queue.key is None:
             self.queue.key = riberry_app.context.current.riberry_app_instance.internal_name
 
-        riberry_app.celery_app.steps['worker'].add(ConcreteCapacityStep)
+        riberry_app.backend.steps['worker'].add(ConcreteCapacityStep)
 
 
 class CapacityStep(AddonStartStopStep):
