@@ -36,7 +36,7 @@ class Context:
             yield
 
     def spawn(self, form_name, job_name=None, input_values=None, input_files=None, owner=None, execute=True):
-        return riberry.celery.app.actions.jobs.create_job(
+        return riberry.app.actions.jobs.create_job(
             form_name=form_name,
             job_name=job_name,
             input_files=input_files,

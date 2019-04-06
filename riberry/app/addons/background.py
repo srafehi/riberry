@@ -4,7 +4,7 @@ import riberry
 
 class BackgroundTasks(Addon):
 
-    def register(self, riberry_app: 'riberry.celery.app.base.RiberryApplication'):
+    def register(self, riberry_app: 'riberry.app.base.RiberryApplication'):
         class ConcreteBackgroundTasksStep(BackgroundTasksStep):
             rib = riberry_app
 
@@ -16,13 +16,13 @@ class BackgroundTasksStep(AddonStartStopStep):
 
     def __init__(self, worker, **_):
         super().__init__(worker=worker, interval=0.6)
-        self.lock = riberry.celery.app.util.redis_lock.RedisLock(name='step:background', on_acquired=self.on_lock_acquired, interval=500)
+        self.lock = riberry.app.util.redis_lock.RedisLock(name='step:background', on_acquired=self.on_lock_acquired, interval=500)
 
     def on_lock_acquired(self):
         try:
-            riberry.celery.app.tasks.echo()
-            riberry.celery.app.tasks.poll()
-            riberry.celery.app.tasks.refresh()
+            riberry.app.tasks.echo()
+            riberry.app.tasks.poll()
+            riberry.app.tasks.refresh()
         finally:
             riberry.model.conn.remove()
             riberry.model.conn.raw_engine.dispose()

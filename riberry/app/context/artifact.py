@@ -15,7 +15,7 @@ class Artifact:
             category='Default',
             data: dict = None,
     ):
-        return riberry.celery.app.actions.artifacts.create_artifact(
+        return riberry.app.actions.artifacts.create_artifact(
             filename=filename,
             content=content,
             name=name,
@@ -31,7 +31,7 @@ class Artifact:
             category: str = 'Intercepted',
             type: riberry.model.job.ArtifactType = riberry.model.job.ArtifactType.error,
     ):
-        return riberry.celery.app.actions.artifacts.create_artifact_from_traceback(
+        return riberry.app.actions.artifacts.create_artifact_from_traceback(
             name=name,
             filename=filename,
             type=type,

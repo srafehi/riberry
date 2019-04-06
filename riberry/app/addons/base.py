@@ -5,14 +5,14 @@ import time
 
 class Addon:
 
-    def register(self, riberry_app: 'riberry.celery.app.base.RiberryApplication'):
+    def register(self, riberry_app: 'riberry.app.base.RiberryApplication'):
         raise NotImplementedError
 
 
 class AddonStartStopStep(bootsteps.StartStopStep):
     requires = {'celery.worker.components:Timer'}
 
-    rib: 'riberry.celery.app.base.RiberryApplication'
+    rib: 'riberry.app.base.RiberryApplication'
 
     def __init__(self, worker, interval, priority=10):
 

@@ -6,7 +6,7 @@ class ExternalTaskReceiver(Addon):
 
     RECEIVER_QUEUE = 'rib.external'
 
-    def register(self, riberry_app: 'riberry.celery.app.base.RiberryApplication'):
+    def register(self, riberry_app: 'riberry.app.base.RiberryApplication'):
         class ConcreteExternalTaskReceiverStep(ExternalTaskReceiverStep):
             rib = riberry_app
 
@@ -20,7 +20,7 @@ class ExternalTaskReceiver(Addon):
             riberry_app.celery_app.conf.task_routes = {}
         riberry_app.celery_app.conf.task_routes.update(task_routes)
         for addon in riberry_app.addons.values():
-            if isinstance(addon, riberry.celery.app.addons.Scale):
+            if isinstance(addon, riberry.app.addons.Scale):
                 addon.conf.ignore_queues.add(self.RECEIVER_QUEUE)
 
     @staticmethod

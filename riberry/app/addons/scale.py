@@ -82,7 +82,7 @@ class ScaleStep(AddonStartStopStep):
 
     def __init__(self, worker, rib_scale, rib_scale_group, rib_scale_parameter, rib_scale_min, rib_scale_max, **_):
         super().__init__(worker=worker, interval=1.0)
-        self.lock = riberry.celery.app.util.redis_lock.RedisLock(name='step:scale', on_acquired=self.on_lock_acquired, interval=5000)
+        self.lock = riberry.app.util.redis_lock.RedisLock(name='step:scale', on_acquired=self.on_lock_acquired, interval=5000)
 
         self.conf.scale = bool(rib_scale)
         self.conf.scale_group = rib_scale_group or self.conf.scale_group

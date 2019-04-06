@@ -10,7 +10,7 @@ import riberry
 class ContextCurrent:
 
     def __init__(self, context):
-        self.context: riberry.celery.app.context.Context = context
+        self.context: riberry.app.context.Context = context
         self._task_stream = None
         self._task_category = None
         self._task_step = None
@@ -35,12 +35,12 @@ class ContextCurrent:
         return celery.current_app
 
     @property
-    def riberry_app(self) -> 'riberry.celery.app.RiberryApplication':
-        return riberry.celery.app.current_riberry_app
+    def riberry_app(self) -> 'riberry.app.RiberryApplication':
+        return riberry.app.current_riberry_app
 
     @property
     def riberry_app_instance(self) -> riberry.model.application.ApplicationInstance:
-        return riberry.celery.app.env.get_instance_model()
+        return riberry.app.env.get_instance_model()
 
     @property
     def task(self) -> celery.Task:

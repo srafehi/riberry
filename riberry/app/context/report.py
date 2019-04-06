@@ -7,7 +7,7 @@ import riberry
 class Report:
 
     def __init__(self, context):
-        self.context: riberry.celery.app.context.Context = context
+        self.context: riberry.app.context.Context = context
 
     def model(self, name):
         job_execution = self.context.current.job_execution
@@ -17,7 +17,7 @@ class Report:
 
         if not report:
             self.context.data.execute_once(
-                key=riberry.celery.app.util.misc.internal_data_key(f'once.create_report.{name}'),
+                key=riberry.app.util.misc.internal_data_key(f'once.create_report.{name}'),
                 func=partial(self._create_report, name=name, job_execution=job_execution)
             )
             return self.model(name=name)

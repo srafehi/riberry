@@ -18,14 +18,14 @@ class EventRegistry:
     types: EventRegistryTypes = EventRegistryTypes
 
     def __init__(self, context):
-        self.context: riberry.celery.app.context.Context = context
+        self.context: riberry.app.context.Context = context
         self._registrations = defaultdict(set)
 
     @staticmethod
     def _make_key(func, **key):
         if not key and func:
             return tuple([
-                ('key', riberry.celery.app.util.misc.function_path(func))
+                ('key', riberry.app.util.misc.function_path(func))
             ])
         return tuple(sorted(key.items()))
 
@@ -48,19 +48,19 @@ class EventRegistry:
 class EventRegistryHelper:
 
     def __init__(self, context):
-        self.context: riberry.celery.app.context.Context = context
+        self.context: riberry.app.context.Context = context
 
     @property
     def _register(self):
         return self.context.event_registry.register
 
     def execution_failed(self, func):
-        key = riberry.celery.app.util.misc.internal_data_key(key='once.execution_failed')
+        key = riberry.app.util.misc.internal_data_key(key='once.execution_failed')
         func = partial(self.context.data.execute_once, key=key, func=func)
         return self._register(event_type=EventRegistryTypes.on_completion, status='FAILURE')(func)
 
     def execution_succeeded(self, func):
-        key = riberry.celery.app.util.misc.internal_data_key(key='once.execution_succeeded')
+        key = riberry.app.util.misc.internal_data_key(key='once.execution_succeeded')
         func = partial(self.context.data.execute_once, key=key, func=func)
         return self._register(event_type=EventRegistryTypes.on_completion, status='SUCCESS')(func)
 

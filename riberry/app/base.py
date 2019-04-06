@@ -14,8 +14,8 @@ class RiberryApplication:
     def __init__(self, celery_app, name=None, addons=None):
         self.celery_app: celery.Celery = celery_app
         self.name = name
-        self.context: riberry.celery.app.context.Context = riberry.celery.app.context.Context()
-        self.executor = riberry.celery.app.executor.TaskExecutor(riberry_app=self)
+        self.context: riberry.app.context.Context = riberry.app.context.Context()
+        self.executor = riberry.app.executor.TaskExecutor(riberry_app=self)
         self.entry_points = {}
 
         self.__registered__[self.name] = self
@@ -32,9 +32,9 @@ class RiberryApplication:
         )(self.executor.external_task_executor())
 
         self.addons = {
-            'scale': riberry.celery.app.addons.Scale(),
-            'background': riberry.celery.app.addons.BackgroundTasks(),
-            'external-receiver': riberry.celery.app.addons.ExternalTaskReceiver(),
+            'scale': riberry.app.addons.Scale(),
+            'background': riberry.app.addons.BackgroundTasks(),
+            'external-receiver': riberry.app.addons.ExternalTaskReceiver(),
             **(addons or {})
         }
         for addon in self.addons.values():
@@ -77,8 +77,8 @@ class RiberryApplication:
                 form=form
             )
 
-        callback_success = riberry.celery.app.tasks.execution_complete.si(status='SUCCESS', stream=entry_point.stream)
-        callback_failure = riberry.celery.app.tasks.execution_complete.si(status='FAILURE', stream=entry_point.stream)
+        callback_success = riberry.app.tasks.execution_complete.si(status='SUCCESS', stream=entry_point.stream)
+        callback_failure = riberry.app.tasks.execution_complete.si(status='FAILURE', stream=entry_point.stream)
 
         body.options['root_id'] = root_id
         callback_success.options['root_id'] = root_id

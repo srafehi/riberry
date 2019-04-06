@@ -35,7 +35,7 @@ class Capacity(Addon):
         finally:
             self.queue.put(member=member, version=version)
 
-    def register(self, riberry_app: 'riberry.celery.app.base.RiberryApplication'):
+    def register(self, riberry_app: 'riberry.app.base.RiberryApplication'):
         class ConcreteCapacityStep(CapacityStep):
             rib = riberry_app
             capacity = self

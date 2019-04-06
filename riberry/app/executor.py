@@ -41,11 +41,11 @@ def _attempt_fallback(exc, task_options):
 class TaskExecutor:
 
     def __init__(self, riberry_app):
-        self.riberry_app: riberry.celery.app.RiberryApplication = riberry_app
+        self.riberry_app: riberry.app.RiberryApplication = riberry_app
 
     def external_task_executor(self):
         def _external_task_executor(external_task_id, validator):
-            task: riberry.celery.app.ext.RiberryTask = self.riberry_app.context.current.task
+            task: riberry.app.ext.RiberryTask = self.riberry_app.context.current.task
             external_task: riberry.model.job.JobExecutionExternalTask = riberry.model.job.JobExecutionExternalTask.query().filter_by(
                 task_id=external_task_id,
             ).first()
@@ -165,6 +165,6 @@ class TaskExecutor:
 
         if 'name' not in task_options:
             task_options['name'] = f'{func.__module__}.{func.__name__}'
-        task_options['base'] = riberry.celery.app.ext.RiberryTask
+        task_options['base'] = riberry.app.ext.RiberryTask
 
         return wrapped_function, task_options

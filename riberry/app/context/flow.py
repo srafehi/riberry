@@ -6,7 +6,7 @@ import riberry
 class Flow:
 
     def __init__(self, context):
-        self.context: riberry.celery.app.context.Context = context
+        self.context: riberry.app.context.Context = context
         self.scoped_stream = None
         self.scoped_category = None
 

@@ -18,7 +18,7 @@ class InputMappings:
 class InputMapping(Mapping):
 
     def __init__(self, context, cls):
-        self.context: riberry.celery.app.context.Context = context
+        self.context: riberry.app.context.Context = context
         self.cls = cls
 
     def _get_value(self, instance):

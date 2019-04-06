@@ -5,7 +5,7 @@ from celery import shared_task
 from sqlalchemy import desc, asc
 
 import riberry
-from riberry.celery.app.util import execution_tracker as tracker
+from riberry.app.util import execution_tracker as tracker
 from . import actions, env
 
 

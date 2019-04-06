@@ -12,7 +12,7 @@ def _tracker_key(value):
 
 def start_tracking_execution(root_id):
     redis = riberry.celery.util.celery_redis_instance()
-    instance = riberry.celery.app.env.get_instance_name()
+    instance = riberry.app.env.get_instance_name()
     key = _tracker_key(instance)
     logger.info(f'execution_tracker: Tracking workflow {root_id!r} via key {key!r}')
     redis.sadd(key, root_id)
@@ -37,7 +37,7 @@ def check_stale_execution(app_instance):
                 f'Root ID: {execution.task_id}, Execution ID:  {execution.id}'
             )
 
-            riberry.celery.app.actions.artifacts.create_artifact(
+            riberry.app.actions.artifacts.create_artifact(
                 name='Workflow Cancelled',
                 type=riberry.model.job.ArtifactType.error,
                 category='Fatal',
@@ -51,7 +51,7 @@ def check_stale_execution(app_instance):
                 root_id=execution.task_id,
             )
 
-            riberry.celery.app.actions.executions.execution_complete(
+            riberry.app.actions.executions.execution_complete(
                 task_id=execution.task_id,
                 root_id=execution.task_id,
                 status='FAILURE',

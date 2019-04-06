@@ -22,7 +22,7 @@ def celeryd_after_setup(*args, **kwargs):
 @signals.before_task_publish.connect
 def before_task_publish(sender, headers, body, **_):
     try:
-        root_id = riberry.celery.app.current_context.current.root_id
+        root_id = riberry.app.current_context.current.root_id
     except:
         return
 

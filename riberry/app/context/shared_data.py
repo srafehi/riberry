@@ -14,7 +14,7 @@ import riberry
 class SharedExecutionData(Mapping):
 
     def __init__(self, context):
-        self.context: riberry.celery.app.context.Context = context
+        self.context: riberry.app.context.Context = context
         self._lock: Dict[AnyStr, riberry.model.misc.ResourceData] = {}
         self._dirty = set()
         self._listeners = defaultdict(list)
