@@ -20,7 +20,7 @@ def queue_job_execution(execution: riberry.model.job.JobExecution):
         tracker.start_tracking_execution(root_id=execution.task_id)
         riberry.model.conn.commit()
 
-        task = current_riberry_app.start(
+        execution_task_id = current_riberry_app.start(
             execution_id=execution.id,
             root_id=execution.task_id,
             form=form.internal_name,
@@ -45,7 +45,7 @@ def queue_job_execution(execution: riberry.model.job.JobExecution):
         riberry.model.conn.commit()
         raise
     else:
-        return task
+        return execution_task_id
 
 
 def execution_complete(task_id, root_id, status, stream):

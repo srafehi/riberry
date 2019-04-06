@@ -1,6 +1,4 @@
 import inspect
-import json
-import uuid
 from typing import Optional
 
 import riberry
@@ -27,14 +25,11 @@ class ExternalTask:
         )
         return ExternalTaskCreationResult(context=self.context, instance=external_task)
 
-    def validator_by_name(self, name):
-        return self._validators[name]
-
     def create_receiver_task(self, external_task_id, validator):
         if inspect.isfunction(validator):
             validator = riberry.app.util.misc.function_path(validator)
 
-        return self.context.current.app.tasks[riberry.app.RiberryApplication.CHECK_EXTERNAL_TASK_NAME].si(
+        return self.context.current.riberry_app.backend.create_receiver_task(
             external_task_id=external_task_id,
             validator=validator,
         )

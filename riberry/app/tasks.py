@@ -1,7 +1,4 @@
-from typing import List
-
 import pendulum
-from celery import shared_task
 from sqlalchemy import desc, asc
 
 import riberry
@@ -9,7 +6,6 @@ from riberry.app.util import execution_tracker as tracker
 from . import actions, env
 
 
-@shared_task(name='riberry.core.execution_complete', bind=True, ignore_result=True)
 def execution_complete(task, status, stream):
     with riberry.model.conn:
         return actions.executions.execution_complete(
@@ -17,7 +13,6 @@ def execution_complete(task, status, stream):
         )
 
 
-@shared_task(name='riberry.core.heartbeat', ignore_result=True)
 def echo():
     with riberry.model.conn:
         app_instance = env.get_instance_model()
@@ -31,7 +26,6 @@ def echo():
         riberry.model.conn.commit()
 
 
-@shared_task(name='riberry.core.poll', ignore_result=True)
 def poll():
     with riberry.model.conn:
         app_instance = env.get_instance_model()
@@ -49,11 +43,10 @@ def poll():
         ).filter_by(instance=app_instance).all()
 
         for execution in executions:
-            task = actions.executions.queue_job_execution(execution=execution)
-            print(f'poll - queueing task {task}')
+            execution_task_id = actions.executions.queue_job_execution(execution=execution)
+            print(f'poll - queueing task {execution_task_id}')
 
 
-@shared_task(name='riberry.core.refresh', ignore_result=True)
 def refresh():
     with riberry.model.conn:
         app_instance = env.get_instance_model()

@@ -1,7 +1,4 @@
 import functools
-
-import celery
-
 import riberry
 
 
@@ -12,7 +9,7 @@ class RiberryApplication:
     CHECK_EXTERNAL_TASK_NAME = 'riberry.core.app.check_external_task'
 
     def __init__(self, backend, name=None, addons=None):
-        self.backend: celery.Celery = backend
+        self.backend: riberry.app.backends.RiberryApplicationBackend = backend
         self.name = name
         self.context: riberry.app.context.Context = riberry.app.context.Context()
         self.executor = riberry.app.executor.TaskExecutor(riberry_app=self)
@@ -58,36 +55,21 @@ class RiberryApplication:
     def task(self, func=None, **options):
         if callable(func):
             wrapped_func, options = self.executor.riberry_task_executor_wrapper(func=func, task_options=options)
-            return self.register_task(wrapped_func, **options)
+            return self.register_task(func=wrapped_func, **options)
         else:
             return functools.partial(self.task, **options)
 
     def register_task(self, func, **kwargs):
-        return self.backend.task(**kwargs)(func)
+        return self.backend.register_task(func=func, **kwargs)
 
-    def start(self, execution_id, root_id, form):
+    def start(self, execution_id, root_id, form) -> str:
         if form not in self.entry_points:
             raise ValueError(f'Application {self.name!r} does not have an entry point with '
                              f'name {form!r} registered.')
 
         entry_point: EntryPoint = self.entry_points[form]
         with self.context.flow.stream_scope(stream=entry_point.stream):
-            body = self.backend.tasks[self.ENTRY_POINT_TASK_NAME].si(
-                execution_id=execution_id,
-                form=form
-            )
-
-        callback_success = riberry.app.tasks.execution_complete.si(status='SUCCESS', stream=entry_point.stream)
-        callback_failure = riberry.app.tasks.execution_complete.si(status='FAILURE', stream=entry_point.stream)
-
-        body.options['root_id'] = root_id
-        callback_success.options['root_id'] = root_id
-        callback_failure.options['root_id'] = root_id
-
-        task = body.on_error(callback_failure) | callback_success
-        task.options['root_id'] = root_id
-
-        return task.apply_async()
+            return self.backend.start_execution(execution_id=execution_id, root_id=root_id, entry_point=entry_point)
 
 
 class EntryPoint:

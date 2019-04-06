@@ -2,8 +2,6 @@ import uuid
 from contextlib import contextmanager
 from typing import Optional
 
-import celery
-
 import riberry
 
 
@@ -31,8 +29,12 @@ class ContextCurrent:
         return self._task_step
 
     @property
-    def app(self) -> celery.Celery:
-        return celery.current_app
+    def backend(self) -> 'riberry.app.backends.RiberryApplicationBackend':
+        return self.riberry_app.backend
+
+    @property
+    def task(self):
+        return self.backend.active_task()
 
     @property
     def riberry_app(self) -> 'riberry.app.RiberryApplication':
@@ -41,10 +43,6 @@ class ContextCurrent:
     @property
     def riberry_app_instance(self) -> riberry.model.application.ApplicationInstance:
         return riberry.app.env.get_instance_model()
-
-    @property
-    def task(self) -> celery.Task:
-        return celery.current_task
 
     @property
     def task_id(self):
