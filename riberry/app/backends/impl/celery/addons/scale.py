@@ -120,6 +120,9 @@ class ScaleStep(AddonStartStopStep):
     def run(self):
         redis_instance = riberry.celery.util.celery_redis_instance()
         self.lock.run(redis_instance=redis_instance)
+        if not self.consumer.task_consumer:
+            return
+        
         self.update(redis_instance=redis_instance)
         self.scale()
 
