@@ -163,6 +163,8 @@ def import_form(app, internal_name, attributes):
 
 def import_input_file_definition(form, internal_name, attributes):
     try:
+        if not form.id:
+            raise NoResultFound
         definition = services.form.file_definition_by_internal_name(form=form, internal_name=internal_name)
         definition = services.form.update_file_definition(definition, attributes)
     except NoResultFound:
@@ -184,6 +186,8 @@ def import_input_value_definition(form, internal_name, attributes):
     )
 
     try:
+        if not form.id:
+            raise NoResultFound
         definition = services.form.value_definition_by_internal_name(form=form, internal_name=internal_name)
         definition = services.form.update_value_definition(definition, attributes)
     except NoResultFound:

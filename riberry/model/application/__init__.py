@@ -24,7 +24,7 @@ class Application(base.Base):
     internal_name: str = Column(String(256), nullable=False, unique=True, comment='The internal name or secondary identifier of the application.')
     description: str = Column(String(256), comment='A brief description of the application\'s purpose.')
     type: str = Column(String(64), nullable=False, comment='The type of application.')
-    enabled: bool = Column(Boolean, default=True, comment='Whether or not this application and its instances are enabled (TODO).')
+    enabled: bool = Column(Boolean(name='application_enabled'), default=True, comment='Whether or not this application and its instances are enabled (TODO).')
 
     # associations
     instances: List['ApplicationInstance'] = relationship(

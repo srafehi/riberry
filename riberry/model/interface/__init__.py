@@ -28,7 +28,7 @@ class Form(base.Base):
     internal_name: str = Column(String(256), unique=True, nullable=False, comment='The internal name or secondary identifier of the form.')
     description: str = Column(String(256), comment='A brief description of the form\'s purpose.')
     version: int = Column(Integer, nullable=False, default=1, comment='The version of the form.')
-    enabled: bool = Column(Boolean, nullable=False, default=True, comment='Whether or not this form is enabled.')
+    enabled: bool = Column(Boolean(name='form_enabled'), nullable=False, default=True, comment='Whether or not this form is enabled.')
 
     # associations
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')
@@ -90,7 +90,7 @@ class InputFileDefinition(base.Base):
     description: str = Column(String(128))
     type: str = Column(String(64), nullable=False)
     accept: str = Column(String(256))
-    required: bool = Column(Boolean, nullable=False, default=True)
+    required: bool = Column(Boolean(name='form_required'), nullable=False, default=True)
 
     # associations
     form: 'Form' = relationship('Form', back_populates='input_file_definitions')
@@ -110,7 +110,7 @@ class InputValueDefinition(base.Base):
     internal_name: str = Column(String(256), nullable=False)
     description: str = Column(String(128))
     type: str = Column(String(64), nullable=False)
-    required: bool = Column(Boolean, nullable=False, default=True)
+    required: bool = Column(Boolean(name='input_value_definition_required'), nullable=False, default=True)
     default_binary = Column('defaults', Binary)
 
     # associations

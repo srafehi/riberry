@@ -63,7 +63,7 @@ class UserNotification(base.Base):
     user_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     notification_id = Column(base.id_builder.type, ForeignKey('notification.id'), nullable=False)
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now)
-    read = Column(Boolean, nullable=False, default=False)
+    read = Column(Boolean(name='notification_user_read'), nullable=False, default=False)
 
     # associations
     user: 'model.auth.User' = relationship('User', back_populates='notifications')
@@ -117,7 +117,7 @@ class ResourceData(base.Base):
     __tablename__ = 'resource_data'
     __reprattrs__ = ['name']
     __table_args__ = (
-        UniqueConstraint('resource_id', 'resource_type', 'name', name='r_f__id_type_name'),
+        UniqueConstraint('resource_id', 'resource_type', 'name'),
     )
 
     # columns
@@ -128,7 +128,7 @@ class ResourceData(base.Base):
     raw_value: bytes = Column('value', Binary, nullable=True)
     lock: str = Column(String(72), nullable=True)
     expiry: datetime = Column(DateTime(timezone=True), nullable=True)
-    marked_for_refresh: bool = Column(Boolean, nullable=False, default=False)
+    marked_for_refresh: bool = Column(Boolean(name='resource_data_marked_for_refresh'), nullable=False, default=False)
 
     @hybrid_property
     def value(self):

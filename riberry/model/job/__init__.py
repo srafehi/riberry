@@ -88,7 +88,7 @@ class JobSchedule(base.Base):
     id = base.id_builder.build()
     job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
-    enabled: bool = Column(Boolean, default=True, nullable=False, comment='Whether or not this schedule is active.')
+    enabled: bool = Column(Boolean(name='sched_job_enabled'), default=True, nullable=False, comment='Whether or not this schedule is active.')
     cron: str = Column(String(24), nullable=False, comment='The cron expression which defines our schedule.')
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False,
                                comment='The time our schedule was created.')
@@ -434,7 +434,7 @@ class JobExecutionReport(base.Base):
     key: str = Column(String(128), nullable=True)
     raw_input_data: Optional[bytes] = deferred(Column('input_data', Binary, nullable=True))
     report: Optional[bytes] = deferred(Column(Binary, nullable=True))
-    marked_for_refresh: bool = Column(Boolean, nullable=False, default=False)
+    marked_for_refresh: bool = Column(Boolean(name='job_report_marked_for_refresh'), nullable=False, default=False)
 
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='reports')
