@@ -7,7 +7,7 @@ class RiberryApplication:
     ENTRY_POINT_TASK_NAME = 'riberry.core.app.entry_point'
     CHECK_EXTERNAL_TASK_NAME = 'riberry.core.app.check_external_task'
 
-    def __init__(self, backend, name=None, addons=None):
+    def __init__(self, name, backend, addons=None):
         self.name = name
         self.__registered__[self.name] = self
         self.context: riberry.app.context.Context = riberry.app.context.Context()
