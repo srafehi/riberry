@@ -12,12 +12,14 @@ class Scale(Addon):
             concurrency_parameter='concurrency',
             minimum_concurrency=None,
             maximum_concurrency=None,
+            check_queues=None,
     ):
         self.conf = ScaleConfiguration(
             active_parameter=active_parameter,
             concurrency_parameter=concurrency_parameter,
             minimum_concurrency=minimum_concurrency,
             maximum_concurrency=maximum_concurrency,
+            check_queues=check_queues,
         )
         self.active_parameter = active_parameter
         self.concurrency_parameter = concurrency_parameter
@@ -54,6 +56,10 @@ class Scale(Addon):
             '--rib-scale-min', default=None,
             help='Minimum concurrency when auto-scaling (zero by default)',
         )
+        parser.add_argument(
+            '--rib-scale-check-queues', action='store_true', default=True,
+            help='Scale down if queues are empty and there are no active tasks (enabled by default)'
+        )
 
 
 class ScaleConfiguration:
@@ -66,6 +72,7 @@ class ScaleConfiguration:
             concurrency_parameter='concurrency',
             minimum_concurrency=None,
             maximum_concurrency=None,
+            check_queues=None,
     ):
         self.active_parameter = active_parameter
         self.concurrency_parameter = concurrency_parameter
@@ -73,6 +80,7 @@ class ScaleConfiguration:
         self.scale_group = scale_group
         self.minimum_concurrency = minimum_concurrency
         self.maximum_concurrency = maximum_concurrency
+        self.check_queues = check_queues
         self.ignore_queues = set()
 
 
@@ -80,7 +88,7 @@ class ScaleStep(AddonStartStopStep):
 
     conf: ScaleConfiguration
 
-    def __init__(self, worker, rib_scale, rib_scale_group, rib_scale_parameter, rib_scale_min, rib_scale_max, **_):
+    def __init__(self, worker, rib_scale, rib_scale_group, rib_scale_parameter, rib_scale_min, rib_scale_max, rib_scale_check_queues, **_):
         super().__init__(worker=worker, interval=1.0)
         self.lock = riberry.app.util.redis_lock.RedisLock(name='step:scale', on_acquired=self.on_lock_acquired, interval=5000)
 
@@ -89,6 +97,7 @@ class ScaleStep(AddonStartStopStep):
         self.conf.concurrency_parameter = rib_scale_parameter or self.conf.concurrency_parameter
         self.conf.minimum_concurrency = int(rib_scale_min) if rib_scale_min is not None else self.conf.minimum_concurrency
         self.conf.maximum_concurrency = int(rib_scale_max) if rib_scale_max is not None else self.conf.maximum_concurrency
+        self.conf.check_queues = bool(rib_scale_check_queues) if rib_scale_check_queues is not None else self.conf.check_queues
 
         self.queues = set()
         self.target_concurrency = None
@@ -162,7 +171,7 @@ class ScaleStep(AddonStartStopStep):
         if tasks_available:
             self.report(r=redis_instance)
 
-        self.is_active = active_flag and tasks_available
+        self.is_active = active_flag and (tasks_available if self.conf.check_queues else True)
         if not self.is_active:
             self.target_concurrency = 0
             return
