@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "riberry"
-version = "0.9.0"
+version = "0.9.1"
 description = "Python-driven job management system"
 authors = ["Shady Rafehi <shadyrafehi@gmail.com>"]
 license = "MIT"
