@@ -1,10 +1,11 @@
 import math
 
 import riberry
-from .base import Addon, AddonStartStopStep
+from .base import AddonStartStopStep
+from celery.utils.log import logger as log
 
 
-class Scale(Addon):
+class Scale(riberry.app.addons.Addon):
 
     def __init__(
             self,
@@ -56,10 +57,17 @@ class Scale(Addon):
             '--rib-scale-min', default=None,
             help='Minimum concurrency when auto-scaling (zero by default)',
         )
-        parser.add_argument(
-            '--rib-scale-check-queues', action='store_true', default=True,
-            help='Scale down if queues are empty and there are no active tasks (enabled by default)'
+
+        feature_parser = parser.add_mutually_exclusive_group(required=False)
+        feature_parser.add_argument(
+            '--rib-scale-check-queues', dest='rib_scale_check_queues', action='store_true',
+            help='Scale down if queues are empty and there are no active tasks'
         )
+        feature_parser.add_argument(
+            '--rib-scale-ignore-queues', dest='rib_scale_check_queues', action='store_false',
+            help='Do not scale down if queues are empty and there are no active tasks'
+        )
+        parser.set_defaults(rib_scale_check_queues=True)
 
 
 class ScaleConfiguration:
@@ -208,7 +216,7 @@ class ScaleStep(AddonStartStopStep):
         target_concurrency = self.target_concurrency
 
         scale_group = list(sorted(b.decode() for b in riberry.celery.util.celery_redis_instance().smembers(self.scale_groups_active_key)))
-        print(f'A: {self.is_active} C[T]: {self.target_concurrency}, C[A]: {actual_concurrency} M: {scale_group}')
+        log.debug(f'A: {self.is_active} C[T]: {self.target_concurrency}, C[A]: {actual_concurrency} M: {scale_group}')
 
         if target_concurrency == 0:
             for queue in list(self.consumer.task_consumer.queues):

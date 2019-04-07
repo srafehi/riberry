@@ -1,7 +1,7 @@
 import time
 import redis
 import functools
-from celery.utils.log import logger
+from celery.utils.log import logger as log
 
 
 class PriorityQueue:
@@ -55,8 +55,8 @@ class PriorityQueue:
                 value_from_callable=True
             )
             if not result and self.blocking:
-                logger.warn(f'PriorityQueue: ({self.free_key}) encountered blank key, '
-                            f'retrying after {self.block_retry} seconds.')
+                log.warn(f'PriorityQueue: ({self.free_key}) encountered blank key, '
+                         f'retrying after {self.block_retry} seconds.')
                 time.sleep(self.block_retry)
                 continue
             else:

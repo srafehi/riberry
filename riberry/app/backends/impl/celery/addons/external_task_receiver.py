@@ -1,8 +1,9 @@
-from .base import Addon, AddonStartStopStep
+from .base import AddonStartStopStep
 import riberry
+from riberry.app.backends.impl import celery as celery_backend
 
 
-class ExternalTaskReceiver(Addon):
+class ExternalTaskReceiver(riberry.app.addons.Addon):
 
     RECEIVER_QUEUE = 'rib.external'
 
@@ -13,14 +14,15 @@ class ExternalTaskReceiver(Addon):
         riberry_app.backend.steps['worker'].add(ConcreteExternalTaskReceiverStep)
         riberry_app.backend.user_options['worker'].add(self.regiser_user_options)
         task_routes = {
-            riberry_app.CHECK_EXTERNAL_TASK_NAME: {'queue': self.RECEIVER_QUEUE},
+            celery_backend.CeleryBackend.CHECK_EXTERNAL_TASK_NAME: {'queue': self.RECEIVER_QUEUE},
         }
 
         if not riberry_app.backend.conf.task_routes:
             riberry_app.backend.conf.task_routes = {}
         riberry_app.backend.conf.task_routes.update(task_routes)
+
         for addon in riberry_app.addons.values():
-            if isinstance(addon, riberry.app.addons.Scale):
+            if isinstance(addon, celery_backend.addons.Scale):
                 addon.conf.ignore_queues.add(self.RECEIVER_QUEUE)
 
     @staticmethod
@@ -55,9 +57,7 @@ class ExternalTaskReceiverStep(AddonStartStopStep):
         queues = {q.name for q in consumer.task_consumer.queues}
 
         if operation == 'add' and ExternalTaskReceiver.RECEIVER_QUEUE not in queues:
-            print('adding')
             consumer.add_task_queue(ExternalTaskReceiver.RECEIVER_QUEUE)
 
         if operation == 'cancel' and ExternalTaskReceiver.RECEIVER_QUEUE in queues:
-            print('cancelling')
             consumer.cancel_task_queue(ExternalTaskReceiver.RECEIVER_QUEUE)

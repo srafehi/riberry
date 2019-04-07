@@ -1,8 +1,9 @@
 from celery import exceptions as celery_exc, current_task
 
 import riberry
-from .misc.signals import task_prerun, task_postrun
-from . import actions
+from riberry.app import actions
+from riberry.app.misc.signals import task_prerun, task_postrun
+from .extension import RiberryTask
 
 
 class ExecutionComplete(Exception):
@@ -40,15 +41,16 @@ def _attempt_fallback(exc, task_options):
 
 class TaskExecutor:
 
-    def __init__(self, riberry_app):
-        self.riberry_app: riberry.app.RiberryApplication = riberry_app
+    @property
+    def riberry_app(self):
+        return riberry.app.env.current_riberry_app
 
     def external_task_executor(self):
         def _external_task_executor(external_task_id, validator):
-            task: riberry.app.ext.RiberryTask = self.riberry_app.context.current.task
             external_task: riberry.model.job.JobExecutionExternalTask = riberry.model.job.JobExecutionExternalTask.query().filter_by(
                 task_id=external_task_id,
             ).first()
+            task: RiberryTask = self.riberry_app.context.current.task
 
             if external_task:
                 if external_task.status == 'WAITING':
@@ -85,7 +87,11 @@ class TaskExecutor:
     def entry_point_executor(self):
         def _entry_point_executor(execution_id, form: str):
             entry_point = self.riberry_app.entry_points[form]
-            actions.executions.execution_started(self.riberry_app.context.current.task, execution_id, entry_point.stream)
+            actions.executions.execution_started(
+                task=self.riberry_app.context.current.task,
+                job_id=execution_id,
+                primary_stream=entry_point.stream,
+            )
             entry_point.func()
 
         return _entry_point_executor
@@ -120,7 +126,7 @@ class TaskExecutor:
                 except Exception as exc:
                     state = 'FAILURE'
                     mark_workflow_complete = True
-                    if isinstance(exc, _retry_types(task_options=task_options)) and not self._max_retries_reached(exc=exc):
+                    if isinstance(exc, _retry_types(task_options=task_options)) and not self._max_retries_reached(exc):
                         state = None
                         mark_workflow_complete = False
                         raise
@@ -141,11 +147,11 @@ class TaskExecutor:
                         task_postrun(context=self.riberry_app.context, props=riberry_properties, state=state)
 
     def _max_retries_reached(self, exc):
-        current_task = self.riberry_app.context.current.task
+        active_task = self.riberry_app.context.current.task
         return bool(
             not isinstance(exc, celery_exc.Ignore) and
-            current_task.max_retries is not None and
-            current_task.request.retries >= current_task.max_retries
+            active_task.max_retries is not None and
+            active_task.request.retries >= active_task.max_retries
         )
 
     def _execute_task(self, func, args, kwargs):
@@ -164,7 +170,7 @@ class TaskExecutor:
             )
 
         if 'name' not in task_options:
-            task_options['name'] = f'{func.__module__}.{func.__name__}'
-        task_options['base'] = riberry.app.ext.RiberryTask
+            task_options['name'] = riberry.app.util.misc.function_path(func=func)
+        task_options['base'] = task_options.get('base') or RiberryTask
 
         return wrapped_function, task_options

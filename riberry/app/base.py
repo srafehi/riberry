@@ -1,4 +1,3 @@
-import functools
 import riberry
 
 
@@ -9,29 +8,14 @@ class RiberryApplication:
     CHECK_EXTERNAL_TASK_NAME = 'riberry.core.app.check_external_task'
 
     def __init__(self, backend, name=None, addons=None):
-        self.backend: riberry.app.backends.RiberryApplicationBackend = backend
         self.name = name
-        self.context: riberry.app.context.Context = riberry.app.context.Context()
-        self.executor = riberry.app.executor.TaskExecutor(riberry_app=self)
-        self.entry_points = {}
-
         self.__registered__[self.name] = self
-
-        # Register "entry point" task
-        self.task(
-            name=self.ENTRY_POINT_TASK_NAME,
-        )(self.executor.entry_point_executor())
-
-        # Register "external task checker" task
-        self.task(
-            name=self.CHECK_EXTERNAL_TASK_NAME,
-            max_retries=None,
-        )(self.executor.external_task_executor())
-
+        self.context: riberry.app.context.Context = riberry.app.context.Context()
+        self.entry_points = {}
+        self.backend: riberry.app.backends.RiberryApplicationBackend = backend
+        self.backend.initialize()
         self.addons = {
-            'scale': riberry.app.addons.Scale(),
-            'background': riberry.app.addons.BackgroundTasks(),
-            'external-receiver': riberry.app.addons.ExternalTaskReceiver(),
+            **self.backend.default_addons(),
             **(addons or {})
         }
         for addon in self.addons.values():
@@ -53,14 +37,10 @@ class RiberryApplication:
         return wrapper
 
     def task(self, func=None, **options):
-        if callable(func):
-            wrapped_func, options = self.executor.riberry_task_executor_wrapper(func=func, task_options=options)
-            return self.register_task(func=wrapped_func, **options)
-        else:
-            return functools.partial(self.task, **options)
+        return self.backend.task(func=func, **options)
 
-    def register_task(self, func, **kwargs):
-        return self.backend.register_task(func=func, **kwargs)
+    def register_task(self, func, **options):
+        return self.backend.register_task(func=func, **options)
 
     def start(self, execution_id, root_id, form) -> str:
         if form not in self.entry_points:

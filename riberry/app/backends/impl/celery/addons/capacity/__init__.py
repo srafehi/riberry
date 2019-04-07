@@ -1,12 +1,12 @@
 from sqlalchemy.util.compat import contextmanager
 
-from ..base import Addon, AddonStartStopStep
+from ..base import AddonStartStopStep
 from .priority_queue import PriorityQueue
 import riberry
-from celery.utils.log import logger
+from celery.utils.log import logger as log
 
 
-class Capacity(Addon):
+class Capacity(riberry.app.addons.Addon):
 
     def __init__(self, parameter='capacity', key=None, sep='|', queue_cls=PriorityQueue, blocking: bool = True, block_retry: int = 0.5, r=None):
         self.parameter = parameter
@@ -69,5 +69,5 @@ class CapacityStep(AddonStartStopStep):
 
         member_scores = {k: int(v) for k, v in values}
         self.capacity.queue.update(member_scores)
-        logger.info(
+        log.info(
             f'DynamicPriorityParameter: ({self.capacity.queue.free_key}) updated {self.capacity.parameter} queue with {value!r}')

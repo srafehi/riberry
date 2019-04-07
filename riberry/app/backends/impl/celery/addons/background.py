@@ -1,8 +1,8 @@
-from .base import Addon, AddonStartStopStep
+from .base import AddonStartStopStep
 import riberry
 
 
-class BackgroundTasks(Addon):
+class BackgroundTasks(riberry.app.addons.Addon):
 
     def register(self, riberry_app: 'riberry.app.base.RiberryApplication'):
         class ConcreteBackgroundTasksStep(BackgroundTasksStep):
@@ -18,7 +18,8 @@ class BackgroundTasksStep(AddonStartStopStep):
         super().__init__(worker=worker, interval=0.6)
         self.lock = riberry.app.util.redis_lock.RedisLock(name='step:background', on_acquired=self.on_lock_acquired, interval=500)
 
-    def on_lock_acquired(self):
+    @staticmethod
+    def on_lock_acquired():
         try:
             riberry.app.tasks.echo()
             riberry.app.tasks.poll()
