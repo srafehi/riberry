@@ -1,4 +1,6 @@
 import celery
+from celery import shared_task
+
 import riberry
 
 
@@ -17,17 +19,17 @@ class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
             form=entry_point.form
         )
 
-        callback_success = riberry.app.tasks.execution_complete.si(status='SUCCESS', stream=entry_point.stream)
-        callback_failure = riberry.app.tasks.execution_complete.si(status='FAILURE', stream=entry_point.stream)
+        callback_success = execution_complete.si(status='SUCCESS', stream=entry_point.stream)
+        callback_failure = execution_complete.si(status='FAILURE', stream=entry_point.stream)
 
         body.options['root_id'] = root_id
         callback_success.options['root_id'] = root_id
         callback_failure.options['root_id'] = root_id
 
-        task = body.on_error(callback_failure) | callback_success
-        task.options['root_id'] = root_id
+        signature = body.on_error(callback_failure) | callback_success
+        signature.options['root_id'] = root_id
 
-        return task.apply_async().id
+        return signature.apply_async().id
 
     def create_receiver_task(self, external_task_id, validator):
         return self.task_by_name(riberry.app.RiberryApplication.CHECK_EXTERNAL_TASK_NAME).si(
@@ -37,3 +39,11 @@ class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
 
     def active_task(self):
         return celery.current_task
+
+
+@shared_task(name='riberry.core.execution_complete', bind=True, ignore_result=True)
+def execution_complete(task, status, stream):
+    with riberry.model.conn:
+        return riberry.app.actions.executions.execution_complete(
+            task_id=task.request.id, root_id=task.request.root_id, status=status, stream=stream
+        )

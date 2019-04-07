@@ -6,13 +6,6 @@ from riberry.app.util import execution_tracker as tracker
 from . import actions, env
 
 
-def execution_complete(task, status, stream):
-    with riberry.model.conn:
-        return actions.executions.execution_complete(
-            task.request.id, task.request.root_id, status, stream
-        )
-
-
 def echo():
     with riberry.model.conn:
         app_instance = env.get_instance_model()
