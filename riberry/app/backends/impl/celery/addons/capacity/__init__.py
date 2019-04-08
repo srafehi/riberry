@@ -25,7 +25,7 @@ class Capacity(riberry.app.addons.Addon):
 
     @last_value.setter
     def last_value(self, value):
-        self.r.set(self.last_value_key, value=value)
+        self.r.set(self.last_value_key, value='' if value is None else value)
 
     @contextmanager
     def borrow(self):
