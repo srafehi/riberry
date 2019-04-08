@@ -19,7 +19,8 @@ class RiberryApplication:
             **(addons or {})
         }
         for addon in self.addons.values():
-            addon.register(riberry_app=self)
+            if addon is not None:
+                addon.register(riberry_app=self)
 
     @classmethod
     def by_name(cls, name):
