@@ -16,6 +16,8 @@ class ResourceType(enum.Enum):
     user = 'User'
     job = 'Job'
     job_execution = 'JobExecution'
+    user_interface = 'UserInterface'
+    misc = 'Misc'
 
     def __repr__(self):
         return repr(self.value)
