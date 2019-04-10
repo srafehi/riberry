@@ -29,14 +29,14 @@ def before_task_publish(sender, headers, body, **_):
     args, kwargs, *_ = body
     task_id = headers['id']
 
-    if '__rib_stream' in kwargs:
+    if '__rib_stream_start' in kwargs:
         create_event(
             name='stream',
             root_id=root_id,
             task_id=task_id,
             data={
                 'stream': str(kwargs['__rib_stream']),
-                'state': 'QUEUED'
+                'state': 'QUEUED',
             }
         )
 
@@ -49,7 +49,7 @@ def before_task_publish(sender, headers, body, **_):
             data={
                 'stream': str(stream),
                 'step': str(step),
-                'state': 'QUEUED'
+                'state': 'QUEUED',
             }
         )
 
@@ -77,7 +77,7 @@ def task_prerun(context, props):
                 task_id=task_id,
                 data={
                     'stream': str(stream),
-                    'state': 'ACTIVE'
+                    'state': 'ACTIVE',
                 }
             )
 
@@ -89,7 +89,7 @@ def task_prerun(context, props):
             data={
                 'stream': str(stream),
                 'step': str(step),
-                'state': 'ACTIVE'
+                'state': 'ACTIVE',
             }
         )
 
@@ -134,6 +134,6 @@ def task_postrun(context, props, state):
             data={
                 'stream': str(stream),
                 'step': str(step),
-                'state': 'SUCCESS' if state == 'IGNORED' else state or 'FAILURE'
+                'state': 'SUCCESS' if state == 'IGNORED' else state or 'FAILURE',
             }
         )

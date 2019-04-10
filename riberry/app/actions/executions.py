@@ -105,7 +105,6 @@ def execution_started(task, job_id, primary_stream):
     job.started = job.updated = pendulum.DateTime.utcnow()
     job.status = 'ACTIVE'
     job.task_id = root_id
-    task.stream = primary_stream
     riberry.model.conn.commit()
 
     create_event(
@@ -114,6 +113,6 @@ def execution_started(task, job_id, primary_stream):
         task_id=root_id,
         data={
             'stream': primary_stream,
-            'state': 'ACTIVE'
+            'state': 'ACTIVE',
         }
     )

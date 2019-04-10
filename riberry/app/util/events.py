@@ -23,3 +23,4 @@ def create_event(name, root_id, task_id, data=None, binary=None):
 
     riberry.model.conn.add(evt)
     riberry.model.conn.commit()
+    riberry.model.conn.flush([evt])

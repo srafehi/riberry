@@ -46,22 +46,30 @@ class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
         return self.instance.tasks[name]
 
     def start_execution(self, execution_id, root_id, entry_point) -> AnyStr:
-        body = self.task_by_name(riberry.app.RiberryApplication.ENTRY_POINT_TASK_NAME).si(
-            execution_id=execution_id,
-            form=entry_point.form
-        )
+        task = self.task_by_name(riberry.app.RiberryApplication.ENTRY_POINT_TASK_NAME)
+        task_signature = task.si(execution_id=execution_id, form=entry_point.form)
 
         callback_success = tasks.execution_complete.si(status='SUCCESS', stream=entry_point.stream)
         callback_failure = tasks.execution_complete.si(status='FAILURE', stream=entry_point.stream)
 
-        body.options['root_id'] = root_id
+        task_signature.options['root_id'] = root_id
         callback_success.options['root_id'] = root_id
         callback_failure.options['root_id'] = root_id
 
-        signature = body.on_error(callback_failure) | callback_success
-        signature.options['root_id'] = root_id
+        exec_signature = task_signature.on_error(callback_failure) | callback_success
+        exec_signature.options['root_id'] = root_id
 
-        return signature.apply_async().id
+        riberry.app.util.events.create_event(
+            name='stream',
+            root_id=root_id,
+            task_id=root_id,
+            data={
+                'stream': entry_point.stream,
+                'state': 'QUEUED',
+            }
+        )
+
+        return exec_signature.apply_async().id
 
     def create_receiver_task(self, external_task_id, validator):
         return self.task_by_name(riberry.app.RiberryApplication.CHECK_EXTERNAL_TASK_NAME).si(
