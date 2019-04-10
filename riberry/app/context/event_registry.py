@@ -54,15 +54,30 @@ class EventRegistryHelper:
     def _register(self):
         return self.context.event_registry.register
 
-    def execution_failed(self, func):
-        key = riberry.app.util.misc.internal_data_key(key='once.execution_failed')
+    def _register_single_execution_function(self, func, event_type, key, registration_key=None):
+        key = riberry.app.util.misc.internal_data_key(key=f'once.{key}')
         func = partial(self.context.data.execute_once, key=key, func=func)
-        return self._register(event_type=EventRegistryTypes.on_completion, status='FAILURE')(func)
+        return self._register(event_type=event_type, **(registration_key or {}))(func)
+
+    def execution_failed(self, func):
+        return self._register_single_execution_function(
+            func=func,
+            event_type=EventRegistryTypes.on_completion,
+            key='execution_failed',
+            registration_key=dict(
+                status='FAILURE',
+            )
+        )
 
     def execution_succeeded(self, func):
-        key = riberry.app.util.misc.internal_data_key(key='once.execution_succeeded')
-        func = partial(self.context.data.execute_once, key=key, func=func)
-        return self._register(event_type=EventRegistryTypes.on_completion, status='SUCCESS')(func)
+        return self._register_single_execution_function(
+            func=func,
+            event_type=EventRegistryTypes.on_completion,
+            key='execution_succeeded',
+            registration_key=dict(
+                status='SUCCESS',
+            )
+        )
 
     def data_updated(self, name):
         return self._register(event_type=EventRegistryTypes.on_data_updated, data_name=name)

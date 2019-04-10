@@ -63,6 +63,7 @@ def execution_complete(task_id, root_id, status, stream):
             )
         except:
             print('Error occurred while triggering on_completion event.')
+            print(traceback.format_exc())
             riberry.model.conn.rollback()
 
     job.task_id = root_id
