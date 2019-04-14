@@ -7,6 +7,14 @@ from . import patch, tasks, addons
 from .executor import TaskExecutor
 
 
+def send_task_process_rib_kwargs(self, *args, **kwargs):
+    riberry_properties = {}
+    if kwargs.get('kwargs'):
+        for key, value in kwargs['kwargs'].items():
+            if key.startswith('__rib_'):
+                riberry_properties[key.replace('__rib_', '', 1)] = value
+
+
 class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
     instance: celery.Celery
 
@@ -18,7 +26,7 @@ class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
         self.executor = TaskExecutor()
 
     def initialize(self):
-        patch.patch_send_task(instance=self.instance)
+        patch.patch_send_task(instance=self.instance, func=send_task_process_rib_kwargs)
 
         # Register "entry point" task
         self.task(
@@ -46,7 +54,7 @@ class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
         return self.instance.tasks[name]
 
     def start_execution(self, execution_id, root_id, entry_point) -> AnyStr:
-        task = self.task_by_name(riberry.app.RiberryApplication.ENTRY_POINT_TASK_NAME)
+        task = self.task_by_name(self.ENTRY_POINT_TASK_NAME)
         task_signature = task.si(execution_id=execution_id, form=entry_point.form)
 
         callback_success = tasks.execution_complete.si(status='SUCCESS', stream=entry_point.stream)
@@ -72,7 +80,7 @@ class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
         return exec_signature.apply_async().id
 
     def create_receiver_task(self, external_task_id, validator):
-        return self.task_by_name(riberry.app.RiberryApplication.CHECK_EXTERNAL_TASK_NAME).si(
+        return self.task_by_name(self.CHECK_EXTERNAL_TASK_NAME).si(
             external_task_id=external_task_id,
             validator=validator,
         )

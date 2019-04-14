@@ -10,9 +10,6 @@ class RiberryApplicationConfig:
 class RiberryApplication:
     __registered__ = {}
 
-    ENTRY_POINT_TASK_NAME = 'riberry.core.app.entry_point'
-    CHECK_EXTERNAL_TASK_NAME = 'riberry.core.app.check_external_task'
-
     def __init__(self, *, name, backend, config=None, addons=None):
         self.name = name
         self.config = config or RiberryApplicationConfig()

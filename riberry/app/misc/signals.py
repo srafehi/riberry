@@ -4,7 +4,18 @@ import riberry
 from ..util.events import create_event
 
 
-__start_stream_cache = {}
+__stream_cache = {}
+
+
+def try_cache_stream(root_id, stream_name, stream_state):
+    key = root_id, stream_name, stream_state
+    if key not in __stream_cache:
+        __stream_cache[key] = None
+        if len(__stream_cache) > 10000:
+            evict_key = next(iter(__stream_cache))
+            __stream_cache.pop(evict_key)
+        return True
+    return False
 
 
 @signals.worker_process_init.connect
@@ -30,15 +41,17 @@ def before_task_publish(sender, headers, body, **_):
     task_id = headers['id']
 
     if '__rib_stream_start' in kwargs:
-        create_event(
-            name='stream',
-            root_id=root_id,
-            task_id=task_id,
-            data={
-                'stream': str(kwargs['__rib_stream']),
-                'state': 'QUEUED',
-            }
-        )
+        stream = str(kwargs['__rib_stream'])
+        if try_cache_stream(root_id=root_id, stream_name=stream, stream_state='QUEUED'):
+            create_event(
+                name='stream',
+                root_id=root_id,
+                task_id=task_id,
+                data={
+                    'stream': stream,
+                    'state': 'QUEUED',
+                }
+            )
 
     if '__rib_step' in kwargs and riberry.app.current_riberry_app.config.enable_steps:
         stream, step = kwargs['__rib_stream'], kwargs['__rib_step']
@@ -65,12 +78,7 @@ def task_prerun(context, props):
         return
 
     if 'stream_start' in props:
-        key = root_id, stream
-        if key not in __start_stream_cache:
-            __start_stream_cache[key] = None
-            if len(__start_stream_cache) > 5000:
-                evict_key = next(iter(__start_stream_cache))
-                __start_stream_cache.pop(evict_key)
+        if try_cache_stream(root_id=root_id, stream_name=stream, stream_state='ACTIVE'):
             create_event(
                 name='stream',
                 root_id=root_id,
