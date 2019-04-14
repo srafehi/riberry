@@ -136,7 +136,7 @@ def handle_steps(events: List[model.misc.Event]):
                 step.updated = event_time
                 if status == 'ACTIVE':
                     step.started = event_time
-                elif status in ('SUCCESS', 'FAILURED'):
+                elif status in ('SUCCESS', 'FAILURE'):
                     step.completed = event_time
 
         except:
