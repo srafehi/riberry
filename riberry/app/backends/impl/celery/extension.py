@@ -7,7 +7,7 @@ class RiberryTask(celery.Task):
     def signature(self, args=None, *starargs, **starkwargs):
         sig = celery.Task.signature(self, args, *starargs, **starkwargs)
         context = riberry.app.current_context
-        stream = context.flow.scoped_stream or context.current.stream
+        stream = sig.get('kwargs', {}).get('__rib_stream') or context.flow.scoped_stream or context.current.stream
 
         if stream:
             sig['kwargs']['__rib_stream'] = stream
