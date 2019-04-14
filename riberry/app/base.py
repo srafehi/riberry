@@ -1,14 +1,21 @@
 import riberry
 
 
+class RiberryApplicationConfig:
+
+    def __init__(self, **kwargs):
+        self.enable_steps = kwargs.get('enable_steps', True)
+
+
 class RiberryApplication:
     __registered__ = {}
 
     ENTRY_POINT_TASK_NAME = 'riberry.core.app.entry_point'
     CHECK_EXTERNAL_TASK_NAME = 'riberry.core.app.check_external_task'
 
-    def __init__(self, name, backend, addons=None):
+    def __init__(self, *, name, backend, config=None, addons=None):
         self.name = name
+        self.config = config or RiberryApplicationConfig()
         self.__registered__[self.name] = self
         self.context: riberry.app.context.Context = riberry.app.context.Context()
         self.entry_points = {}

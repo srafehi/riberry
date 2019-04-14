@@ -40,7 +40,7 @@ def before_task_publish(sender, headers, body, **_):
             }
         )
 
-    if '__rib_step' in kwargs:
+    if '__rib_step' in kwargs and riberry.app.current_riberry_app.config.enable_steps:
         stream, step = kwargs['__rib_stream'], kwargs['__rib_step']
         create_event(
             name='step',
@@ -81,7 +81,7 @@ def task_prerun(context, props):
                 }
             )
 
-    if step:
+    if step and riberry.app.current_riberry_app.config.enable_steps:
         create_event(
             name='step',
             root_id=root_id,
@@ -126,7 +126,7 @@ def task_postrun(context, props, state):
             }
         )
 
-    if step:
+    if step and riberry.app.current_riberry_app.config.enable_steps:
         create_event(
             name='step',
             root_id=root_id,
