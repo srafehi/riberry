@@ -312,12 +312,13 @@ class JobExecutionStreamStep(base.Base):
     __reprattrs__ = ['name', 'task_id', 'status']
     __table_args__ = (
         Index('j_s_s__idx_stream_id', 'stream_id'),
+        Index('j_s_s__idx_task_id', 'task_id'),
     )
 
     # columns
     id = base.id_builder.build()
     stream_id = Column(base.id_builder.type, ForeignKey('job_stream.id'), nullable=False)
-    task_id: str = Column(String(36), unique=True)
+    task_id: str = Column(String(36))
     name: str = Column(String(64))
     status: str = Column(String(24), default='RECEIVED')
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
