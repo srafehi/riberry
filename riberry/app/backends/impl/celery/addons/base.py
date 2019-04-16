@@ -44,12 +44,19 @@ class AddonStartStopStep(bootsteps.StartStopStep):
     def __execute(self):
         start_time = time.time()
         try:
-            self.run()
+            log.debug(f'Started {self.step_name}')
+            riberry.model.conn.raw_engine.dispose()
+            with riberry.model.conn:
+                self.run()
         finally:
-            log.debug(f'Completed {type(self).__name__} in {time.time() - start_time:2} seconds')
+            log.debug(f'Completed {self.step_name} in {time.time() - start_time:2} seconds')
 
     def should_run(self) -> bool:
         raise NotImplementedError
 
     def run(self):
         raise NotImplementedError
+
+    @property
+    def step_name(self):
+        return type(self).__name__
