@@ -151,7 +151,9 @@ class ScaleStep(AddonStartStopStep):
         for queue_name in queues:
             for queue in r.keys(f'{queue_name}*'):
                 try:
-                    if r.llen(queue):
+                    queue_length = r.llen(queue)
+                    log.debug(f'ScaleStep:: Queue length of {queue.decode()!r} is {queue_length}')
+                    if queue_length:
                         return False
                 except:
                     continue
@@ -219,10 +221,6 @@ class ScaleStep(AddonStartStopStep):
         if target_concurrency != self.target_concurrency:
             self.target_concurrency = target_concurrency
 
-    @property
-    def prefetch_target(self):
-        return (self.worker.consumer.pool.num_processes * self.worker.consumer.prefetch_multiplier) - self.worker.consumer.qos.value
-
     def scale(self):
         actual_concurrency = self.worker.consumer.pool.num_processes
         target_concurrency = self.target_concurrency
@@ -245,13 +243,21 @@ class ScaleStep(AddonStartStopStep):
                 self.worker.consumer.pool.grow(1)
             else:
                 self.worker.consumer.pool.grow(min(target_concurrency - actual_concurrency, 8))
-            log.info(f'ScaleStep:: Scaled up to {self.worker.consumer.pool.num_processes} concurrency (target: {self.target_concurrency}, prefetch: {self.worker.consumer.qos.value})')
-            self.worker.consumer.qos.increment_eventually(n=abs(self.prefetch_target))
-            self.worker.consumer.qos.update()
+            log.info(f'ScaleStep:: Scaled concurrency up to {self.worker.consumer.pool.num_processes} concurrency (target: {self.target_concurrency}, prefetch: {self.worker.consumer.qos.value})')
         elif actual_concurrency > target_concurrency:
-            self.worker.consumer.qos.decrement_eventually(n=abs(self.prefetch_target) - 1)
+            self.worker.consumer.qos.decrement_eventually(n=1)
             self.worker.consumer.qos.update()
             self.worker.consumer.pool.shrink(min(actual_concurrency - target_concurrency, 8))
-            self.worker.consumer.qos.decrement_eventually(n=abs(self.prefetch_target))
+            log.info(f'ScaleStep:: Scaled concurrency down to {self.worker.consumer.pool.num_processes} concurrency (target: {self.target_concurrency}, prefetch: {self.worker.consumer.qos.value})')
+
+        prefetch_target = self.worker.consumer.pool.num_processes * self.worker.consumer.prefetch_multiplier
+        prefetch_difference = prefetch_target - self.worker.consumer.qos.value
+        if prefetch_difference > 0:
+            self.worker.consumer.qos.increment_eventually(n=abs(prefetch_difference))
             self.worker.consumer.qos.update()
-            log.info(f'ScaleStep:: Scaled down to {self.worker.consumer.pool.num_processes} concurrency (target: {self.target_concurrency}, prefetch: {self.worker.consumer.qos.value})')
+            log.info(f'ScaleStep:: Scaled prefetch up to {self.worker.consumer.qos.value} (+{prefetch_difference})')
+        elif prefetch_difference < 0 and self.worker.consumer.qos.value != 1:
+            self.worker.consumer.qos.decrement_eventually(n=abs(prefetch_difference))
+            self.worker.consumer.qos.update()
+            log.info(f'ScaleStep:: Scaled prefetch down to {self.worker.consumer.qos.value} ({prefetch_difference})')
+
