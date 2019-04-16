@@ -98,7 +98,6 @@ class ScaleStep(AddonStartStopStep):
 
     def __init__(self, worker, rib_scale, rib_scale_group, rib_scale_parameter, rib_scale_min, rib_scale_max, rib_scale_check_queues, **_):
         super().__init__(worker=worker, interval=1.0)
-        self.lock = riberry.app.util.redis_lock.RedisLock(name='step:scale', on_acquired=self.on_lock_acquired, interval=5000)
 
         self.conf.scale = bool(rib_scale)
         self.conf.scale_group = rib_scale_group or self.conf.scale_group
@@ -107,12 +106,15 @@ class ScaleStep(AddonStartStopStep):
         self.conf.maximum_concurrency = int(rib_scale_max) if rib_scale_max is not None else self.conf.maximum_concurrency
         self.conf.check_queues = bool(rib_scale_check_queues) if rib_scale_check_queues is not None else self.conf.check_queues
 
+        self.lock = riberry.app.util.redis_lock.RedisLock(name=f'step:{self.conf.scale_group}:scale', on_acquired=self.on_lock_acquired, interval=5000)
+
         self.queues = set()
         self.target_concurrency = None
         self.initial_concurrency = None
         self.is_active = False
         self._worker_uuid = self.rib.context.current.WORKER_UUID
         self._instance_name = self.rib.context.current.riberry_app_instance.internal_name
+        self.idle_counter = 0
 
     def should_run(self) -> bool:
         return True
@@ -184,8 +186,11 @@ class ScaleStep(AddonStartStopStep):
 
         self.is_active = active_flag and (tasks_available if self.conf.check_queues else True)
         if not self.is_active:
-            self.target_concurrency = 0
+            if self.idle_counter > 10 or self.target_concurrency is None:
+                self.target_concurrency = 0
+            self.idle_counter += 1
             return
+        self.idle_counter = 0
 
         scale_group = list(sorted(b.decode() for b in redis_instance.smembers(self.scale_groups_active_key)))
         if self.conf.scale and self.conf.concurrency_parameter:
@@ -215,7 +220,7 @@ class ScaleStep(AddonStartStopStep):
             self.target_concurrency = target_concurrency
 
     @property
-    def prefetch_count(self):
+    def prefetch_target(self):
         return (self.worker.consumer.pool.num_processes * self.worker.consumer.prefetch_multiplier) - self.worker.consumer.qos.value
 
     def scale(self):
@@ -223,7 +228,7 @@ class ScaleStep(AddonStartStopStep):
         target_concurrency = self.target_concurrency
 
         scale_group = list(sorted(b.decode() for b in riberry.celery.util.celery_redis_instance().smembers(self.scale_groups_active_key)))
-        log.debug(f'A: {self.is_active} C[T]: {self.target_concurrency}, C[A]: {actual_concurrency} M: {scale_group}')
+        log.debug(f'A: {self.is_active} C[T]: {self.target_concurrency}, C[A]: {actual_concurrency}, P: {self.worker.consumer.qos.value},  M: {scale_group}')
 
         if target_concurrency == 0:
             for queue in list(self.consumer.task_consumer.queues):
@@ -241,10 +246,12 @@ class ScaleStep(AddonStartStopStep):
             else:
                 self.worker.consumer.pool.grow(min(target_concurrency - actual_concurrency, 8))
             log.info(f'ScaleStep:: Scaled up to {self.worker.consumer.pool.num_processes} concurrency (target: {self.target_concurrency}, prefetch: {self.worker.consumer.qos.value})')
-            self.worker.consumer.qos.increment_eventually(n=abs(self.prefetch_count))
+            self.worker.consumer.qos.increment_eventually(n=abs(self.prefetch_target))
             self.worker.consumer.qos.update()
         elif actual_concurrency > target_concurrency:
+            self.worker.consumer.qos.decrement_eventually(n=abs(self.prefetch_target) - 1)
+            self.worker.consumer.qos.update()
             self.worker.consumer.pool.shrink(min(actual_concurrency - target_concurrency, 8))
-            self.worker.consumer.qos.decrement_eventually(n=abs(self.prefetch_count))
+            self.worker.consumer.qos.decrement_eventually(n=abs(self.prefetch_target))
             self.worker.consumer.qos.update()
             log.info(f'ScaleStep:: Scaled down to {self.worker.consumer.pool.num_processes} concurrency (target: {self.target_concurrency}, prefetch: {self.worker.consumer.qos.value})')
