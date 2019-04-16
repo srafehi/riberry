@@ -28,7 +28,7 @@ class RedisLock:
                 pass
 
     def _attempt_lock(self, redis_instance):
-        with redis_instance.lock(name=self.key_lock, blocking_timeout=0.0):
+        with redis_instance.lock(name=self.key_lock, timeout=60, blocking_timeout=0.0):
             print(f"{self.name}: acquired lock...")
             time_start = time.time()
             try:
