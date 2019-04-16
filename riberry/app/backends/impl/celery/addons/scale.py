@@ -214,6 +214,10 @@ class ScaleStep(AddonStartStopStep):
         if target_concurrency != self.target_concurrency:
             self.target_concurrency = target_concurrency
 
+    @property
+    def prefetch_count(self):
+        return (self.worker.consumer.pool.num_processes * self.worker.consumer.prefetch_multiplier) - self.worker.consumer.qos.value
+
     def scale(self):
         actual_concurrency = self.worker.consumer.pool.num_processes
         target_concurrency = self.target_concurrency
@@ -236,5 +240,11 @@ class ScaleStep(AddonStartStopStep):
                 self.worker.consumer.pool.grow(1)
             else:
                 self.worker.consumer.pool.grow(min(target_concurrency - actual_concurrency, 8))
+            log.info(f'ScaleStep:: Scaled up to {self.worker.consumer.pool.num_processes} concurrency (target: {self.target_concurrency}, prefetch: {self.worker.consumer.qos.value})')
+            self.worker.consumer.qos.increment_eventually(n=abs(self.prefetch_count))
+            self.worker.consumer.qos.update()
         elif actual_concurrency > target_concurrency:
             self.worker.consumer.pool.shrink(min(actual_concurrency - target_concurrency, 8))
+            self.worker.consumer.qos.decrement_eventually(n=abs(self.prefetch_count))
+            self.worker.consumer.qos.update()
+            log.info(f'ScaleStep:: Scaled down to {self.worker.consumer.pool.num_processes} concurrency (target: {self.target_concurrency}, prefetch: {self.worker.consumer.qos.value})')
