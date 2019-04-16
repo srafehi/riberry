@@ -106,7 +106,7 @@ class ScaleStep(AddonStartStopStep):
         self.conf.maximum_concurrency = int(rib_scale_max) if rib_scale_max is not None else self.conf.maximum_concurrency
         self.conf.check_queues = bool(rib_scale_check_queues) if rib_scale_check_queues is not None else self.conf.check_queues
 
-        self.lock = riberry.app.util.redis_lock.RedisLock(name=f'step:{self.conf.scale_group}:scale', on_acquired=self.on_lock_acquired, interval=5000)
+        self.lock = riberry.app.util.redis_lock.RedisLock(name=f'step:scale:{self.conf.scale_group}', on_acquired=self.on_lock_acquired, interval=5000)
 
         self.queues = set()
         self.target_concurrency = None
