@@ -149,7 +149,7 @@ class ScaleStep(AddonStartStopStep):
     @staticmethod
     def _queues_empty(r, queues):
         for queue_name in queues:
-            for queue in r.keys(f'{queue_name}*'):
+            for queue in r.scan_iter(f'{queue_name}*'):
                 try:
                     queue_length = r.llen(queue)
                     log.debug(f'ScaleStep:: Queue length of {queue.decode()!r} is {queue_length}')
