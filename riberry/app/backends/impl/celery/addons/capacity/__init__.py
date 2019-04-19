@@ -25,7 +25,7 @@ class Capacity(riberry.app.addons.Addon):
 
     @last_value.setter
     def last_value(self, value):
-        self.r.set(self.last_value_key, value='' if value is None else value)
+        self.r.set(self.last_value_key, value=value)
 
     @contextmanager
     def borrow(self):
@@ -50,24 +50,30 @@ class CapacityStep(AddonStartStopStep):
     capacity: Capacity
 
     def __init__(self, worker, **_):
-        super().__init__(worker=worker, interval=0.5)
+        super().__init__(worker=worker, interval=1.0)
+        self.lock = riberry.app.util.redis_lock.RedisLock(name='step:capacity', on_acquired=self.on_lock_acquired, interval=900)
 
     def should_run(self) -> bool:
         return True
 
-    def run(self):
-        value = self.rib.context.current.riberry_app_instance.active_schedule_value(name=self.capacity.parameter)
+    def on_lock_acquired(self):
+        value = self.rib.context.current.riberry_app_instance.active_schedule_value(name=self.capacity.parameter) or ''
 
         if self.capacity.last_value is not None and value == self.capacity.last_value:
+            log.warn(f'DynamicPriorityParameter: ({self.capacity.queue.free_key}) is unchanged')
             return
 
         self.capacity.last_value = value
         values = [
             part.split(self.capacity.sep) if self.capacity.sep in part else (part, 0)
-            for part in (value or '').split(' ')
+            for part in value.split(' ')
         ]
 
         member_scores = {k: int(v) for k, v in values}
         self.capacity.queue.update(member_scores)
-        log.info(
-            f'DynamicPriorityParameter: ({self.capacity.queue.free_key}) updated {self.capacity.parameter} queue with {value!r}')
+        log.warn(f'DynamicPriorityParameter: ({self.capacity.queue.free_key}) updated {self.capacity.parameter} queue with {value!r}')
+
+    def run(self):
+        redis_instance = riberry.celery.util.celery_redis_instance()
+        print(self.capacity.queue.version)
+        self.lock.run(redis_instance=redis_instance)
