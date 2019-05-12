@@ -75,5 +75,4 @@ class CapacityStep(AddonStartStopStep):
 
     def run(self):
         redis_instance = riberry.celery.util.celery_redis_instance()
-        print(self.capacity.queue.version)
         self.lock.run(redis_instance=redis_instance)

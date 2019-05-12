@@ -14,6 +14,10 @@ from celery.utils.log import logger
 
 
 def email_notification(host, body, mime_type, subject, sender, recipients: List):
+    if not recipients:
+        logger.warn('Attempted to send email notification with no recipients provided.')
+        return
+
     try:
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
@@ -238,7 +242,7 @@ def handle_notifications(events: List[model.misc.Event]):
                     mime_type=notification_data.get('mime_type') or 'plain',
                     subject=notification_data['subject'],
                     sender=notification_data.get('from') or config.config.email.sender,
-                    recipients=[user.details.email] + notification_data.get('to', []),
+                    recipients=list(filter(None, [user.details.email] + notification_data.get('to', []))),
                 )
             except:
                 logger.warn(f'An error occurred processing notification type {notification_type}: '
@@ -262,7 +266,7 @@ def handle_notifications(events: List[model.misc.Event]):
                 ]
             )
             model.conn.add(notification)
-            if config.config.email.enabled:
+            if config.config.email.enabled and user.details.email:
                 email_notification(
                     host=config.config.email.smtp_server,
                     body=message,
@@ -285,7 +289,7 @@ def handle_notifications(events: List[model.misc.Event]):
                 ]
             )
             model.conn.add(notification)
-            if config.config.email.enabled:
+            if config.config.email.enabled and user.details.email:
                 email_notification(
                     host=config.config.email.smtp_server,
                     body=message,
