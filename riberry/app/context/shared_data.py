@@ -96,7 +96,7 @@ class SharedExecutionData(Mapping):
             ).update({
                 'lock': lock_value,
                 'expiry': pendulum.DateTime.utcnow().add(seconds=ttl)
-            })
+            }, synchronize_session=False)
             riberry.model.conn.commit()
             riberry.model.conn.expire(instance=instance)
 
