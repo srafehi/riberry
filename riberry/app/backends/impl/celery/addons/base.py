@@ -1,6 +1,8 @@
 import time
 
 from celery import bootsteps
+from redis import RedisError
+
 import riberry
 from celery.utils.log import logger as log
 
@@ -48,6 +50,8 @@ class AddonStartStopStep(bootsteps.StartStopStep):
             riberry.model.conn.raw_engine.dispose()
             with riberry.model.conn:
                 self.run()
+        except RedisError:
+            log.exception(f'Encountered redis exception while executing {self.step_name}')
         finally:
             log.debug(f'Completed {self.step_name} in {time.time() - start_time:2} seconds')
 
