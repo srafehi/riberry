@@ -96,8 +96,7 @@ def execution_complete(task_id, root_id, status, stream):
     )
 
 
-def execution_started(task, job_id, primary_stream):
-    root_id = task.request.root_id
+def execution_started(task_id, root_id, job_id, primary_stream):
 
     job: riberry.model.job.JobExecution = riberry.model.job.JobExecution.query().filter_by(
         id=job_id,
@@ -110,9 +109,10 @@ def execution_started(task, job_id, primary_stream):
     create_event(
         name='stream',
         root_id=root_id,
-        task_id=root_id,
+        task_id=task_id,
         data={
             'stream': primary_stream,
             'state': 'ACTIVE',
         }
     )
+    notify.workflow_started(task_id=task_id, root_id=root_id)

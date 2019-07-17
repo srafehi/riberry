@@ -88,7 +88,8 @@ class TaskExecutor:
         def _entry_point_executor(execution_id, form: str):
             entry_point = self.riberry_app.entry_points[form]
             actions.executions.execution_started(
-                task=self.riberry_app.context.current.task,
+                task_id=self.riberry_app.context.current.task_id,
+                root_id=self.riberry_app.context.current.root_id,
                 job_id=execution_id,
                 primary_stream=entry_point.stream,
             )

@@ -1,4 +1,5 @@
 import json
+import traceback
 
 import pendulum
 
@@ -21,6 +22,10 @@ def create_event(name, root_id, task_id, data=None, binary=None):
         binary=binary,
     )
 
-    riberry.model.conn.add(evt)
-    riberry.model.conn.commit()
-    riberry.model.conn.flush([evt])
+    try:
+        riberry.model.conn.add(evt)
+        riberry.model.conn.commit()
+        riberry.model.conn.flush([evt])
+    except:
+        traceback.print_exc()
+        riberry.model.conn.rollback()

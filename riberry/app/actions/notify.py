@@ -16,7 +16,7 @@ def notify(notification_type, data=None, task_id=None, root_id=None):
             'type': notification_type,
             'data': data or {}
         },
-        binary=None
+        binary=None,
     )
 
 
@@ -25,7 +25,16 @@ def workflow_complete(task_id: str, root_id: str, status: str):
         notification_type='workflow_complete',
         data=dict(status=status),
         task_id=task_id,
-        root_id=root_id
+        root_id=root_id,
+    )
+
+
+def workflow_started(task_id: str, root_id: str):
+    notify(
+        notification_type='workflow_started',
+        data=None,
+        task_id=task_id,
+        root_id=root_id,
     )
 
 
@@ -46,6 +55,6 @@ def send_email(
             'mime_type': mime_type,
             'body': body,
             'from': sender,
-            'to': receivers or []
+            'to': receivers or [],
         }
     )
