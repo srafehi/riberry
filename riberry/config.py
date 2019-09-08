@@ -1,11 +1,19 @@
-import riberry
-import toml
-import os
 import binascii
+import os
 import pathlib
 import warnings
 
+import toml
+from appdirs import AppDirs
+
+import riberry
 from riberry.util.common import variable_substitution
+
+APP_DIRS = AppDirs(appname='riberry')
+APP_DIR_USER_DATA = pathlib.Path(APP_DIRS.user_data_dir)
+APP_DIR_USER_CONF = pathlib.Path(APP_DIRS.user_config_dir)
+APP_DIR_USER_DATA.mkdir(parents=True, exist_ok=True)
+APP_DIR_USER_CONF.mkdir(parents=True, exist_ok=True)
 
 CONF_DEFAULT_BG_SCHED_INTERVAL = 10
 CONF_DEFAULT_BG_EVENT_INTERVAL = 2
@@ -13,21 +21,25 @@ CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT = 1000
 CONF_DEFAULT_BG_CAPACITY_INTERVAL = 5
 
 CONF_DEFAULT_DB_ECHO = False
-CONF_DEFAULT_DB_CONN_PATH = (pathlib.Path(os.path.expanduser('~')) / '.riberry') / 'model.db'
+CONF_DEFAULT_DB_CONN_PATH = APP_DIR_USER_DATA / 'model.db'
 CONF_DEFAULT_DB_CONN_URL = f'sqlite:///{CONF_DEFAULT_DB_CONN_PATH}'
 
 CONF_DEFAULT_POLICY_PROVIDER = 'default'
 CONF_DEFAULT_AUTH_PROVIDER = 'default'
 CONF_DEFAULT_AUTH_TOKEN_PROVIDER = 'jwt'
-CONF_DEFAULT_AUTH_TOKEN_PATH = (pathlib.Path(os.path.expanduser('~')) / '.riberry') / 'auth.key'
+CONF_DEFAULT_AUTH_TOKEN_PATH = APP_DIR_USER_DATA / 'auth.key'
 CONF_DEFAULT_AUTH_TOKEN_SIZE = 256
+CONF_DEFAULT_PATH = APP_DIR_USER_CONF / 'conf.toml'
 
 
 if 'RIBERRY_CONFIG_PATH' in os.environ:
     _config = variable_substitution(toml.load(os.environ['RIBERRY_CONFIG_PATH']))
+elif CONF_DEFAULT_PATH.exists():
+    _config = variable_substitution(toml.load(str(CONF_DEFAULT_PATH)))
 else:
     warnings.warn(message=f'Environment variable \'RIBERRY_CONFIG_PATH\' not declared, '
-                          f'defaulting to default configuration')
+                          f'config at default path {CONF_DEFAULT_PATH} not found, '
+                          f'using in-memory configuration')
     _config = {}
 
 

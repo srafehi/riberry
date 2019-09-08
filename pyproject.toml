@@ -18,6 +18,7 @@ toml = "^0.10.0"
 click = "^7.0"
 redis = "^3.2"
 celery = {version="^4.3", extras=["redis"]}
+appdirs = "^1.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^4.4"
