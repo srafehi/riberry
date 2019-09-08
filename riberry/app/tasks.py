@@ -1,3 +1,5 @@
+from typing import Callable, Optional, List
+
 import pendulum
 from sqlalchemy import desc, asc
 
@@ -19,15 +21,22 @@ def echo():
         riberry.model.conn.commit()
 
 
-def poll():
+def poll(
+        track_executions: bool = True,
+        filter_func: Optional[
+            Callable[[List[riberry.model.job.JobExecution]], List[riberry.model.job.JobExecution]]
+        ] = None
+):
     with riberry.model.conn:
         app_instance = env.get_instance_model()
 
-        tracker.check_stale_execution(app_instance=app_instance)
+        if track_executions:
+            tracker.check_stale_execution(app_instance=app_instance)
+
         if app_instance.status != 'online':
             return
 
-        executions = riberry.model.job.JobExecution.query().filter(
+        executions: List[riberry.model.job.JobExecution] = riberry.model.job.JobExecution.query().filter(
             riberry.model.job.JobExecution.status == 'RECEIVED'
         ).join(riberry.model.job.Job).order_by(
             desc(riberry.model.job.JobExecution.priority),
@@ -35,8 +44,12 @@ def poll():
             asc(riberry.model.job.JobExecution.id),
         ).filter_by(instance=app_instance).all()
 
+        if callable(filter_func):
+            executions = filter_func(executions)
+
         for execution in executions:
-            execution_task_id = actions.executions.queue_job_execution(execution=execution)
+            execution_task_id = actions.executions.queue_job_execution(
+                execution=execution, track_executions=track_executions)
             print(f'poll - queueing task {execution_task_id}')
 
 

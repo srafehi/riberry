@@ -10,14 +10,17 @@ from ..util import execution_tracker as tracker
 from ..util.events import create_event
 
 
-def queue_job_execution(execution: riberry.model.job.JobExecution):
+def queue_job_execution(execution: riberry.model.job.JobExecution, track_executions: bool = True):
     job = execution.job
     form = job.form
 
     try:
         execution.status = 'READY'
         execution.task_id = str(uuid.uuid4())
-        tracker.start_tracking_execution(root_id=execution.task_id)
+
+        if track_executions:
+            tracker.start_tracking_execution(root_id=execution.task_id)
+
         riberry.model.conn.commit()
 
         execution_task_id = current_riberry_app.start(
