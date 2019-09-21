@@ -2,10 +2,10 @@ import abc
 import functools
 import inspect
 from contextlib import contextmanager
-from threading import local
 from typing import Set, Union, Optional, Type, Callable
 
 from riberry.exc import AuthorizationError
+from .store import ThreadLocalPolicyContextStore, PolicyContextStore
 
 
 class NotApplicable(Exception):
@@ -30,15 +30,14 @@ class AuthorizationEngine:
 
 
 class PolicyContext:
-
-    _local = local()
+    store: PolicyContextStore = ThreadLocalPolicyContextStore()
     _no_default = object()
 
     def __getitem__(self, item):
-        return getattr(self._local, item, None)
+        return self.store.get(item, default=None)
 
     def __setitem__(self, item, value):
-        setattr(self._local, item, value)
+        self.store.set(item, value)
 
     @property
     def enabled(self):
@@ -94,7 +93,8 @@ class PolicyContext:
         finally:
             self.enabled = True
 
-    def configure(self, subject, environment, policy_engine, on_deny: Optional[Union[Type, Callable]] = AuthorizationError):
+    def configure(self, subject, environment, policy_engine,
+                  on_deny: Optional[Union[Type, Callable]] = AuthorizationError):
         self.enabled = True
         self.subject = subject
         self.environment = environment
@@ -142,7 +142,9 @@ class PolicyContext:
             def inner(*args, **kwargs):
                 result = func(*args, **kwargs)
                 return self.filter(resources=result, action=action)
+
             return inner
+
         return outer
 
     def post_authorize(self, action, on_deny: Optional[Union[Type, Callable]] = _no_default):
@@ -152,7 +154,9 @@ class PolicyContext:
                 result = func(*args, **kwargs)
                 self.authorize(resource=result, action=action, on_deny=on_deny)
                 return result
+
             return inner
+
         return outer
 
 
