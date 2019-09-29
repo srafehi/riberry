@@ -8,6 +8,9 @@ from riberry.app.util import execution_tracker as tracker
 from . import actions, env
 
 
+log = riberry.log.make(__name__)
+
+
 def echo():
     with riberry.model.conn:
         app_instance = env.get_instance_model()
@@ -47,7 +50,7 @@ def poll(
                 continue
             execution_task_id = actions.executions.queue_job_execution(
                 execution=execution, track_executions=track_executions)
-            print(f'poll - queueing task {execution_task_id}')
+            log.info(f'Queueing execution: id={execution.id!r}, root={execution_task_id!r}, job={execution.job.name!r}')
 
 
 def refresh():
