@@ -107,6 +107,7 @@ class TaskExecutor:
             with self.riberry_app.context.scope(
                 root_id=current_task.request.root_id,
                 task_id=current_task.request.id,
+                task_name=current_task.name,
                 stream=riberry_properties.get('stream'),
                 step=riberry_properties.get('step'),
                 category=riberry_properties.get('category'),
