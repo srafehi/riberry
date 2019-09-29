@@ -30,7 +30,10 @@ class RiberryApplication:
     def by_name(cls, name):
         return cls.__registered__[name]
 
-    def entry_point(self, form, stream='Overall', step='Entry'):
+    def entry_point(self, form, stream=None, step=None):
+        stream = stream or self.backend.default_stream_name
+        step = step or self.backend.default_step_name
+
         def wrapper(func):
             self.entry_points[form] = EntryPoint(
                 form=form,
