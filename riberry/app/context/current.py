@@ -1,3 +1,4 @@
+import threading
 import uuid
 from contextlib import contextmanager
 from typing import Optional
@@ -6,15 +7,18 @@ import riberry
 
 
 class ContextCurrent:
+    _state = threading.local()
 
     def __init__(self, context):
         self.context: riberry.app.context.Context = context
-        self._task_stream = None
-        self._task_category = None
-        self._task_step = None
-        self._root_id = None
-        self._task_id = None
         self._worker_uuid = str(uuid.uuid4())
+
+    def _get_state(self, key, default=None):
+        _data = getattr(self._state, 'state', {})
+        return _data.get(key, default)
+
+    def _set_state(self, **state):
+        self._state.state = state
 
     @property
     def WORKER_UUID(self):
@@ -22,11 +26,15 @@ class ContextCurrent:
 
     @property
     def stream(self):
-        return self._task_stream
+        return self._get_state('stream')
 
     @property
     def step(self):
-        return self._task_step
+        return self._get_state('step')
+
+    @property
+    def category(self):
+        return self._get_state('category')
 
     @property
     def backend(self) -> 'riberry.app.backends.RiberryApplicationBackend':
@@ -46,11 +54,11 @@ class ContextCurrent:
 
     @property
     def task_id(self):
-        return self._task_id
+        return self._get_state('task_id')
 
     @property
     def root_id(self):
-        return self._root_id
+        return self._get_state('root_id')
 
     @property
     def job_execution(self) -> Optional[riberry.model.job.JobExecution]:
@@ -64,12 +72,10 @@ class ContextCurrent:
     @contextmanager
     def scope(self, root_id, task_id, stream, category, step):
         try:
-            self._root_id, self._task_id = root_id, task_id
-            self._task_stream, self._task_category, self._task_step = stream, category, step
+            self._set_state(root_id=root_id, task_id=task_id, step=step, stream=stream, category=category)
             yield
         finally:
-            self._root_id, self._task_id = None, None
-            self._task_stream, self._task_category, self._task_step = None, None, None
+            self._set_state()
 
     @property
     def progress(self) -> str:
