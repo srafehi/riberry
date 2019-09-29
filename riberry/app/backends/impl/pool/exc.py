@@ -1,0 +1,2 @@
+class Defer(Exception):
+    pass
