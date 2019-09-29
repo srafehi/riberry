@@ -19,7 +19,7 @@ def update_all_reports(app_instance=None):
     for report in reports:
         root_id = report.job_execution.task_id
 
-        with cxt.scope(root_id=root_id, task_id=root_id, stream=None, step=None, category=None):
+        with cxt.scope(root_id=root_id, task_id=root_id, task_name=None, stream=None, step=None, category=None):
             cxt.event_registry.call(event_type=cxt.event_registry.types.on_report_refresh, report=report.name)
             if report.marked_for_refresh:
                 report.marked_for_refresh = False

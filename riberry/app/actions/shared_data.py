@@ -21,7 +21,7 @@ def update_all_data_items(app_instance=None):
     for item in data_items:
         root_id = riberry.model.job.JobExecution.query().filter_by(id=item.resource_id).one().task_id
 
-        with cxt.scope(root_id=root_id, task_id=root_id, stream=None, step=None, category=None):
+        with cxt.scope(root_id=root_id, task_id=root_id, task_name=None, stream=None, step=None, category=None):
             cxt.event_registry.call(event_type=cxt.event_registry.types.on_data_updated, data_name=item.name)
             cxt.event_registry.call(event_type=cxt.event_registry.types.on_report_refresh, data_name=item.name)
             if item.marked_for_refresh:
