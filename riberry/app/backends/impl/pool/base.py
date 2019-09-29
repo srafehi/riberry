@@ -11,7 +11,7 @@ from .task_queue import TaskQueue, Task, TaskDefinition
 log = riberry.log.make(__name__)
 
 
-def formify(form_name, **kwargs):
+def entry_point(form_name, **kwargs):
     form: riberry.model.interface.Form = riberry.model.interface.Form.query().filter_by(internal_name=form_name).one()
     try:
         app: RiberryApplication = RiberryApplication.by_name(form.application.internal_name)
