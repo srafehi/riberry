@@ -35,6 +35,7 @@ def poll(
             tracker.check_stale_execution(app_instance=app_instance)
 
         if app_instance.status != 'online':
+            log.debug(f'Instance {app_instance.internal_name!r} is not online, skipped polling tasks')
             return
 
         executions: List[riberry.model.job.JobExecution] = riberry.model.job.JobExecution.query().filter(
