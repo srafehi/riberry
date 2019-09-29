@@ -23,9 +23,7 @@ def echo():
 
 def poll(
         track_executions: bool = True,
-        filter_func: Optional[
-            Callable[[List[riberry.model.job.JobExecution]], List[riberry.model.job.JobExecution]]
-        ] = None
+        filter_func: Optional[Callable[[riberry.model.job.JobExecution], bool]] = None,
 ):
     with riberry.model.conn:
         app_instance = env.get_instance_model()
@@ -44,10 +42,9 @@ def poll(
             asc(riberry.model.job.JobExecution.id),
         ).filter_by(instance=app_instance).all()
 
-        if callable(filter_func):
-            executions = filter_func(executions)
-
         for execution in executions:
+            if callable(filter_func) and not filter_func(execution):
+                continue
             execution_task_id = actions.executions.queue_job_execution(
                 execution=execution, track_executions=track_executions)
             print(f'poll - queueing task {execution_task_id}')
