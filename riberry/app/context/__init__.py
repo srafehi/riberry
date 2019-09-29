@@ -25,10 +25,11 @@ class Context:
         self.on = EventRegistryHelper(context=self)
 
     @contextmanager
-    def scope(self, root_id, task_id, stream, category, step):
+    def scope(self, root_id, task_id, task_name, stream, category, step):
         with self.current.scope(
             root_id=root_id,
             task_id=task_id,
+            task_name=task_name,
             stream=stream,
             category=category,
             step=step,

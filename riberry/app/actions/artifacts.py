@@ -67,15 +67,14 @@ def create_artifact_from_traceback(
     else:
         error_content = traceback.format_exc().encode()
 
-    task = context.current.task
     create_artifact(
-        name=name if name else f'Exception {task.name}',
+        name=name if name else f'Exception {context.current.task_name}',
         type=type,
         category=category,
         data={
             'Error Type': exc.__class__.__name__,
             'Error Message': str(exc),
         },
-        filename=filename if filename else f'{task.name}-{task.request.id}.log',
+        filename=filename if filename else f'{context.current.task_name}-{context.current.task_id}.log',
         content=error_content
     )

@@ -58,7 +58,7 @@ def execution_complete(task_id, root_id, status, stream):
         return
 
     cxt = current_riberry_app.context
-    with cxt.scope(root_id=root_id, task_id=root_id, stream=None, step=None, category=None):
+    with cxt.scope(root_id=root_id, task_id=root_id, task_name=None, stream=None, step=None, category=None):
         try:
             current_riberry_app.context.event_registry.call(
                 event_type=current_riberry_app.context.event_registry.types.on_completion,

@@ -57,6 +57,10 @@ class ContextCurrent:
         return self._get_state('task_id')
 
     @property
+    def task_name(self):
+        return self._get_state('task_name')
+
+    @property
     def root_id(self):
         return self._get_state('root_id')
 
@@ -70,9 +74,10 @@ class ContextCurrent:
         return job_execution.job if self.job_execution else None
 
     @contextmanager
-    def scope(self, root_id, task_id, stream, category, step):
+    def scope(self, root_id, task_id, task_name, stream, category, step):
         try:
-            self._set_state(root_id=root_id, task_id=task_id, step=step, stream=stream, category=category)
+            self._set_state(
+                root_id=root_id, task_name=task_name, task_id=task_id, step=step, stream=stream, category=category)
             yield
         finally:
             self._set_state()
