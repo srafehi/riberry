@@ -51,23 +51,23 @@ def queue_job_execution(execution: riberry.model.job.JobExecution, track_executi
         return execution_task_id
 
 
-def execution_complete(task_id, root_id, status, stream):
-    job: riberry.model.job.JobExecution = riberry.model.job.JobExecution.query().filter_by(
-        task_id=root_id).first()
+def execution_complete(task_id, root_id, status, stream, context):
+    job: riberry.model.job.JobExecution = riberry.model.job.JobExecution.query().filter_by(task_id=root_id).first()
+
     if not job:
         return
 
-    cxt = current_riberry_app.context
-    with cxt.scope(root_id=root_id, task_id=root_id, task_name=None, stream=None, step=None, category=None):
-        try:
-            current_riberry_app.context.event_registry.call(
-                event_type=current_riberry_app.context.event_registry.types.on_completion,
-                status=status,
-            )
-        except:
-            print('Error occurred while triggering on_completion event.')
-            print(traceback.format_exc())
-            riberry.model.conn.rollback()
+    if context:
+        with context.scope(root_id=root_id, task_id=root_id, task_name=None, stream=None, step=None, category=None):
+            try:
+                context.event_registry.call(
+                    event_type=context.event_registry.types.on_completion,
+                    status=status,
+                )
+            except:
+                print('Error occurred while triggering on_completion event.')
+                print(traceback.format_exc())
+                riberry.model.conn.rollback()
 
     job.task_id = root_id
     job.status = status

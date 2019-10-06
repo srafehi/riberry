@@ -96,6 +96,7 @@ def execute_task(job_execution: riberry.model.job.JobExecution, task: Task):
                 root_id=job_execution.task_id,
                 status=status,
                 stream=task.definition.stream,
+                context=riberry.app.current_context,
             )
 
         task_postrun(context=riberry.app.current_context, props={}, state=status or 'IGNORED')

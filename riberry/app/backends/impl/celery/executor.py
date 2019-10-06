@@ -144,6 +144,7 @@ class TaskExecutor:
                             root_id=self.riberry_app.context.current.root_id,
                             status=state,
                             stream=None,
+                            context=self.riberry_app.context,
                         )
                     if state is not None:
                         task_postrun(context=self.riberry_app.context, props=riberry_properties, state=state)

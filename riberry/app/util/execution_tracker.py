@@ -55,5 +55,6 @@ def check_stale_execution(app_instance):
                 task_id=execution.task_id,
                 root_id=execution.task_id,
                 status='FAILURE',
-                stream=None
+                stream=None,
+                context=riberry.app.current_context,
             )
