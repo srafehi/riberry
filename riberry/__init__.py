@@ -5,8 +5,9 @@ from riberry import log, config, plugins, model, celery, policy, services, exc, 
 __version__ = '0.10.11'
 
 log.root_name = __name__
-log.root = logging.getLogger(log.root_name)
-log.root.addHandler(logging.NullHandler())
+log.logger = logging.getLogger(log.root_name)
+log.init()
+
 
 config.config.enable()
 config.config.authentication.enable()

@@ -34,5 +34,5 @@ def configure(log_level='ERROR'):
         logging.Formatter('%(levelname)-8s | %(asctime)-s | %(context)-41s | %(root_id)-41s | %(prefix)s%(message)s')
     )
     handler.addFilter(Filter())
-    riberry.log.root.addHandler(handler)
-    riberry.log.root.setLevel(log_level.upper())
+    riberry.log.logger.addHandler(handler)
+    riberry.log.logger.setLevel(log_level.upper())
