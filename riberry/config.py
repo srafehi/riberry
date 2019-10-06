@@ -66,12 +66,14 @@ class DatabaseConfig:
             self.connection_url = CONF_DEFAULT_DB_CONN_URL
 
         self.echo = connection_config.get('echo', CONF_DEFAULT_DB_ECHO)
+        self.engine_settings = self.raw_config.get('engine', {})
         self.connection_arguments = self.raw_config.get('arguments', {})
 
     def enable(self):
         riberry.model.init(
             url=self.connection_url,
             echo=self.echo,
+            engine_settings=self.engine_settings,
             connection_arguments=self.connection_arguments
         )
 

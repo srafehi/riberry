@@ -1,12 +1,16 @@
+from typing import Union
+
 import sqlalchemy
 import sqlalchemy.orm
 import sqlalchemy.pool
 
 from . import misc, application, group, auth, interface, job, base
 
+ScopedSessionExt = Union[sqlalchemy.orm.Session, sqlalchemy.orm.scoping.ScopedSession]
+
 
 class __ModelProxy:
-    raw_session = None
+    raw_session: ScopedSessionExt = None
     raw_engine = None
 
     def __getattr__(self, item):
@@ -16,10 +20,13 @@ class __ModelProxy:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.remove()
+        if exc_type is not None:
+            self.raw_session.rollback()
+        self.raw_session.remove()
 
 
-conn: sqlalchemy.orm.session.Session = __ModelProxy()
+# noinspection PyTypeChecker
+conn: ScopedSessionExt = __ModelProxy()
 
 
 def init(url='sqlite://', **config):
@@ -29,6 +36,8 @@ def init(url='sqlite://', **config):
         poolclass=sqlalchemy.pool.QueuePool,
         pool_use_lifo=True,
         pool_pre_ping=True,
+        pool_recycle=360,
+        **config.get('engine_settings', {}),
         connect_args=config.get('connection_arguments', {})
     )
     __ModelProxy.raw_session = sqlalchemy.orm.scoped_session(sqlalchemy.orm.sessionmaker(bind=__ModelProxy.raw_engine))

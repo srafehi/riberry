@@ -1,6 +1,8 @@
+from typing import Union
+
 import pendulum
 from sqlalchemy import Column, Sequence, Integer, MetaData
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 
 from riberry import model
 
@@ -36,7 +38,8 @@ meta = MetaData(
     }
 )
 
-Base = declarative_base(cls=_BaseMixin, metadata=meta)
+DeclarativeMetaExt = Union[_BaseMixin, DeclarativeMeta]
+Base: DeclarativeMetaExt = declarative_base(cls=_BaseMixin, metadata=meta)
 id_builder = _IdBuilder(id_type=Integer)
 
 
