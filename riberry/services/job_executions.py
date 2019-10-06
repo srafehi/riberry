@@ -1,6 +1,5 @@
-from riberry.celery import client
-from riberry import model, policy
 import riberry
+from riberry import model, policy
 
 
 @policy.context.post_authorize(action='view')
