@@ -23,8 +23,13 @@ interval = 5
 [database.connection]
 
 envvar = "RIBERRY_DATABASE_URL"
-echo = false
 
+[database.engine]
+
+echo = false
+pool_use_lifo = true
+pool_pre_ping = true
+pool_recycle = 360
 
 [database.arguments]
 
@@ -107,4 +112,3 @@ description = "description"
 enabled = false
 smtpServer = "..."
 sender = "noreply@example.com"
-

@@ -20,7 +20,6 @@ CONF_DEFAULT_BG_EVENT_INTERVAL = 2
 CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT = 1000
 CONF_DEFAULT_BG_CAPACITY_INTERVAL = 5
 
-CONF_DEFAULT_DB_ECHO = False
 CONF_DEFAULT_DB_CONN_PATH = APP_DIR_USER_DATA / 'model.db'
 CONF_DEFAULT_DB_CONN_URL = f'sqlite:///{CONF_DEFAULT_DB_CONN_PATH}'
 
@@ -65,16 +64,14 @@ class DatabaseConfig:
             CONF_DEFAULT_DB_CONN_PATH.parent.mkdir(exist_ok=True)
             self.connection_url = CONF_DEFAULT_DB_CONN_URL
 
-        self.echo = connection_config.get('echo', CONF_DEFAULT_DB_ECHO)
         self.engine_settings = self.raw_config.get('engine', {})
         self.connection_arguments = self.raw_config.get('arguments', {})
 
     def enable(self):
         riberry.model.init(
             url=self.connection_url,
-            echo=self.echo,
             engine_settings=self.engine_settings,
-            connection_arguments=self.connection_arguments
+            connection_arguments=self.connection_arguments,
         )
 
 

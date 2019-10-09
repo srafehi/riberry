@@ -29,16 +29,20 @@ class __ModelProxy:
 conn: ScopedSessionExt = __ModelProxy()
 
 
-def init(url='sqlite://', **config):
-    __ModelProxy.raw_engine = sqlalchemy.create_engine(
-        url,
-        echo=config.get('echo', False),
-        poolclass=sqlalchemy.pool.QueuePool,
+def init(url='sqlite://', engine_settings=None, connection_arguments=None):
+    engine_defaults = dict(
         pool_use_lifo=True,
         pool_pre_ping=True,
         pool_recycle=360,
-        **config.get('engine_settings', {}),
-        connect_args=config.get('connection_arguments', {})
+    )
+    engine_settings = {**engine_defaults, **(engine_settings or {})}
+    connection_arguments = connection_arguments or {}
+
+    __ModelProxy.raw_engine = sqlalchemy.create_engine(
+        url,
+        poolclass=sqlalchemy.pool.QueuePool,
+        **engine_settings,
+        connect_args=connection_arguments,
     )
     __ModelProxy.raw_session = sqlalchemy.orm.scoped_session(sqlalchemy.orm.sessionmaker(bind=__ModelProxy.raw_engine))
     base.Base.metadata.create_all(__ModelProxy.raw_engine)
