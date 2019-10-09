@@ -34,8 +34,13 @@ def poll(
         if track_executions:
             tracker.check_stale_execution(app_instance=app_instance)
 
+        instance_name = app_instance.internal_name
         if app_instance.status != 'online':
-            log.debug(f'Instance {app_instance.internal_name!r} is not online, skipped polling tasks')
+            log.debug(f'Instance {instance_name!r} is not online, skipped polling executions')
+            return
+
+        if app_instance.active_schedule_value('accept', default='Y') == 'N':
+            log.debug(f'Instance {instance_name!r} is not accepting new executions, skipped polling executions')
             return
 
         executions: List[riberry.model.job.JobExecution] = riberry.model.job.JobExecution.query().filter(
@@ -47,11 +52,33 @@ def poll(
         ).filter_by(instance=app_instance).all()
 
         for execution in executions:
+            if execution_limit_reached(app_instance=app_instance):
+                log.debug(f'Instance {instance_name!r} has reached the allowed limit of active/ready executions')
+                return
             if callable(filter_func) and not filter_func(execution):
                 continue
             execution_task_id = actions.executions.queue_job_execution(
                 execution=execution, track_executions=track_executions)
             log.info(f'Queueing execution: id={execution.id!r}, root={execution_task_id!r}, job={execution.job.name!r}')
+
+
+def execution_limit_reached(app_instance: riberry.model.application.ApplicationInstance) -> bool:
+    limit_raw = str(app_instance.active_schedule_value('limit'))
+    if not limit_raw.isdigit():
+        return False
+
+    limit = int(limit_raw)
+    if limit > 0:
+        active_execution_count = riberry.model.job.JobExecution.query().filter(
+            riberry.model.job.JobExecution.status.in_(('READY', 'ACTIVE'))
+        ).join(
+            riberry.model.job.Job
+        ).filter_by(
+            instance=app_instance
+        ).count()
+        return active_execution_count >= limit
+
+    return False
 
 
 def refresh():
