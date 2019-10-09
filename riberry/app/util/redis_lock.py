@@ -2,6 +2,10 @@ import time
 
 from redis.exceptions import LockError
 
+import riberry
+
+log = riberry.log.make(__name__)
+
 
 class RedisLock:
 
@@ -29,7 +33,7 @@ class RedisLock:
 
     def _attempt_lock(self, redis_instance):
         with redis_instance.lock(name=self.key_lock, timeout=60, blocking_timeout=0.0):
-            print(f"{self.name}: acquired lock...")
+            log.debug(f"{self.name}: acquired lock...")
             time_start = time.time()
             try:
                 self.on_acquired()
@@ -40,4 +44,4 @@ class RedisLock:
     def _set_timeout(self, redis_instance, process_time):
         expiry = int(max(self.interval - (process_time * 1000), self.min_interval))
         redis_instance.set(name=self.key_timeout, value='1', px=expiry)
-        print(f'{self.name}: processed task in {process_time:03}, setting lock expiry to {expiry:03} milliseconds')
+        log.debug(f'{self.name}: processed task in {process_time:03}, setting lock expiry to {expiry:03} milliseconds')

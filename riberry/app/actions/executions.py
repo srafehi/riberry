@@ -10,6 +10,9 @@ from ..util import execution_tracker as tracker
 from ..util.events import create_event
 
 
+log = riberry.log.make(__name__)
+
+
 def queue_job_execution(execution: riberry.model.job.JobExecution, track_executions: bool = True):
     job = execution.job
     form = job.form
@@ -65,8 +68,7 @@ def execution_complete(task_id, root_id, status, stream, context):
                     status=status,
                 )
             except:
-                print('Error occurred while triggering on_completion event.')
-                print(traceback.format_exc())
+                log.exception('Error occurred while triggering on_completion event.')
                 riberry.model.conn.rollback()
 
     job.task_id = root_id
