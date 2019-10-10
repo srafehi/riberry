@@ -2,7 +2,7 @@ import logging
 
 from riberry import log, config, plugins, model, celery, policy, services, exc, app
 
-__version__ = '0.10.13'
+__version__ = '0.10.14'
 
 log.root_name = __name__
 log.logger = logging.getLogger(log.root_name)
