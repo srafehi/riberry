@@ -41,6 +41,7 @@ class RiberryApplication:
                 stream=stream,
                 step=step,
             )
+            return func
 
         return wrapper
 
