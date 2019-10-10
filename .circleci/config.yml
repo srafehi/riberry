@@ -2,19 +2,20 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/python:3.6.1
+      - image: circleci/python:3.6.8
       - image: redis
     working_directory: ~/repo
     steps:
       - checkout
       - restore_cache:
           keys:
-          - py-dependencies-{{ checksum "requirements.txt" }}
-      - run: python3 -m venv venv && . venv/bin/activate && pip install -r requirements.txt
+          - py-dependencies-{{ checksum "poetry.lock" }}
+      - run: curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python3
+      - run: python3 -m venv venv && . venv/bin/activate && poetry install
       - save_cache:
           paths:
             - ./venv
-          key: py-dependencies-{{ checksum "requirements.txt" }}
+          key: py-dependencies-{{ checksum "poetry.lock" }}
       - run: mkdir -p test-reports/pytest test-reports/pycoverage
       - run: . venv/bin/activate && pytest --junitxml=test-reports/pytest/results.xml --cov-report xml:test-reports/pycoverage/results.xml --cov=riberry ./tests
       - store_test_results:
