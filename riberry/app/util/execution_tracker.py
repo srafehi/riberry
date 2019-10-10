@@ -1,9 +1,10 @@
 from typing import List
 
-from celery.utils.log import logger
 from sqlalchemy import desc, asc
 
 import riberry
+
+log = riberry.log.make(__name__)
 
 
 def _tracker_key(value):
@@ -14,7 +15,7 @@ def start_tracking_execution(root_id):
     redis = riberry.celery.util.celery_redis_instance()
     instance = riberry.app.env.get_instance_name()
     key = _tracker_key(instance)
-    logger.info(f'execution_tracker: Tracking workflow {root_id!r} via key {key!r}')
+    log.info(f'execution_tracker: Tracking workflow {root_id!r} via key {key!r}')
     redis.sadd(key, root_id)
 
 
@@ -32,7 +33,7 @@ def check_stale_execution(app_instance):
     redis = riberry.celery.util.celery_redis_instance()
     for execution in executions:
         if not redis.sismember(_tracker_key(app_instance.internal_name), execution.task_id):
-            logger.warn(
+            log.warning(
                 f'execution_tracker: Identified stale workflow. '
                 f'Root ID: {execution.task_id}, Execution ID:  {execution.id}'
             )
