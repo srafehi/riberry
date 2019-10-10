@@ -18,7 +18,12 @@ def execution_listener(task_queue: TaskQueue):
     except Empty:
         return
 
-    threading.Thread(name=f'{task.execution_id}:{task.id}:{task.definition.name}', target=execute, args=(task, task_queue)).start()
+    execution_thread = threading.Thread(
+        name=f'{task.execution_id}:{task.id}:{task.definition.name}',
+        target=execute,
+        args=(task, task_queue)
+    )
+    execution_thread.start()
 
 
 def execute(task: Task, task_queue: TaskQueue):

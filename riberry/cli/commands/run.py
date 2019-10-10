@@ -24,7 +24,7 @@ def pool(module, instance, log_level, concurrency):
         os.environ['RIBERRY_INSTANCE'] = instance
 
     log_configure(log_level=log_level)
-    importlib.import_module(module, instance)
+    importlib.import_module(module)
     backend: RiberryPoolBackend = riberry.app.current_riberry_app.backend
     backend.task_queue.limit = concurrency
     backend.start()
