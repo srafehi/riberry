@@ -20,6 +20,7 @@ def ready_external_tasks() -> List[riberry.model.job.JobExecutionExternalTask]:
 def queue_receiver_tasks(queue: TaskQueue):
     with queue.lock:
         if not queue.limit_reached():
-            external_tasks = ready_external_tasks()
-            while external_tasks and not queue.limit_reached():
-                queue.submit_receiver_task(external_tasks.pop())
+            with riberry.model.conn:
+                external_tasks = ready_external_tasks()
+                while external_tasks and not queue.limit_reached():
+                    queue.submit_receiver_task(external_tasks.pop())
