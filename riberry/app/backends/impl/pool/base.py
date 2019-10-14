@@ -26,6 +26,8 @@ def entry_point(form_name, **kwargs):
 class RiberryPoolBackend(riberry.app.backends.RiberryApplicationBackend):
     _local = threading.local()
 
+    execution_tracker: PoolExecutionTracker
+
     def __init__(self):
         super().__init__(instance=None)
         self.task_queue: TaskQueue = TaskQueue(backend=self, limit=3)

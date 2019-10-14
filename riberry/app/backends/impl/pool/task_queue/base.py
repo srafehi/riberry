@@ -53,7 +53,7 @@ class TaskQueue:
     queue_cls = Queue
 
     def __init__(self, backend, queue=None, limit=None):
-        self.backend = backend
+        self.backend: riberry.app.backends.impl.pool.RiberryPoolBackend = backend
         self.queue = queue or self.queue_cls()
         self.limit = limit
         self.counter = TaskCounter()
@@ -66,6 +66,10 @@ class TaskQueue:
         return bool(self.limit is not None and self.counter.value >= self.limit)
 
     def submit_receiver_task(self, external_task: riberry.model.job.JobExecutionExternalTask):
+        self.backend.execution_tracker.track_execution(
+            root_id=external_task.job_execution.task_id,
+            app_instance=external_task.job_execution.job.instance,
+        )
         self._submit(make_receiver_task(backend=self.backend, external_task=external_task))
 
     def submit_entry_task(self, execution_id: int, root_id: str, entry_point: riberry.app.base.EntryPoint):
