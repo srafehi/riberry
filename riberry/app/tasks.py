@@ -4,9 +4,8 @@ import pendulum
 from sqlalchemy import desc, asc
 
 import riberry
-from riberry.app.util import execution_tracker as tracker
+from riberry.app import current_riberry_app
 from . import actions, env
-
 
 log = riberry.log.make(__name__)
 
@@ -32,7 +31,7 @@ def poll(
         app_instance = env.get_instance_model()
 
         if track_executions:
-            tracker.check_stale_execution(app_instance=app_instance)
+            current_riberry_app.backend.execution_tracker.check_stale_executions(app_instance=app_instance)
 
         instance_name = app_instance.internal_name
         if app_instance.status != 'online':

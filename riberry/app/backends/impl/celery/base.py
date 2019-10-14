@@ -5,6 +5,7 @@ import celery
 import riberry
 from . import patch, tasks, addons
 from .executor import TaskExecutor
+from .tracker import CeleryExecutionTracker
 
 
 def send_task_process_rib_kwargs(self, *args, **kwargs):
@@ -24,6 +25,7 @@ class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
     def __init__(self, instance):
         super().__init__(instance=instance)
         self.executor = TaskExecutor()
+        self._celery_execution_tracker = CeleryExecutionTracker(backend=self)
 
     def initialize(self):
         patch.patch_send_task(instance=self.instance, func=send_task_process_rib_kwargs)
@@ -87,3 +89,6 @@ class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
 
     def active_task(self):
         return celery.current_task
+
+    def _execution_tracker(self):
+        return self._celery_execution_tracker

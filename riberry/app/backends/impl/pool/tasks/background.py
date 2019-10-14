@@ -10,7 +10,7 @@ def background(queue: TaskQueue):
     riberry.app.tasks.echo()
     with queue.lock:
         if not queue.limit_reached():
-            riberry.app.tasks.poll(track_executions=False, filter_func=lambda _: not queue.limit_reached())
+            riberry.app.tasks.poll(track_executions=True, filter_func=lambda _: not queue.limit_reached())
         else:
             log.debug('Queue limit reached, skipped task polling')
 

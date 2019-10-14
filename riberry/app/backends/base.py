@@ -1,10 +1,10 @@
 import functools
-import riberry
 from typing import Dict, AnyStr
+
+import riberry
 
 
 class RiberryApplicationBackend:
-
     default_stream_name = 'Overall'
     default_step_name = 'Entry'
 
@@ -37,6 +37,13 @@ class RiberryApplicationBackend:
 
     def active_task(self):
         raise NotImplementedError
+
+    def _execution_tracker(self):
+        raise NotImplementedError
+
+    @property
+    def execution_tracker(self) -> 'riberry.app.backends.RiberryExecutionTracker':
+        return self._execution_tracker()
 
     def __getattr__(self, item):
         return getattr(self.instance, item)

@@ -6,9 +6,7 @@ import pendulum
 import riberry
 from . import notify
 from .. import current_riberry_app
-from ..util import execution_tracker as tracker
 from ..util.events import create_event
-
 
 log = riberry.log.make(__name__)
 
@@ -22,7 +20,10 @@ def queue_job_execution(execution: riberry.model.job.JobExecution, track_executi
         execution.task_id = str(uuid.uuid4())
 
         if track_executions:
-            tracker.start_tracking_execution(root_id=execution.task_id)
+            current_riberry_app.backend.execution_tracker.track_execution(
+                root_id=execution.task_id,
+                app_instance=execution.job.instance,
+            )
 
         riberry.model.conn.commit()
 
@@ -102,7 +103,6 @@ def execution_complete(task_id, root_id, status, stream, context):
 
 
 def execution_started(task_id, root_id, job_id, primary_stream):
-
     job: riberry.model.job.JobExecution = riberry.model.job.JobExecution.query().filter_by(
         id=job_id,
     ).one()

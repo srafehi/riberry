@@ -7,6 +7,7 @@ import riberry
 from riberry.app import RiberryApplication, current_context as cxt
 from . import tasks
 from .task_queue import TaskQueue, Task, TaskDefinition
+from .tracker import PoolExecutionTracker
 
 log = riberry.log.make(__name__)
 
@@ -31,6 +32,7 @@ class RiberryPoolBackend(riberry.app.backends.RiberryApplicationBackend):
         self.tasks = {}
         self._exit = threading.Event()
         self._threads = []
+        self._pool_execution_tracker = PoolExecutionTracker(backend=self)
 
     def _create_thread(self, thread_name, target):
         thread = threading.Thread(name=thread_name, target=target)
@@ -121,3 +123,6 @@ class RiberryPoolBackend(riberry.app.backends.RiberryApplicationBackend):
 
     def set_active_task(self, task: Task):
         self._local.task = task
+
+    def _execution_tracker(self):
+        return self._pool_execution_tracker
