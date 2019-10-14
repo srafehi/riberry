@@ -81,6 +81,7 @@ def execute_task(job_execution: riberry.model.job.JobExecution, task: Task):
     status = 'SUCCESS'
     start_time = time.time()
     try:
+        log.info('Starting task %s', task.definition.name)
         task.definition.func()
 
     except Defer:
@@ -93,7 +94,7 @@ def execute_task(job_execution: riberry.model.job.JobExecution, task: Task):
 
     finally:
         end_time = time.time()
-        log.info('Completed in %.4f seconds', end_time - start_time)
+        log.info('Completed task %s in %.4f seconds', task.definition.name, end_time - start_time)
 
         if status:
             riberry.app.actions.executions.execution_complete(

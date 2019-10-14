@@ -1,4 +1,5 @@
 import logging
+import os
 import sys
 import threading
 
@@ -29,10 +30,17 @@ class Filter(logging.Filter):
 
 
 def configure(log_level='ERROR'):
-    handler = logging.StreamHandler(stream=sys.stdout)
-    handler.setFormatter(
-        logging.Formatter('%(levelname)-8s | %(asctime)-s | %(context)-41s | %(root_id)-41s | %(prefix)s%(message)s')
+    handler = riberry.log.stdout_handler
+    handler.formatter = logging.Formatter(
+        os.environ.get(
+            'RIBERRY_LOGFORMAT',
+            '%(levelname)-8s | %(asctime)-s | %(context)-41s | %(root_id)-41s | %(prefix)s%(message)s'
+        )
     )
+
+    for filter_ in list(handler.filters):
+        handler.removeFilter(filter=filter_)
+
     handler.addFilter(Filter())
     riberry.log.logger.addHandler(handler)
     riberry.log.logger.setLevel(log_level.upper())

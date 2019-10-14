@@ -38,6 +38,7 @@ class RiberryPoolBackend(riberry.app.backends.RiberryApplicationBackend):
         return thread
 
     def start(self):
+        log.info('Starting application %s', riberry.app.current_riberry_app.name)
         signal.signal(signal.SIGTERM, self._stop_signal)
         signal.signal(signal.SIGINT, self._stop_signal)
         signal.signal(signal.SIGHUP, self._stop_signal)
@@ -53,7 +54,7 @@ class RiberryPoolBackend(riberry.app.backends.RiberryApplicationBackend):
         self.stop()
 
     def stop(self):
-        log.info('Stopping app')
+        log.info('Stopping application %s', riberry.app.current_riberry_app.name)
         self._exit.set()
 
     def initialize(self):
