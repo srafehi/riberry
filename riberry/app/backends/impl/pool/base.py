@@ -42,14 +42,16 @@ class RiberryPoolBackend(riberry.app.backends.RiberryApplicationBackend):
         return thread
 
     def start(self):
-        log.info('Starting application %s', riberry.app.current_riberry_app.name)
-        signal.signal(signal.SIGTERM, self._stop_signal)
-        signal.signal(signal.SIGINT, self._stop_signal)
-        signal.signal(signal.SIGHUP, self._stop_signal)
+        log.debug('Starting application %s', riberry.app.current_riberry_app.name)
+
+        for sig in ('SIGTERM', 'SIGINT', 'SIGHUP'):
+            if hasattr(signal, sig):
+                signal.signal(getattr(signal, sig), self._stop_signal)
 
         for thread in self._threads:
             thread.start()
 
+        log.info('Started application %s', riberry.app.current_riberry_app.name)
         for thread in self._threads:
             thread.join()
 
