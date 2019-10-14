@@ -96,6 +96,8 @@ def execute_task(job_execution: riberry.model.job.JobExecution, task: Task):
         end_time = time.time()
         log.info('Completed task %s in %.4f seconds', task.definition.name, end_time - start_time)
 
+        task_postrun(context=riberry.app.current_context, props={}, state=status or 'IGNORED')
+
         if status:
             riberry.app.actions.executions.execution_complete(
                 task_id=task.id,
@@ -105,5 +107,4 @@ def execute_task(job_execution: riberry.model.job.JobExecution, task: Task):
                 context=riberry.app.current_context,
             )
 
-        task_postrun(context=riberry.app.current_context, props={}, state=status or 'IGNORED')
         riberry.app.current_riberry_app.backend.set_active_task(task=None)
