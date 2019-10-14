@@ -25,7 +25,7 @@ class CeleryExecutionTracker(riberry.app.backends.tracker.RiberryExecutionTracke
         redis = riberry.celery.util.celery_redis_instance()
         instance = riberry.app.env.get_instance_name()
         key = _tracker_key(instance)
-        log.info(f'CeleryExecutionTracker: Tracking workflow {root_id!r} via key {key!r}')
+        log.debug(f'Tracking execution: root={root_id!r}, key={key!r}')
         redis.sadd(key, root_id)
 
     def _artifact_message(self, execution: riberry.model.job.JobExecution):

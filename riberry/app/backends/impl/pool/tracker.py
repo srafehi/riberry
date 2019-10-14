@@ -2,7 +2,7 @@ from typing import List
 
 import riberry
 
-
+log = riberry.log.make(__name__)
 _executions_tracked = set()
 
 
@@ -18,6 +18,7 @@ class PoolExecutionTracker(riberry.app.backends.RiberryExecutionTracker):
                 self._cancel_execution(execution=execution)
 
     def track_execution(self, root_id: str, app_instance: riberry.model.application.ApplicationInstance):
+        log.debug(f'Tracking execution: root={root_id!r}')
         _executions_tracked.add(root_id)
 
     def _artifact_message(self, execution: riberry.model.job.JobExecution):
