@@ -16,17 +16,17 @@ class BackgroundTasksStep(AddonStartStopStep):
 
     def __init__(self, worker, **_):
         super().__init__(worker=worker, interval=1.0)
-        self.lock = riberry.app.util.redis_lock.RedisLock(name='step:background', on_acquired=self.on_lock_acquired, interval=900)
+        self.lock = riberry.app.util.redis_lock.RedisLock(
+            name='step:background',
+            on_acquired=self.on_lock_acquired,
+            interval=900,
+        )
 
     @staticmethod
     def on_lock_acquired():
-        try:
-            riberry.app.tasks.echo()
-            riberry.app.tasks.poll()
-            riberry.app.tasks.refresh()
-        finally:
-            riberry.model.conn.remove()
-            riberry.model.conn.raw_engine.dispose()
+        riberry.app.tasks.echo()
+        riberry.app.tasks.poll()
+        riberry.app.tasks.refresh()
 
     def should_run(self) -> bool:
         return True

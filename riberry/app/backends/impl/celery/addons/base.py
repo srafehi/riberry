@@ -47,7 +47,6 @@ class AddonStartStopStep(bootsteps.StartStopStep):
         start_time = time.time()
         try:
             log.debug(f'Started {self.step_name}')
-            riberry.model.conn.raw_engine.dispose()
             with riberry.model.conn:
                 self.run()
         except RedisError:
