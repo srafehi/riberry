@@ -1,2 +1,2 @@
 from .base import CeleryBackend
-from . import addons, patch
+from . import addons, patch, signals

@@ -2,7 +2,6 @@ from celery import exceptions as celery_exc, current_task
 
 import riberry
 from riberry.app import actions
-from riberry.app.misc.signals import task_prerun, task_postrun
 from .extension import RiberryTask
 
 
@@ -115,7 +114,10 @@ class TaskExecutor:
                 state = None
                 mark_workflow_complete = False
                 try:
-                    task_prerun(context=self.riberry_app.context, props=riberry_properties)
+                    riberry.app.util.task_transitions.task_active(
+                        context=self.riberry_app.context,
+                        props=riberry_properties,
+                    )
                     result = self._execute_task(func, func_args, func_kwargs)
                     state = 'SUCCESS'
                     return result
@@ -147,7 +149,11 @@ class TaskExecutor:
                             context=self.riberry_app.context,
                         )
                     if state is not None:
-                        task_postrun(context=self.riberry_app.context, props=riberry_properties, state=state)
+                        riberry.app.util.task_transitions.task_complete(
+                            context=self.riberry_app.context,
+                            props=riberry_properties,
+                            state=state,
+                        )
 
     def _max_retries_reached(self, exc):
         active_task = self.riberry_app.context.current.task

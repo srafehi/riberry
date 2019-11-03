@@ -5,7 +5,6 @@ from queue import Empty
 import time
 
 import riberry
-from riberry.app.misc.signals import task_prerun, task_postrun
 from ..exc import Defer
 from ..task_queue import TaskQueue, Task
 
@@ -75,7 +74,10 @@ def execute_receiver_task(job_execution: riberry.model.job.JobExecution, task: T
 
 
 def execute_task(job_execution: riberry.model.job.JobExecution, task: Task):
-    task_prerun(context=riberry.app.current_context, props={})
+    riberry.app.util.task_transitions.task_active(
+        context=riberry.app.current_context,
+        props={},
+    )
     riberry.app.current_riberry_app.backend.set_active_task(task=task)
 
     status = 'SUCCESS'
@@ -96,7 +98,11 @@ def execute_task(job_execution: riberry.model.job.JobExecution, task: Task):
         end_time = time.time()
         log.info('Completed task %s in %.4f seconds', task.definition.name, end_time - start_time)
 
-        task_postrun(context=riberry.app.current_context, props={}, state=status or 'IGNORED')
+        riberry.app.util.task_transitions.task_complete(
+            context=riberry.app.current_context,
+            props={},
+            state=status or 'IGNORED',
+        )
 
         if status:
             riberry.app.actions.executions.execution_complete(
