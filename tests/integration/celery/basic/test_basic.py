@@ -1,7 +1,8 @@
 import json
 
-from riberry import testing
 import pytest
+
+from riberry import testing
 
 
 @pytest.fixture(scope='module', autouse=True)

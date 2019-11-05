@@ -1,4 +1,5 @@
 from celery import Celery, current_task, group
+
 import riberry
 from riberry.app import RiberryApplication
 from riberry.app.backends.impl.celery import CeleryBackend
@@ -46,7 +47,7 @@ def entry_point():
 @rib.task(name='process')
 def process(num: int) -> int:
     """ Processes our input value and returns the result. """
-    
+
     return num * num
 
 

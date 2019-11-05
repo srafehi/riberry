@@ -1,8 +1,8 @@
 import os
 import pathlib
-import pytest
 import subprocess
 
+import pytest
 
 RIB_TOML = str(pathlib.Path(__file__).parent.parent / 'config' / 'riberry.toml')
 APP_YAML = str(pathlib.Path(__file__).parent.parent / 'config' / 'apps.yaml')
@@ -34,7 +34,6 @@ def init_riberry():
 
 @pytest.fixture(scope='module')
 def start_celery_worker(request):
-
     def start(cmd, riberry_instance, app_path=None):
         proc = subprocess.Popen(
             cmd,
@@ -44,4 +43,3 @@ def start_celery_worker(request):
         request.addfinalizer(proc.kill)
 
     return start
-
