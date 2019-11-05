@@ -8,7 +8,7 @@ app = celery.Celery(...)
 
 # create a riberry application with celery as our backend
 rib = RiberryApplication(
-    name='example_app',                   # riberry application name
+    name='sample_app',                    # riberry application name
     backend=CeleryBackend(instance=app),  # riberry backend
 )
 
@@ -17,8 +17,8 @@ cxt = rib.context
 
 
 # register an entry point for one of our application's forms
-@rib.entry_point(form='example_app.example_form', stream='Example')
-def example_form():
+@rib.entry_point(form='sample_app.form.sample', stream='Sample Stream')
+def sample_form():
 
     # extract the username
     username = cxt.current.job_execution.creator.username
