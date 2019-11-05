@@ -1,0 +1,4 @@
+[celery]
+
+result_backend = "redis://"
+broker_url = "redis://"

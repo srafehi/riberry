@@ -1,0 +1,19 @@
+applications:
+  test.celery:
+    name: Test Celery Application
+    type: Celery
+    instances:
+      test.celery.instance:
+        name: Test Celery Application Instance
+    forms:
+      test.celery.form.basic:
+        instance: test.celery.instance
+        name: Basic Form
+        inputValues:
+          streams:
+            name: Streams
+            description: Number of streams to create
+            type: number
+            required: yes
+        groups:
+          - default
