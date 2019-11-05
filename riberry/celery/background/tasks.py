@@ -8,7 +8,8 @@ from . import app
 
 @app.task(ignore_result=True)
 def process_events(event_limit=None):
-    events.process(event_limit)
+    with model.conn:
+        events.process(event_limit)
 
 
 @app.task(ignore_result=True)

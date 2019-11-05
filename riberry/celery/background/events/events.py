@@ -314,35 +314,36 @@ handlers = {
 }
 
 
-def process(event_limit=None):
-    with model.conn:
-        event_mapping = defaultdict(list)
-        query = model.misc.Event.query().order_by(model.misc.Event.time.asc(), model.misc.Event.id.asc())
-        if event_limit:
-            query = query.limit(event_limit)
-        events = query.all()
+def process(event_limit=None, query_extension=None):
+    event_mapping = defaultdict(list)
+    query = model.misc.Event.query().order_by(model.misc.Event.time.asc(), model.misc.Event.id.asc())
+    if event_limit:
+        query = query.limit(event_limit)
+    if callable(query_extension):
+        query = query_extension(query)
+    events = query.all()
 
-        if not events:
-            return
+    if not events:
+        return
 
-        for event in events:
-            event_mapping[event.name].append(event)
+    for event in events:
+        event_mapping[event.name].append(event)
 
-        to_delete = []
-        for handler_name, handler_func in handlers.items():
-            handler_events = event_mapping[handler_name]
-            if handler_events:
-                try:
-                    to_delete += handlers[handler_name](handler_events)
-                except:
-                    logger.warn(f'Failed to process {handler_name} events: {handler_events}')
-                    raise
+    to_delete = []
+    for handler_name, handler_func in handlers.items():
+        handler_events = event_mapping[handler_name]
+        if handler_events:
+            try:
+                to_delete += handlers[handler_name](handler_events)
+            except:
+                logger.warn(f'Failed to process {handler_name} events: {handler_events}')
+                raise
 
-        for event in to_delete:
-            logger.info(f'Removing processed event {event}')
-            model.conn.delete(event)
+    for event in to_delete:
+        logger.info(f'Removing processed event {event}')
+        model.conn.delete(event)
 
-        model.conn.commit()
+    model.conn.commit()
 
 
 if __name__ == '__main__':
