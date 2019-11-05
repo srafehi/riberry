@@ -343,7 +343,7 @@ class JobExecutionArtifact(base.Base):
     job_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), nullable=False)
     stream_id = Column(base.id_builder.type, ForeignKey('job_stream.id'))
     name: str = Column(String(128), nullable=False)
-    type: str = Column(Enum(ArtifactType), nullable=False)
+    type: ArtifactType = Column(Enum(ArtifactType), nullable=False)
     category: str = Column(String(128), nullable=False, default='Default')
     filename: str = Column(String(512), nullable=False)
     created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
