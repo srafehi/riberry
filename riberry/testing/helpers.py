@@ -29,7 +29,7 @@ def setup_test_scenario(
     test_app.execution_id = executions[0].id
     test_app.job_id = job.id
     test_app.job_values = {input_.internal_name: input_.value for input_ in job.values}
-    test_app.job_files = {input_.internal_name: input_.value for input_ in job.files}
+    test_app.job_files = {input_.internal_name: input_.binary for input_ in job.files}
 
 
 def verify_execution_completion(
