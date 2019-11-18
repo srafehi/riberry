@@ -2,7 +2,7 @@ import logging
 
 from riberry import log
 
-__version__ = '0.10.19'
+__version__ = '0.10.20'
 
 log.root_name = __name__
 log.logger = logging.getLogger(log.root_name)
