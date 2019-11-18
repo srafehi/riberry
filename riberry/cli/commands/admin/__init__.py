@@ -1,4 +1,4 @@
-from . import sync, user, group
+from . import model, user, group
 from .base import admin
 from ...root import cli
 
