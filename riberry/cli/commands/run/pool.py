@@ -6,12 +6,7 @@ import click
 import riberry
 from riberry.app.backends.impl.pool.base import RiberryPoolBackend
 from riberry.app.backends.impl.pool.log import configure as log_configure
-from ..root import cli
-
-
-@click.group()
-def run():
-    pass
+from .base import run
 
 
 @run.command()
@@ -28,6 +23,3 @@ def pool(module, instance, log_level, concurrency):
     backend: RiberryPoolBackend = riberry.app.current_riberry_app.backend
     backend.task_queue.limit = concurrency
     backend.start()
-
-
-cli.add_command(run)
