@@ -3,9 +3,8 @@ import subprocess
 
 import click
 
-from .base import run
 from riberry import log
-
+from .base import run
 
 log = log.make(__name__)
 
@@ -22,7 +21,6 @@ def _kill(processes):
 @run.command(help='Start Riberry\'s core background celery app')
 @click.option('--log-level', '-l', default='ERROR', help='Log level')
 def core(log_level):
-
     process_beat = subprocess.Popen([
         'celery', 'beat',
         '-A', 'riberry.celery.background',

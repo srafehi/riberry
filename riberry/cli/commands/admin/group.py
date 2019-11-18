@@ -1,7 +1,7 @@
 import click
 
-from riberry.util.__main__ import add_user
 from riberry.util import groups
+from riberry.util.__main__ import add_user
 from .base import admin
 
 
