@@ -19,7 +19,7 @@ def _kill(processes):
             log.exception(f'Failed to kill process {process}')
 
 
-@run.command()
+@run.command(help='Starts core Riberry background celery app')
 @click.option('--log-level', '-l', default='ERROR', help='Log level')
 def core(log_level):
 

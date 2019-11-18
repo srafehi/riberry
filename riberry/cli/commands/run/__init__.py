@@ -1,5 +1,5 @@
 from .base import run
-from . import core, pool
+from . import core, pool, web
 from ...root import cli
 
 
