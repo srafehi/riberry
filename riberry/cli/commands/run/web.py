@@ -5,7 +5,7 @@ import click
 from .base import run
 
 
-@run.command('web', help='Starts Riberry web application')
+@run.command('web', help='Start Riberry\'s web application')
 @click.option('--module', '-m', show_default=True, default='riberry_web:main', help='Callable to start the web server.')
 @click.option('--host', '-h', show_default=True, default='127.0.0.1', help='Bind to given host.')
 @click.option('--port', '-p', show_default=True, default=5445, help='Bind to given port.')

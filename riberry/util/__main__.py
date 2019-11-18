@@ -10,8 +10,8 @@ def cli():
     pass
 
 
-@cli.command('import')
-@click.option('--config-path', '-p', prompt='Configuration path', help='YAML file containing application references.')
+@cli.command('import', help='Loads and synchronises Riberry\'s models from config')
+@click.option('--config-path', '-p', prompt='Configuration path', help='YAML file containing riberry model.')
 @click.option('--commit/--rollback', '-c/-r', prompt='Dry run', is_flag=True,
               help='Gathers all database changes without commits.', default=False)
 @click.option('--app', '-a', 'apps', help='Restricts the import to the specified app', multiple=True)
@@ -20,7 +20,7 @@ def importer(config_path, commit, apps):
     print(json.dumps(changes, indent=2))
 
 
-@cli.command('add-user')
+@cli.command('add-user', help='Creates a new Riberry user account')
 @click.option('--username', prompt='Username', help="User's username")
 @click.option('--password', prompt='Password', help="User's password", hide_input=True, confirmation_prompt=True)
 @click.option('--first-name', prompt='First name', help="User's first name")
@@ -41,7 +41,7 @@ def add_user(username, password, first_name, last_name, display_name, department
     print(f'Created user {username} (User ID: {user_id})')
 
 
-@cli.command('user-groups')
+@cli.command('groups', help='Manage Riberry user groups')
 @click.argument('action', type=click.Choice(['add', 'remove']))
 @click.option('--username', '-u', prompt='Username', help="User's username")
 @click.option('--group', '-g', prompt='Group', help="Group's name")

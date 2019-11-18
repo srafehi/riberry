@@ -9,7 +9,7 @@ from riberry.app.backends.impl.pool.log import configure as log_configure
 from .base import run
 
 
-@run.command(help='Starts custom Riberry pool app')
+@run.command(help='Start custom Riberry pool application')
 @click.option('--module', '-m', required=True, help='Module containing Riberry pool application')
 @click.option('--instance', '-i', help='Riberry application instance to run')
 @click.option('--log-level', '-l', default='ERROR', help='Log level')

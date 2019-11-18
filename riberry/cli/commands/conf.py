@@ -6,7 +6,7 @@ import riberry
 from ..root import cli
 
 
-@cli.command('conf', help='Copies the given environment config to Riberry\'s default path')
+@cli.command('conf', help='Copy the given environment config to Riberry\'s default path')
 @click.argument('path', required=True)
 def import_config(path):
     target = str(riberry.config.CONF_DEFAULT_PATH)
