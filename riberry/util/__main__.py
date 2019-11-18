@@ -44,7 +44,7 @@ def add_user(username, password, first_name, last_name, display_name, department
 @cli.command('user-groups')
 @click.argument('action', type=click.Choice(['add', 'remove']))
 @click.option('--username', '-u', prompt='Username', help="User's username")
-@click.option('--group', '-g', prompt='Username', help="Group's name")
+@click.option('--group', '-g', prompt='Group', help="Group's name")
 def modify_user_groups(action, username, group):
     try:
         if action == 'add':
