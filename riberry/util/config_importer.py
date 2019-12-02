@@ -122,19 +122,22 @@ def import_forms(app, forms):
 
 
 def import_form(app, internal_name, attributes):
+    instance_internal_name = attributes['instance']
+    instances = [instance for instance in app.instances if instance.internal_name == instance_internal_name]
+    if not instances:
+        raise ValueError(f'Could not find instance {instance_internal_name} for form {internal_name}')
+    instance = instances[0]
+
     try:
         form = services.form.form_by_internal_name(internal_name=internal_name)
         form = services.form.update_form(form, attributes)
+        if form.instance != instance.id:
+            form.instance = instance
+
     except NoResultFound:
-        instance_internal_name = attributes['instance']
-        instances = [instance for instance in app.instances if instance.internal_name == instance_internal_name]
-
-        if not instances:
-            raise ValueError(f'Could not find instance {instance_internal_name} for form {internal_name}')
-
         form = services.form.create_form(
             application=app,
-            instance=instances[0],
+            instance=instance,
             name=attributes.get('name'),
             internal_name=internal_name,
             version=attributes.get('version'),
