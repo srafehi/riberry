@@ -1,7 +1,6 @@
 import click
 
 from riberry.util import groups
-from riberry.util.__main__ import add_user
 from .base import admin
 
 
@@ -34,5 +33,4 @@ def remove(username, group):
         exit(1)
 
 
-group.add_command(add_user, name='add')
 admin.add_command(group)
