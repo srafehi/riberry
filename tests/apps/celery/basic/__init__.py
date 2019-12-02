@@ -19,7 +19,7 @@ rib = RiberryApplication(name='test.celery', backend=backend)
 cxt = rib.context
 
 
-@rib.entry_point('test.celery.form.basic')
+@rib.entry_point('test.celery.form.basic', stream='Stream Entry', step='entry_point')
 def entry_point():
     """
     Triggered when a new job execution is created for the

@@ -31,15 +31,13 @@ class RiberryApplication:
         return cls.__registered__[name]
 
     def entry_point(self, form, stream=None, step=None):
-        stream = stream or self.backend.default_stream_name
-        step = step or self.backend.default_step_name
 
         def wrapper(func):
             self.entry_points[form] = EntryPoint(
                 form=form,
                 func=func,
-                stream=stream,
-                step=step,
+                stream=stream or self.backend.default_stream_name,
+                step=step or riberry.app.util.misc.function_path(func),
             )
             return func
 

@@ -6,7 +6,6 @@ import riberry
 
 class RiberryApplicationBackend:
     default_stream_name = 'Overall'
-    default_step_name = 'Entry'
 
     def __init__(self, instance):
         self.instance = instance

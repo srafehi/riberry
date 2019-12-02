@@ -42,8 +42,8 @@ class TestBasicCeleryApp(testing.base.TestApplication):
         testing.comparators.compare_streams(
             execution=self.execution,
             expected={
-                'Overall': {
-                    'riberry.core.app.entry_point': 1,
+                'Stream Entry': {
+                    'entry_point': 1,
                     'save_all': 1,
                 },
                 'Stream #0': {

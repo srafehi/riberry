@@ -57,7 +57,12 @@ class CeleryBackend(riberry.app.backends.RiberryApplicationBackend):
 
     def start_execution(self, execution_id, root_id, entry_point) -> AnyStr:
         task = self.task_by_name(self.ENTRY_POINT_TASK_NAME)
-        task_signature = task.si(execution_id=execution_id, form=entry_point.form)
+        task_signature = task.si(
+            execution_id=execution_id,
+            form=entry_point.form,
+            __rib_stream=entry_point.stream,
+            __rib_step=entry_point.step,
+        )
 
         callback_success = tasks.execution_complete.si(status='SUCCESS', stream=entry_point.stream)
         callback_failure = tasks.execution_complete.si(status='FAILURE', stream=entry_point.stream)
