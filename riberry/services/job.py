@@ -1,6 +1,6 @@
 import json
 from io import BytesIO
-from typing import Dict
+from typing import Dict, Tuple, List
 
 from riberry import model, services, policy, exc
 
@@ -31,7 +31,12 @@ def jobs_by_form_id(form_id):
     return model.job.Job.query().filter_by(form_id=form_id).all()
 
 
-def verify_inputs(input_value_definitions, input_file_definitions, input_values, input_files):
+def verify_inputs(
+        input_value_definitions: List['model.interface.InputValueDefinition'],
+        input_file_definitions: List['model.interface.InputFileDefinition'],
+        input_values: dict,
+        input_files: dict
+) -> Tuple[dict, dict]:
     value_map_definitions: Dict[str, 'model.interface.InputValueDefinition'] = {input_def.name: input_def for input_def in input_value_definitions}
     file_map_definitions: Dict[str, 'model.interface.InputValueDefinition'] = {input_def.name: input_def for input_def in input_file_definitions}
 
@@ -49,7 +54,7 @@ def verify_inputs(input_value_definitions, input_file_definitions, input_values,
         if name in input_values:
             value = input_values.pop(name)
         else:
-            value = definition.default_binary
+            value = definition.default_value
 
         if definition.required and not value:
             err = exc.RequiredInputError(target='job', field=definition.name, internal_name=definition.internal_name)
