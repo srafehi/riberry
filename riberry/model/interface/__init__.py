@@ -2,7 +2,7 @@ import json
 import mimetypes
 from typing import List
 
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime, desc
+from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime, desc, asc
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, deferred
@@ -56,7 +56,17 @@ class Form(base.Base):
         order_by=lambda: InputFileDefinition.id.asc(),
         back_populates='form'
     )
-    document: 'model.misc.Document' = relationship('Document', cascade='save-update, merge, delete, delete-orphan', single_parent=True)
+    metrics: List['model.job.JobExecutionMetric'] = relationship(
+        'JobExecutionMetric',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: asc(model.job.JobExecutionMetric.epoch_end),
+        back_populates='form',
+    )
+    document: 'model.misc.Document' = relationship(
+        'Document',
+        cascade='save-update, merge, delete, delete-orphan',
+        single_parent=True
+    )
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')

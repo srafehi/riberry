@@ -220,6 +220,12 @@ class JobExecution(base.Base):
         viewonly=True,
         uselist=False,
     )
+    metrics: List['JobExecutionMetric'] = relationship(
+        'JobExecutionMetric',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: asc(JobExecutionMetric.epoch_end),
+        back_populates='job_execution',
+    )
 
     parent_execution: 'JobExecution' = relationship('JobExecution', back_populates='child_executions', remote_side=[id])
     child_executions: List['JobExecution'] = relationship('JobExecution', back_populates='parent_execution')
@@ -293,8 +299,8 @@ class JobExecutionMetric(base.Base):
     min_duration: float = Column(Float, default=0, nullable=False)
 
     # associations
-    job_execution: 'JobExecution' = relationship('JobExecution')
-    form: 'model.interface.Form' = relationship('Form')
+    job_execution: 'JobExecution' = relationship('JobExecution', back_populates='metrics')
+    form: 'model.interface.Form' = relationship('Form', back_populates='metrics')
 
 
 class JobExecutionStream(base.Base):
