@@ -267,6 +267,36 @@ class JobExecutionProgress(base.Base):
         return progress_percentage
 
 
+class JobExecutionMetric(base.Base):
+    __tablename__ = 'job_execution_metric'
+    __reprattrs__ = ['form_id', 'job_execution_id', 'stream_name', 'step_name']
+    __table_args__ = (
+        Index('j_e_m__idx_job_execution_id', 'job_execution_id'),
+        Index('j_e_m__idx_form_id', 'form_id'),
+        Index('j_e_m__epoch_start', 'epoch_start'),
+        Index('j_e_m__epoch_end', 'epoch_end'),
+        Index('j_e_m__stream_name', 'stream_name'),
+    )
+
+    # columns
+    id = base.id_builder.build()
+    form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
+    job_execution_id = Column(base.id_builder.type, ForeignKey('job_execution.id'), nullable=False)
+    epoch_start: int = Column(Integer, nullable=False)
+    epoch_end: int = Column(Integer, nullable=False)
+    epoch_last: float = Column(Float, default=0, nullable=False)
+    stream_name: str = Column(String(64), nullable=False)
+    step_name: str = Column(String(64), nullable=False)
+    count: int = Column(Integer, default=0, nullable=False)
+    sum_duration: float = Column(Float, default=0, nullable=False)
+    max_duration: float = Column(Float, default=0, nullable=False)
+    min_duration: float = Column(Float, default=0, nullable=False)
+
+    # associations
+    job_execution: 'JobExecution' = relationship('JobExecution')
+    form: 'model.interface.Form' = relationship('Form')
+
+
 class JobExecutionStream(base.Base):
     __tablename__ = 'job_stream'
     __reprattrs__ = ['name', 'task_id', 'status']
