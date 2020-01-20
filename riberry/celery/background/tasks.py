@@ -3,6 +3,7 @@ import importlib
 from riberry import model
 from riberry.celery.background import capacity_config
 from riberry.celery.background.events import events
+from riberry.celery.background.metrics import process_metrics
 from . import app
 
 
@@ -39,6 +40,12 @@ def update_capacity_parameters():
             )
 
         model.conn.commit()
+
+
+@app.task(ignore_result=True)
+def update_execution_metrics(time_interval: int, step_limit: int):
+    with model.conn:
+        process_metrics(time_interval=time_interval, limit=step_limit)
 
 
 @app.task(ignore_result=True)

@@ -14,6 +14,15 @@ app.conf.beat_schedule.update({
         },
         'options': {'queue': 'riberry.background.events'}
     },
+    'process:metrics': {
+        'task': 'riberry.celery.background.tasks.update_execution_metrics',
+        'schedule': config.config.background.metrics.interval,
+        'kwargs': {
+            'time_interval': config.config.background.metrics.time_interval,
+            'step_limit': config.config.background.metrics.step_limit,
+        },
+        'options': {'queue': 'riberry.background.metrics'}
+    },
     'process:job-schedule': {
         'task': 'riberry.celery.background.tasks.job_schedules',
         'schedule': config.config.background.schedules.interval,

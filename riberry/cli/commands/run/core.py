@@ -32,7 +32,10 @@ def core(log_level):
         '-A', 'riberry.celery.background',
         '-l', log_level.lower(),
         '-c', '1',
-        '-Q', 'riberry.background.custom,riberry.background.schedules,riberry.background.events',
+        '-Q', 'riberry.background.custom,'
+              'riberry.background.schedules,'
+              'riberry.background.events,'
+              'riberry.background.metrics',
     ])
 
     processes = process_background, process_beat

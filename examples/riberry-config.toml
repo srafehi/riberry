@@ -20,6 +20,13 @@ interval = 5
 interval = 5
 
 
+[background.metrics]
+
+interval = 5
+timeInterval = 15
+stepLimit = 25000
+
+
 [database.connection]
 
 envvar = "RIBERRY_DATABASE_URL"

@@ -19,6 +19,9 @@ CONF_DEFAULT_BG_SCHED_INTERVAL = 10
 CONF_DEFAULT_BG_EVENT_INTERVAL = 2
 CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT = 1000
 CONF_DEFAULT_BG_CAPACITY_INTERVAL = 5
+CONF_DEFAULT_BG_METRIC_INTERVAL = 5
+CONF_DEFAULT_BG_METRIC_TIME_INTERVAL = 15
+CONF_DEFAULT_BG_METRIC_STEP_LIMIT = 25_000
 
 CONF_DEFAULT_DB_CONN_PATH = APP_DIR_USER_DATA / 'model.db'
 CONF_DEFAULT_DB_CONN_URL = f'sqlite:///{CONF_DEFAULT_DB_CONN_PATH}'
@@ -172,6 +175,7 @@ class BackgroundTaskConfig:
         self.events = BackgroundTaskEventsConfig(self.raw_config.get('events') or {})
         self.schedules = BackgroundTaskScheduleConfig(self.raw_config.get('schedules') or {})
         self.capacity = BackgroundTaskCapacityConfig(self.raw_config.get('capacity') or {})
+        self.metrics = BackgroundTaskMetricConfig(self.raw_config.get('metrics') or {})
 
 
 class BackgroundTaskEventsConfig:
@@ -194,6 +198,15 @@ class BackgroundTaskCapacityConfig:
     def __init__(self, config_dict):
         self.raw_config = config_dict or {}
         self.interval = config_dict.get('interval', CONF_DEFAULT_BG_CAPACITY_INTERVAL)
+
+
+class BackgroundTaskMetricConfig:
+
+    def __init__(self, config_dict):
+        self.raw_config = config_dict or {}
+        self.interval: int = config_dict.get('interval', CONF_DEFAULT_BG_METRIC_INTERVAL)
+        self.time_interval: int = config_dict.get('timeInterval', CONF_DEFAULT_BG_METRIC_TIME_INTERVAL)
+        self.step_limit: int = config_dict.get('stepLimit', CONF_DEFAULT_BG_METRIC_STEP_LIMIT)
 
 
 class RiberryConfig:
