@@ -291,6 +291,7 @@ class JobExecutionMetric(base.Base):
     epoch_start: int = Column(Integer, nullable=False)
     epoch_end: int = Column(Integer, nullable=False)
     epoch_last: float = Column(Float, default=0, nullable=False)
+    updated: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
     stream_name: str = Column(String(64), nullable=False)
     step_name: str = Column(String(64), nullable=False)
     count: int = Column(Integer, default=0, nullable=False)
