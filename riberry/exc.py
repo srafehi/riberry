@@ -130,3 +130,11 @@ class UniqueInputConstraintError(BaseError):
 
     def __init__(self, target, field, value):
         super(UniqueInputConstraintError, self).__init__(target=target, field=field, value=value)
+
+
+class InvalidApiKeyError(BaseError):
+    __msg__ = 'The supplied API Key is invalid.'
+    __http_code__ = 403
+
+    def __init__(self):
+        super(InvalidApiKeyError, self).__init__(target='user')

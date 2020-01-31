@@ -1,16 +1,17 @@
 import datetime
 import re
-from typing import AnyStr, Dict, List
+from typing import AnyStr, Dict, List, Optional
 
 import jwt
 import pendulum
-from sqlalchemy import Column, String, ForeignKey, DateTime, desc
+from sqlalchemy import Column, String, ForeignKey, DateTime, desc, Index
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, validates, joinedload
 
 from riberry import model, exc
-from riberry.model import base
 from riberry.config import config
+from riberry.model import base
+from . import api_key_helpers
 
 
 class User(base.Base):
@@ -22,9 +23,11 @@ class User(base.Base):
     password = Column(String(512))
     auth_provider = Column(String(32), nullable=False, default=config.authentication.providers.default)
     details: 'UserDetails' = relationship('UserDetails', uselist=False, back_populates='user')
+    tokens: 'UserToken' = relationship('UserToken', back_populates='user')
 
     # associations
-    group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
+    group_associations: List[
+        'model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
         resource_type=model.misc.ResourceType.user
     )
@@ -100,7 +103,7 @@ class UserDetails(base.Base):
     display_name = Column(String(128))
     department = Column(String(128))
     email = Column(String(128))
-    updated: datetime = Column(DateTime(timezone=True), default=base.utc_now)
+    updated: datetime.datetime = Column(DateTime(timezone=True), default=base.utc_now)
 
     @property
     def full_name(self):
@@ -116,10 +119,82 @@ class UserDetails(base.Base):
         return email
 
 
+class UserToken(base.Base):
+    __tablename__ = 'user_token'
+    __reprattrs__ = ['user_id', 'token']
+    __table_args__ = (
+        Index('u_t__idx_user_id', 'user_id'),
+        Index('u_t__idx_expires', 'expires'),
+    )
+
+    id = base.id_builder.build()
+    user_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
+    type: str = Column(String(64), nullable=False)
+    token = Column(String(64), nullable=False, unique=True)
+    created: datetime.datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False)
+    expires: datetime.datetime = Column(DateTime(timezone=True), nullable=True)
+
+    user: 'User' = relationship('User', back_populates='tokens')
+
+    def expired(self) -> bool:
+        return base.utc_now() > self.expires if self.expires is not None else False
+
+    def generate_api_key(self) -> str:
+        return api_key_helpers.make_api_key(
+            token=self.token,
+            identifier=str(self.user_id),
+            secret=self.__secret(),
+        )
+
+    @staticmethod
+    def __secret() -> str:
+        return config.authentication.token.secret
+
+    @staticmethod
+    def create(user: User, type: str, expiry_delta: Optional[datetime.timedelta] = None) -> 'UserToken':
+        return UserToken(
+            user_id=user.id,
+            type=type,
+            token=api_key_helpers.make_token(),
+            expires=base.utc_now() + expiry_delta if expiry_delta else None,
+        )
+
+    @classmethod
+    def from_api_key(cls, api_key: str) -> 'UserToken':
+
+        # Ensure the API key is genuine
+        api_key_helpers.validate_api_key(
+            api_key=api_key,
+            secret=cls.__secret(),
+        )
+
+        user_token: Optional[UserToken] = UserToken.query().filter_by(
+            token=api_key_helpers.token_from_api_key(api_key)
+        ).first()
+
+        # Ensure the API key has not been expired/deleted
+        if not user_token or user_token.expired():
+            raise exc.InvalidApiKeyError
+
+        # Ensure the identifier in the API key matches the user ID against the token.
+        # If a mismatch is found, it suggests that the user associated with the token
+        # was changed after the API key was generated, and therefore the token is
+        # invalidated.
+        if str(user_token.user_id) != api_key_helpers.identifier_from_api_key(api_key):
+            raise exc.InvalidApiKeyError
+
+        return user_token
+
+    @classmethod
+    def expire_api_key(cls, api_key: str):
+        user_token = cls.from_api_key(api_key)
+        user_token.expires = base.utc_now()
+
+
 class AuthToken:
 
     @staticmethod
-    def create(user: User, expiry_delta: datetime.timedelta=datetime.timedelta(hours=24)) -> AnyStr:
+    def create(user: User, expiry_delta: datetime.timedelta = datetime.timedelta(hours=24)) -> AnyStr:
         iat: pendulum.DateTime = base.utc_now()
         exp: pendulum.DateTime = iat + expiry_delta
 
@@ -137,4 +212,3 @@ class AuthToken:
             raise exc.SessionExpired
         except Exception:
             raise exc.AuthenticationError
-
