@@ -188,26 +188,3 @@ class UserToken(base.Base):
     def expire_api_key(cls, api_key: str):
         user_token = cls.from_api_key(api_key)
         user_token.expires = base.utc_now()
-
-
-class AuthToken:
-
-    @staticmethod
-    def create(user: User, expiry_delta: datetime.timedelta = datetime.timedelta(hours=24)) -> AnyStr:
-        iat: pendulum.DateTime = base.utc_now()
-        exp: pendulum.DateTime = iat + expiry_delta
-
-        return jwt.encode({
-            'iat': iat.int_timestamp,
-            'exp': exp.int_timestamp,
-            'subject': user.username
-        }, config.authentication.token.secret, algorithm='HS256')
-
-    @staticmethod
-    def verify(token: AnyStr) -> Dict:
-        try:
-            return jwt.decode(token, config.authentication.token.secret, algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            raise exc.SessionExpired
-        except Exception:
-            raise exc.AuthenticationError
