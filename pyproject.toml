@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "riberry"
-version = "0.10.22"
+version = "0.11.0"
 description = "Python-driven workflow management system"
 authors = ["Shady Rafehi <shadyrafehi@gmail.com>"]
 license = "MIT"
