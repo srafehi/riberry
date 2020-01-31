@@ -141,8 +141,7 @@ class UserToken(base.Base):
 
     def generate_api_key(self) -> str:
         return api_key_helpers.make_api_key(
-            token=self.token,
-            identifier=str(self.user_id),
+            payload=dict(token=self.token, uid=self.user_id),
             secret=self.__secret(),
         )
 
@@ -163,13 +162,13 @@ class UserToken(base.Base):
     def from_api_key(cls, api_key: str) -> 'UserToken':
 
         # Ensure the API key is genuine
-        api_key_helpers.validate_api_key(
+        payload: dict = api_key_helpers.verify_api_key(
             api_key=api_key,
             secret=cls.__secret(),
         )
 
         user_token: Optional[UserToken] = UserToken.query().filter_by(
-            token=api_key_helpers.token_from_api_key(api_key)
+            token=payload['token'],
         ).first()
 
         # Ensure the API key has not been expired/deleted
@@ -180,7 +179,7 @@ class UserToken(base.Base):
         # If a mismatch is found, it suggests that the user associated with the token
         # was changed after the API key was generated, and therefore the token is
         # invalidated.
-        if str(user_token.user_id) != api_key_helpers.identifier_from_api_key(api_key):
+        if user_token.user_id != payload['uid']:
             raise exc.InvalidApiKeyError
 
         return user_token
