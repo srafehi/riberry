@@ -16,8 +16,9 @@ APP_DIR_USER_DATA.mkdir(parents=True, exist_ok=True)
 APP_DIR_USER_CONF.mkdir(parents=True, exist_ok=True)
 
 CONF_DEFAULT_BG_SCHED_INTERVAL = 10
+CONF_DEFAULT_BG_APIKEY_CLEANUP_INTERVAL = 3_600
 CONF_DEFAULT_BG_EVENT_INTERVAL = 2
-CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT = 1000
+CONF_DEFAULT_BG_EVENT_PROCESS_LIMIT = 1_000
 CONF_DEFAULT_BG_CAPACITY_INTERVAL = 5
 CONF_DEFAULT_BG_METRIC_INTERVAL = 5
 CONF_DEFAULT_BG_METRIC_TIME_INTERVAL = 15
@@ -28,7 +29,6 @@ CONF_DEFAULT_DB_CONN_URL = f'sqlite:///{CONF_DEFAULT_DB_CONN_PATH}'
 
 CONF_DEFAULT_POLICY_PROVIDER = 'default'
 CONF_DEFAULT_AUTH_PROVIDER = 'default'
-CONF_DEFAULT_AUTH_TOKEN_PROVIDER = 'jwt'
 CONF_DEFAULT_AUTH_TOKEN_PATH = APP_DIR_USER_DATA / 'auth.key'
 CONF_DEFAULT_AUTH_TOKEN_SIZE = 256
 CONF_DEFAULT_PATH = APP_DIR_USER_CONF / 'conf.toml'
@@ -82,8 +82,6 @@ class AuthenticationTokenConfig:
 
     def __init__(self, config_dict):
         self.raw_config = config_dict or {}
-        self.provider = self.raw_config.get('provider') or CONF_DEFAULT_AUTH_TOKEN_PROVIDER
-
         self.secret = load_config_value(self.raw_config)
         if not self.secret:
             self.secret = self.make_secret()
@@ -176,6 +174,7 @@ class BackgroundTaskConfig:
         self.schedules = BackgroundTaskScheduleConfig(self.raw_config.get('schedules') or {})
         self.capacity = BackgroundTaskCapacityConfig(self.raw_config.get('capacity') or {})
         self.metrics = BackgroundTaskMetricConfig(self.raw_config.get('metrics') or {})
+        self.api_key_cleanup = BackgroundTaskApiKeyCleanupConfig(self.raw_config.get('apiKeyCleanup') or {})
 
 
 class BackgroundTaskEventsConfig:
@@ -191,6 +190,13 @@ class BackgroundTaskScheduleConfig:
     def __init__(self, config_dict):
         self.raw_config = config_dict or {}
         self.interval = config_dict.get('interval', CONF_DEFAULT_BG_SCHED_INTERVAL)
+
+
+class BackgroundTaskApiKeyCleanupConfig:
+
+    def __init__(self, config_dict):
+        self.raw_config = config_dict or {}
+        self.interval = config_dict.get('interval', CONF_DEFAULT_BG_APIKEY_CLEANUP_INTERVAL)
 
 
 class BackgroundTaskCapacityConfig:

@@ -33,6 +33,11 @@ app.conf.beat_schedule.update({
         'schedule': config.config.background.capacity.interval,
         'options': {'queue': 'riberry.background.schedules'}
     },
+    'process:cleanup-api-keys': {
+        'task': 'riberry.celery.background.tasks.cleanup_api_keys',
+        'schedule': config.config.background.api_key_cleanup.interval,
+        'options': {'queue': 'riberry.background.schedules'}
+    }
 })
 
 app.conf.imports = list(app.conf.imports) + ['riberry.celery.background.tasks']

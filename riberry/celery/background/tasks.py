@@ -4,6 +4,7 @@ from riberry import model
 from riberry.celery.background import capacity_config
 from riberry.celery.background.events import events
 from riberry.celery.background.metrics import process_metrics
+from riberry.celery.background.api_key_cleanup import remove_expired_api_keys
 from . import app
 
 
@@ -46,6 +47,12 @@ def update_capacity_parameters():
 def update_execution_metrics(time_interval: int, step_limit: int):
     with model.conn:
         process_metrics(time_interval=time_interval, limit=step_limit)
+
+
+@app.task(ignore_result=True)
+def cleanup_api_keys():
+    with model.conn:
+        remove_expired_api_keys()
 
 
 @app.task(ignore_result=True)
