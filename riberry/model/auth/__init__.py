@@ -1,9 +1,7 @@
 import datetime
 import re
-from typing import AnyStr, Dict, List, Optional
+from typing import List, Optional
 
-import jwt
-import pendulum
 from sqlalchemy import Column, String, ForeignKey, DateTime, desc, Index
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, validates, joinedload
