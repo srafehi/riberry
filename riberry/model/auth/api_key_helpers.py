@@ -44,6 +44,12 @@ def encoded_payload_from_api_key(api_key: str) -> str:
     return api_key.split('.')[0]
 
 
+def signature_from_api_key(api_key: str) -> str:
+    """ Returns the hmac signature from the given API key. """
+
+    return api_key.split('.')[-1]
+
+
 def payload_from_api_key(api_key: str) -> dict:
     """ Returns the deserialized payload from the given API key. """
 

@@ -134,6 +134,9 @@ class UserToken(base.Base):
 
     user: 'User' = relationship('User', back_populates='tokens')
 
+    def expire(self):
+        self.expires = base.utc_now() - datetime.timedelta(seconds=1)
+
     def expired(self) -> bool:
         return base.utc_now() > self.expires if self.expires is not None else False
 
@@ -184,5 +187,4 @@ class UserToken(base.Base):
 
     @classmethod
     def expire_api_key(cls, api_key: str):
-        user_token = cls.from_api_key(api_key)
-        user_token.expires = base.utc_now()
+        cls.from_api_key(api_key).expire()
