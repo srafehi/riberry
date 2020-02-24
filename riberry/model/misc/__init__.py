@@ -12,12 +12,17 @@ from riberry.model import base
 
 
 class ResourceType(enum.Enum):
+    application = 'Application'
+    application_instance = 'ApplicationInstance'
     form = 'Form'
-    user = 'User'
     job = 'Job'
     job_execution = 'JobExecution'
-    user_interface = 'UserInterface'
+    job_execution_stream = 'JobExecutionStream'
+    job_execution_stream_step = 'JobExecutionStreamStep'
+    job_execution_artifact = 'JobExecutionArtifact'
     misc = 'Misc'
+    user = 'User'
+    user_interface = 'UserInterface'
 
     def __repr__(self):
         return repr(self.value)
