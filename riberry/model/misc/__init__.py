@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from typing import List, Optional
 
+import pendulum
 from sqlalchemy import Binary, String, Column, Float, ForeignKey, Boolean, DateTime, Index, Enum, UniqueConstraint, sql
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
@@ -157,3 +158,63 @@ class ResourceData(base.Base):
             foreign_keys=lambda: ResourceData.resource_id,
             cascade='save-update, merge, delete, delete-orphan',
         )
+
+
+class ResourceRetention(base.Base):
+    __tablename__ = 'resource_retention'
+    __reprattrs__ = ['form_id', 'resource_type', 'period']
+
+    id = base.id_builder.build()
+    form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
+    resource_type = Column(Enum(ResourceType), nullable=False)
+    period = Column(String(64), nullable=False)
+    last_completion_time: datetime = Column(DateTime(timezone=True), default=None)
+
+    def run(self):
+        executions = self.ready_executions()
+        if not executions:
+            return
+        execution_ids = [execution.id for execution in executions]
+
+        if self.resource_type == ResourceType.job_execution_artifact:
+            deletion_query = model.job.JobExecutionArtifact.query().filter(
+                model.job.JobExecutionArtifact.job_execution_id.in_(execution_ids)
+            )
+
+        elif self.resource_type == ResourceType.job_execution_stream:
+            deletion_query = model.job.JobExecutionStream.query().filter(
+                model.job.JobExecutionStream.job_execution_id.in_(execution_ids)
+            )
+
+        elif self.resource_type == ResourceType.job_execution_stream_step:
+            deletion_query = model.job.JobExecutionStreamStep.query().filter(
+                model.job.JobExecutionStreamStep.stream_id.in_(
+                    model.conn.query(model.job.JobExecutionStream.id).filter(
+                        model.job.JobExecutionStream.job_execution_id.in_(execution_ids)
+                    )
+                )
+            )
+
+        elif self.resource_type == ResourceType.job_execution:
+            deletion_query = model.job.JobExecution.query().filter(
+                model.job.JobExecution.id.in_(execution_ids)
+            )
+
+        else:
+            raise NotImplementedError(f'ResourceRetention.run :: Unsupported type {self.resource_type}')
+
+        deletion_query.delete()
+        self.last_completion_time = max(execution.completed for execution in executions)
+
+    def ready_executions(self) -> List['model.job.JobExecution']:
+        # noinspection PyComparisonWithNone
+        query = model.job.JobExecution.query().join(model.job.Job).filter(
+            (model.job.JobExecution.completed != None) &
+            (model.job.JobExecution.completed < (base.utc_now() - pendulum.parse(self.period))) &
+            (model.job.Job.form_id == self.form_id)
+        )
+
+        if self.last_completion_time:
+            query = query.filter(model.job.JobExecution.completed > self.last_completion_time)
+
+        return query.order_by(model.job.JobExecution.completed.asc()).all()
