@@ -171,23 +171,26 @@ class ResourceRetention(base.Base):
     last_completion_time: datetime = Column(DateTime(timezone=True), default=None)
 
     def run(self):
+        """ Retrieves resources for the executions belonging to the given policy's form
+        which have exceeded the retention period. """
+
         executions = self.ready_executions()
         if not executions:
             return
         execution_ids = [execution.id for execution in executions]
 
         if self.resource_type == ResourceType.job_execution_artifact:
-            deletion_query = model.job.JobExecutionArtifact.query().filter(
+            query = model.job.JobExecutionArtifact.query().filter(
                 model.job.JobExecutionArtifact.job_execution_id.in_(execution_ids)
             )
 
         elif self.resource_type == ResourceType.job_execution_stream:
-            deletion_query = model.job.JobExecutionStream.query().filter(
+            query = model.job.JobExecutionStream.query().filter(
                 model.job.JobExecutionStream.job_execution_id.in_(execution_ids)
             )
 
         elif self.resource_type == ResourceType.job_execution_stream_step:
-            deletion_query = model.job.JobExecutionStreamStep.query().filter(
+            query = model.job.JobExecutionStreamStep.query().filter(
                 model.job.JobExecutionStreamStep.stream_id.in_(
                     model.conn.query(model.job.JobExecutionStream.id).filter(
                         model.job.JobExecutionStream.job_execution_id.in_(execution_ids)
@@ -196,17 +199,21 @@ class ResourceRetention(base.Base):
             )
 
         elif self.resource_type == ResourceType.job_execution:
-            deletion_query = model.job.JobExecution.query().filter(
+            query = model.job.JobExecution.query().filter(
                 model.job.JobExecution.id.in_(execution_ids)
             )
 
         else:
             raise NotImplementedError(f'ResourceRetention.run :: Unsupported type {self.resource_type}')
 
-        deletion_query.delete()
+        for resource in query.yield_per(10000):
+            model.conn.delete(resource)
+
         self.last_completion_time = max(execution.completed for execution in executions)
 
     def ready_executions(self) -> List['model.job.JobExecution']:
+        """ Retrieves executions for the given policy's form which have exceeded the retention period. """
+
         # noinspection PyComparisonWithNone
         query = model.job.JobExecution.query().join(model.job.Job).filter(
             (model.job.JobExecution.completed != None) &

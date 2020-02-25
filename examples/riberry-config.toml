@@ -27,6 +27,11 @@ timeInterval = 15
 stepLimit = 25000
 
 
+[background.retention]
+
+interval = 3600
+
+
 [database.connection]
 
 envvar = "RIBERRY_DATABASE_URL"
