@@ -280,6 +280,66 @@ def import_instance(app, internal_name, attributes):
     return instance
 
 
+def import_jobs(applications, restrict):
+    for application, properties in applications.items():
+        if restrict and application not in restrict:
+            continue
+
+        for form_internal_name, form_info in properties.get('forms', {}).items():
+            jobs = form_info.get('jobs') or []
+            if not jobs:
+                continue
+
+            form: model.interface.Form = model.interface.Form.query().filter_by(
+                internal_name=form_internal_name,
+            ).first()
+
+            if not form:
+                print(f'import_jobs:: Form {form_internal_name} not found, skipping {application}')
+                continue
+
+            for job in jobs:
+                job_name = job['name']
+                job_owner = job['owner']
+                job_remove = job.get('remove', False)
+                job_schedule_definitions = job.get('schedules') or []
+                job_input_values = job.get('inputValues') or {}
+
+                job = model.job.Job.query().filter_by(name=job_name).first()
+                if job_remove:
+                    if job:
+                        model.conn.delete(job)
+                    continue
+                if not job:
+                    job = services.job.create_job(
+                        form_id=form.id,
+                        name=job_name,
+                        input_values=job_input_values,
+                        input_files={},
+                        execute=False,
+                    )
+                job.creator = model.auth.User.query().filter_by(username=job_owner).one()
+                current_schedules = {schedule.cron: schedule for schedule in job.schedules}
+                for schedule_definition in job_schedule_definitions:
+                    sched_cron = schedule_definition['cron']
+                    sched_owner = schedule_definition.get('owner') or job_owner
+                    sched_limit = schedule_definition.get('limit') or None
+                    sched_enabled = schedule_definition.get('enabled', True)
+
+                    if sched_cron in current_schedules:
+                        schedule = current_schedules.pop(sched_cron)
+                    else:
+                        schedule = model.job.JobSchedule(cron=sched_cron, job=job)
+
+                    schedule.limit = sched_limit
+                    schedule.enabled = sched_enabled
+                    schedule.creator = model.auth.User.query().filter_by(username=sched_owner).one()
+                    model.conn.add(schedule)
+
+                for current_schedule in current_schedules.values():
+                    model.conn.delete(current_schedule)
+
+
 def import_groups(applications, restrict):
     created_groups = {}
     for application, properties in applications.items():
@@ -387,7 +447,6 @@ def import_menu_item(item, menu_type, parent=None):
     return menu_item
 
 
-
 def import_config(config, formatter=None, restrict_apps=None):
     applications = config.get('applications') or {}
     import_applications(applications=applications, restrict=restrict_apps)
@@ -399,6 +458,7 @@ def import_config(config, formatter=None, restrict_apps=None):
 
     import_menu_for_forms(menu=config.get('menues', {}).get('forms', {}))
     import_groups(applications=applications, restrict=restrict_apps)
+    import_jobs(applications=applications, restrict=restrict_apps)
 
     for k, v in session_diff().items():
         if k in diff:

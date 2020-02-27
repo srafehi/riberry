@@ -22,3 +22,9 @@ forms:
     instance: sample_app.instance.primary
     groups:
       - SampleGroup
+    jobs:
+      - name: Sample Job
+        owner: admin
+        remove: no
+        schedules:
+          - cron: "* * * * *"
