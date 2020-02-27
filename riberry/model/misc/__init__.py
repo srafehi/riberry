@@ -164,11 +164,15 @@ class ResourceRetention(base.Base):
     __tablename__ = 'resource_retention'
     __reprattrs__ = ['form_id', 'resource_type', 'period']
 
+    # columns
     id = base.id_builder.build()
     form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
     resource_type = Column(Enum(ResourceType), nullable=False)
     period = Column(String(64), nullable=False)
     last_completion_time: datetime = Column(DateTime(timezone=True), default=None)
+
+    # associations
+    form: 'model.interface.Form' = relationship('Form', back_populates='retention_policies')
 
     def run(self):
         """ Retrieves resources for the executions belonging to the given policy's form

@@ -22,3 +22,7 @@ forms:
     instance: sample_app.instance.primary
     groups:
       - SampleGroup
+    retentionPolicies:
+      steps: P1D
+      streams: P2D
+      artifacts: P3D

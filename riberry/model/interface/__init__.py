@@ -67,6 +67,12 @@ class Form(base.Base):
         cascade='save-update, merge, delete, delete-orphan',
         single_parent=True
     )
+    retention_policies: List['model.misc.ResourceRetention'] = relationship(
+        'ResourceRetention',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: model.misc.ResourceRetention.id.asc(),
+        back_populates='form',
+    )
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')

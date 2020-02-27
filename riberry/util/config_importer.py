@@ -161,6 +161,11 @@ def import_form(app, internal_name, attributes):
         input_values=attributes.get('inputValues') or {},
     )
 
+    import_form_retention_policies(
+        form=form,
+        retention_policies=attributes.get('retentionPolicies') or {},
+    )
+
     return form
 
 
@@ -218,6 +223,33 @@ def import_form_inputs(form, input_files, input_values):
             for name, attrs in input_values.items()
         }
     )
+
+
+def import_form_retention_policies(form, retention_policies: dict):
+    mapping = {
+        'steps': model.misc.ResourceType.job_execution_stream_step,
+        'streams': model.misc.ResourceType.job_execution_stream,
+        'artifacts': model.misc.ResourceType.job_execution_artifact,
+        'executions': model.misc.ResourceType.job_execution,
+    }
+
+    existing_policies = {
+        retention_policy.resource_type: retention_policy
+        for retention_policy in form.retention_policies
+    }
+
+    for retention_policy_alias, period in retention_policies.items():
+        resource_type = mapping[retention_policy_alias]
+        if resource_type in existing_policies:
+            retention_policy = existing_policies[resource_type]
+            del existing_policies[resource_type]
+        else:
+            retention_policy = model.misc.ResourceRetention(form=form, resource_type=resource_type)
+        retention_policy.period = period
+        model.conn.add(retention_policy)
+
+    for retention_policy in existing_policies.values():
+        model.conn.delete(retention_policy)
 
 
 def import_instance(app, internal_name, attributes):
