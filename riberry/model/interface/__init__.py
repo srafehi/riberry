@@ -2,7 +2,7 @@ import json
 import mimetypes
 from typing import List
 
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime, desc, asc
+from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime, desc, asc, Text
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, deferred
@@ -56,6 +56,12 @@ class Form(base.Base):
         order_by=lambda: InputFileDefinition.id.asc(),
         back_populates='form'
     )
+    input_definitions: List['InputDefinition'] = relationship(
+        'InputDefinition',
+        cascade='save-update, merge, delete, delete-orphan',
+        order_by=lambda: InputDefinition.id.asc(),
+        back_populates='form',
+    )
     metrics: List['model.job.JobExecutionMetric'] = relationship(
         'JobExecutionMetric',
         cascade='save-update, merge, delete, delete-orphan',
@@ -70,6 +76,25 @@ class Form(base.Base):
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
+
+
+class InputDefinition(base.Base):
+    __tablename__ = 'input_definition'
+    __reprattrs__ = ['name']
+
+    # columns
+    id = base.id_builder.build()
+    form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
+
+    sequence: int = Column(Integer, nullable=False)
+    name: str = Column(String(64), nullable=False)
+    internal_name: str = Column(String(256), nullable=False)
+    type: str = Column(String(64), nullable=False)
+    description: str = Column(String(128))
+    value: str = Column(Text, nullable=False)
+
+    # associations
+    form: 'Form' = relationship('Form', back_populates='input_definitions')
 
 
 class FormSchedule(base.Base):
@@ -178,10 +203,6 @@ class InputValueInstance(base.Base):
 
     # associations
     job: 'model.job.Job' = relationship('Job', back_populates='values')
-
-    @property
-    def definition(self):
-        return self.job.form
 
     @hybrid_property
     def value(self):
