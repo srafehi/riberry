@@ -80,7 +80,7 @@ class Form(base.Base):
 
 class InputDefinition(base.Base):
     __tablename__ = 'input_definition'
-    __reprattrs__ = ['name']
+    __reprattrs__ = ['internal_name', 'type']
 
     # columns
     id = base.id_builder.build()
@@ -91,7 +91,7 @@ class InputDefinition(base.Base):
     internal_name: str = Column(String(256), nullable=False)
     type: str = Column(String(64), nullable=False)
     description: str = Column(String(128))
-    value: str = Column(Text, nullable=False)
+    definition: str = Column(Text, nullable=False)
 
     # associations
     form: 'Form' = relationship('Form', back_populates='input_definitions')
