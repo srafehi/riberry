@@ -325,11 +325,15 @@ def import_input_definition(
 
 def import_form_inputs(form: model.interface.Form, input_files: dict, input_values: dict, inputs: dict):
 
-    if inputs and (input_files or input_values):
-        raise ValueError(f'Form[{form.internal_name}] Cannot use form.inputs with form.inputFiles or form.inputValues')
-
     if len(inputs) > 1:
         raise NotImplementedError(f'Form[{form.internal_name}] Multiple form.inputs currently not supported')
+
+    if input_files or input_values:
+        if inputs:
+            raise ValueError(f'Form[{form.internal_name}] Cannot use form.inputs with form.inputFiles or form.inputValues')
+        legacy_input_definition = {import_legacy_input_definitions(form, input_files, input_values)}
+    else:
+        legacy_input_definition = set()
 
     collection_diff(
         obj=form,
@@ -355,9 +359,7 @@ def import_form_inputs(form: model.interface.Form, input_files: dict, input_valu
         loader=lambda: {
             import_input_definition(form, name, sequence, attrs, support_legacy=False)
             for sequence, (name, attrs) in enumerate(inputs.items())
-        } | (
-            {import_legacy_input_definitions(form, input_files, input_values)}
-        ) if input_files or input_values else set()
+        } | legacy_input_definition
     )
 
 
