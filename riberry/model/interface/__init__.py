@@ -88,8 +88,8 @@ class InputDefinition(base.Base):
 
     sequence: int = Column(Integer, nullable=False)
     name: str = Column(String(64), nullable=False)
-    internal_name: str = Column(String(256), nullable=False)
-    type: str = Column(String(64), nullable=False)
+    internal_name: str = Column(String(64), nullable=False)
+    type: str = Column(String(32), nullable=False)
     description: str = Column(String(128))
     definition: str = Column(Text, nullable=False)
 
