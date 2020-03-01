@@ -3,6 +3,7 @@ import os
 import uuid
 
 import yaml
+from jsonschema import Draft7Validator
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -201,7 +202,89 @@ def import_input_value_definition(form, internal_name, attributes):
     return definition
 
 
-def import_input_definition(form, internal_name, sequence, attributes):
+def import_legacy_input_definitions(
+        form: model.interface.Form,
+        input_files: dict,
+        input_values: dict
+) -> model.interface.InputDefinition:
+    required = []
+    properties = {}
+    ui_schema = {}
+
+    for internal_name, attributes in input_values.items():
+        parameter = {}
+
+        if attributes.get('required'):
+            required.append(internal_name)
+
+        if attributes.get('name'):
+            parameter['title'] = attributes['name']
+
+        if attributes.get('description'):
+            parameter['description'] = attributes['description']
+
+        if attributes.get('default') is not None:
+            parameter['default'] = attributes['default']
+
+        if attributes['type'] == 'text':
+            parameter['type'] = 'string'
+        elif attributes['type'] == 'datetime-local':
+            parameter['type'] = 'string'
+            parameter['format'] = 'datetime'
+
+        if attributes.get('enumerations'):
+            parameter['enum'] = attributes['enumerations']
+
+        properties[internal_name] = parameter
+
+    for internal_name, attributes in input_files.items():
+        parameter = {
+            'type': 'string',
+            'format': 'data-url',
+        }
+
+        if attributes.get('required'):
+            required.append(internal_name)
+
+        if attributes.get('name'):
+            parameter['title'] = attributes['name']
+
+        if attributes.get('description'):
+            parameter['description'] = attributes['description']
+
+        if attributes.get('accept'):
+            ui_schema[internal_name] = {
+                'ui:options': {
+                    'accept': attributes['accept'],
+                }
+            }
+
+        properties[internal_name] = parameter
+
+    return import_input_definition(
+        form=form,
+        internal_name='input',
+        sequence=0,
+        attributes={
+            'type': 'jsonschema',
+            'schema': {
+                'type': 'object',
+                'required': required,
+                'properties': properties,
+            },
+            'uiSchema': ui_schema,
+        },
+        support_legacy=True,
+    )
+
+
+def import_input_definition(
+        form: model.interface.Form,
+        internal_name: str,
+        sequence: int,
+        attributes: dict,
+        support_legacy: bool,
+) -> model.interface.InputDefinition:
     attributes = {**{'sequence': sequence}, **attributes}
 
     if 'type' not in attributes:
@@ -212,17 +295,21 @@ def import_input_definition(form, internal_name, sequence, attributes):
 
     json_schema = attributes.pop('schema')
     ui_schema = attributes.pop('uiSchema', {})
-
-    attributes['definition'] = json.dumps({
-        'schema': json_schema,
-        'uiSchema': ui_schema,
-    }, indent=2)
+    options = attributes.pop('options', {})
 
     if 'name' not in attributes:
         attributes['name'] = json_schema.get('title', internal_name)
 
     if 'description' not in attributes:
-        attributes['description'] = json_schema.get('description', '')[:128] or None
+        attributes['description'] = json_schema.get('description', '')[:256] or None
+
+    if support_legacy:
+        options['flatten'] = True
+
+    Draft7Validator.check_schema(schema=json_schema)
+
+    definition = {'schema': json_schema, 'uiSchema': ui_schema, 'options': options}
+    attributes['definition'] = json.dumps(definition, indent=2)
 
     try:
         if not form.id:
@@ -266,9 +353,11 @@ def import_form_inputs(form: model.interface.Form, input_files: dict, input_valu
         obj=form,
         collection_name='input_definitions',
         loader=lambda: {
-            import_input_definition(form, name, sequence, attrs)
+            import_input_definition(form, name, sequence, attrs, support_legacy=False)
             for sequence, (name, attrs) in enumerate(inputs.items())
-        }
+        } | (
+            {import_legacy_input_definitions(form, input_files, input_values)}
+        ) if input_files or input_values else set()
     )
 
 
