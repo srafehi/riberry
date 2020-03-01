@@ -159,6 +159,7 @@ def import_form(app, internal_name, attributes):
         form=form,
         input_files=attributes.get('inputFiles') or {},
         input_values=attributes.get('inputValues') or {},
+        inputs=attributes.get('input') or {},
     )
 
     return form
@@ -200,7 +201,49 @@ def import_input_value_definition(form, internal_name, attributes):
     return definition
 
 
-def import_form_inputs(form, input_files, input_values):
+def import_input_definition(form, internal_name, sequence, attributes):
+    attributes = {**{'sequence': sequence}, **attributes}
+
+    if 'type' not in attributes:
+        attributes['type'] = 'jsonschema'
+
+    if attributes['type'] != 'jsonschema':
+        raise NotImplementedError(f'Form[{form.internal_name}] Only "jsonschema" for form.input.type is supported')
+
+    json_schema = attributes.pop('schema')
+    ui_schema = attributes.pop('uiSchema', {})
+
+    attributes['definition'] = json.dumps({
+        'schema': json_schema,
+        'uiSchema': ui_schema,
+    }, indent=2)
+
+    if 'name' not in attributes:
+        attributes['name'] = json_schema.get('title', internal_name)
+
+    if 'description' not in attributes:
+        attributes['description'] = json_schema.get('description', '')[:128] or None
+
+    try:
+        if not form.id:
+            raise NoResultFound
+        definition = services.form.input_definition_by_internal_name(form=form, internal_name=internal_name)
+        definition = services.form.update_input_definition(definition, attributes)
+    except NoResultFound:
+        definition = model.interface.InputDefinition(internal_name=internal_name, **attributes)
+        model.conn.add(definition)
+
+    return definition
+
+
+def import_form_inputs(form: model.interface.Form, input_files: dict, input_values: dict, inputs: dict):
+
+    if inputs and (input_files or input_values):
+        raise ValueError(f'Form[{form.internal_name}] Cannot use form.inputs with form.inputFiles or form.inputValues')
+
+    if len(inputs) > 1:
+        raise NotImplementedError(f'Form[{form.internal_name}] Multiple form.inputs currently not supported')
+
     collection_diff(
         obj=form,
         collection_name='input_file_definitions',
@@ -216,6 +259,15 @@ def import_form_inputs(form, input_files, input_values):
         loader=lambda: {
             import_input_value_definition(form, name, attrs)
             for name, attrs in input_values.items()
+        }
+    )
+
+    collection_diff(
+        obj=form,
+        collection_name='input_definitions',
+        loader=lambda: {
+            import_input_definition(form, name, sequence, attrs)
+            for sequence, (name, attrs) in enumerate(inputs.items())
         }
     )
 
