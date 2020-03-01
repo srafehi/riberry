@@ -59,7 +59,7 @@ class Form(base.Base):
     input_definitions: List['InputDefinition'] = relationship(
         'InputDefinition',
         cascade='save-update, merge, delete, delete-orphan',
-        order_by=lambda: InputDefinition.id.asc(),
+        order_by=lambda: InputDefinition.sequence.asc(),
         back_populates='form',
     )
     metrics: List['model.job.JobExecutionMetric'] = relationship(
