@@ -5,7 +5,7 @@ import sqlalchemy.orm
 import sqlalchemy.pool
 import sqlalchemy.engine
 
-from . import misc, application, group, auth, interface, job, base
+from . import misc, application, group, auth, interface, job, base, helpers
 from ..util.misc import import_from_string
 from .. import log
 
