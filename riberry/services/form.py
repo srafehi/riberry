@@ -82,7 +82,7 @@ def value_definition_by_internal_name(form, internal_name) -> model.interface.In
 def update_input_definition(
         definition: model.interface.InputDefinition,
         attributes: Dict,
-) -> model.interface.InputValueDefinition:
+) -> model.interface.InputDefinition:
     for attr in {'type', 'name', 'description', 'sequence', 'definition'} & set(attributes):
         setattr(definition, attr, attributes[attr])
 
