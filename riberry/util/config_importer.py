@@ -309,7 +309,7 @@ def import_input_definition(
     Draft7Validator.check_schema(schema=json_schema)
 
     definition = {'schema': json_schema, 'uiSchema': ui_schema, 'options': options}
-    attributes['definition'] = json.dumps(definition, indent=2)
+    attributes['definition'] = definition
 
     try:
         if not form.id:
