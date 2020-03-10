@@ -14,14 +14,12 @@ class JobSpecification:
             username: str,
             job_prefix: str = 'TEST_',
             job_name: Union[Callable[[], str], str] = uuid.uuid4,
-            input_values: dict = None,
-            input_files: dict = None,
+            input_data: dict = None,
             execute: bool = True,
     ):
         self.form_internal_name = form_internal_name
         self.username = username
-        self.input_values = input_values or {}
-        self.input_files = input_files or {}
+        self.input_data = input_data
         self.job_prefix = job_prefix
         self.job_name = job_name
         self.execute = execute
@@ -32,8 +30,7 @@ class JobSpecification:
             username=self.username,
             job_prefix=self.job_prefix,
             job_name=self.job_name,
-            input_values=self.input_values,
-            input_files=self.input_files,
+            input_data=self.input_data,
             execute=self.execute,
         )
 
