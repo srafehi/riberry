@@ -1,6 +1,7 @@
 import base64
 import mimetypes
 from email.message import Message
+from functools import lru_cache
 from typing import Dict, Optional, Any
 from urllib.parse import parse_qsl
 from urllib.request import urlopen
@@ -10,7 +11,7 @@ class DataUri:
     """ Parses a data-uri string allowing you to access its contents and properties """
 
     def __init__(self, data_uri: str):
-        with urlopen(data_uri) as f:
+        with self._open_data_uri(data_uri) as f:
             self.properties: Dict[str, str] = self._extract_properties(f.headers)
             self.binary: bytes = f.read()
             self.size: int = len(self.binary)
@@ -21,11 +22,18 @@ class DataUri:
 
         return self.binary.decode() if self.binary is not None else None
 
-    @staticmethod
-    def is_data_uri(value: str) -> bool:
+    @classmethod
+    def is_data_uri(cls, value: str) -> bool:
         """ Checks to see if the given string is a data-uri object. """
 
-        return value.startswith('data:') and value.split(';')[-1].startswith('base64,')
+        if not value.startswith('data:'):
+            return False
+
+        # noinspection PyBroadException
+        try:
+            return bool(cls(value))
+        except:
+            return False
 
     @staticmethod
     def _extract_properties(headers: Message) -> Dict[str, str]:
@@ -34,6 +42,13 @@ class DataUri:
         properties_string = headers['content-type'].split(';', 1)[-1]
         properties_items = parse_qsl(properties_string)
         return dict(properties_items)
+
+    @staticmethod
+    @lru_cache(maxsize=2)
+    def _open_data_uri(data_uri):
+        """ Creates and returns a file-like object for the data-uri. """
+
+        return urlopen(data_uri)
 
 
 class DataUriBuilder:
