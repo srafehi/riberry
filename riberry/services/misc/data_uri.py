@@ -62,30 +62,31 @@ class DataUriBuilder:
         self._content_encoded = None
 
     @property
-    def content_encoded(self) -> bytes:
-        """ Returns the content encoded as a base64 byte string. """
+    def content_encoded(self) -> str:
+        """ Returns the content encoded as a base64 string. """
 
-        if self.content and self._content_encoded is None:
+        if self.content is not None and self._content_encoded is None:
             try:
                 content = self.content.read()
             except AttributeError:
-                if isinstance(self.content, str):
-                    content = self.content.encode()
-                elif isinstance(self.content, bytes):
-                    content = self.content
-                else:
-                    raise ValueError(
-                        f'DataUriBuilder.content is unsupported type ({type(self.content)}). '
-                        f'Expected str, bytes or file/file-like object.'
-                    )
+                content = self.content
+
+            if isinstance(content, str):
+                content = content.encode()
+            elif not isinstance(content, bytes):
+                raise ValueError(
+                    f'DataUriBuilder.content is unsupported type ({type(self.content)}). '
+                    f'Expected str, bytes or file/file-like object.'
+                )
+
             self._content_encoded = base64.b64encode(content).decode()
-        return self._content_encoded or b''
+        return self._content_encoded or ''
 
     @property
     def mimetype(self):
         """ Returns the current mimetype based on the supplied filename. """
 
-        file_type, _ = mimetypes.guess_type(self.filename)
+        file_type, _ = mimetypes.guess_type(self.filename or '')
         return file_type or self.fallback_file_type
 
     def build(self) -> str:
