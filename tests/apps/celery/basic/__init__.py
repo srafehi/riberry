@@ -27,7 +27,7 @@ def entry_point_schema():
     """
 
     # Extract "streams" input value
-    stream_count = cxt.input.values['data']['streams']
+    stream_count = cxt.input.data['streams']
     _create_workflow(stream_count=stream_count)
 
 

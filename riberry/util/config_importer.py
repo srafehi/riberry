@@ -8,6 +8,7 @@ from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.exc import NoResultFound
 
 from riberry import model, services, policy
+from riberry.model.helpers import max_string_length
 from riberry.util.common import variable_substitution
 
 
@@ -160,7 +161,7 @@ def import_form(app, internal_name, attributes):
         form=form,
         input_files=attributes.get('inputFiles') or {},
         input_values=attributes.get('inputValues') or {},
-        inputs=attributes.get('input') or {},
+        input_definition=attributes.get('input') or {},
     )
 
     return form
@@ -263,8 +264,6 @@ def import_legacy_input_definitions(
 
     return import_input_definition(
         form=form,
-        internal_name='input',
-        sequence=0,
         attributes={
             'type': 'jsonschema',
             'schema': {
@@ -280,12 +279,10 @@ def import_legacy_input_definitions(
 
 def import_input_definition(
         form: model.interface.Form,
-        internal_name: str,
-        sequence: int,
         attributes: dict,
         support_legacy: bool,
 ) -> model.interface.InputDefinition:
-    attributes = {**{'sequence': sequence}, **attributes}
+    attributes = dict(attributes)
 
     if 'type' not in attributes:
         attributes['type'] = 'jsonschema'
@@ -298,7 +295,7 @@ def import_input_definition(
     options = attributes.pop('options', {})
 
     if 'name' not in attributes:
-        attributes['name'] = json_schema.get('title', internal_name)
+        attributes['name'] = json_schema.get('title') or 'Form Input'
 
     if 'description' not in attributes:
         attributes['description'] = json_schema.get('description', '')[:256] or None
@@ -311,29 +308,22 @@ def import_input_definition(
     definition = {'schema': json_schema, 'uiSchema': ui_schema, 'options': options}
     attributes['definition'] = definition
 
-    try:
-        if not form.id:
-            raise NoResultFound
-        definition = services.form.input_definition_by_internal_name(form=form, internal_name=internal_name)
-        definition = services.form.update_input_definition(definition, attributes)
-    except NoResultFound:
-        definition = model.interface.InputDefinition(internal_name=internal_name, **attributes)
-        model.conn.add(definition)
-
-    return definition
+    if form.input_definition:
+        services.form.update_input_definition(form.input_definition, attributes)
+    else:
+        form.input_definition = model.interface.InputDefinition(**attributes)
+        model.conn.add(form.input_definition)
+    return form.input_definition
 
 
-def import_form_inputs(form: model.interface.Form, input_files: dict, input_values: dict, inputs: dict):
-
-    if len(inputs) > 1:
-        raise NotImplementedError(f'Form[{form.internal_name}] Multiple form.inputs currently not supported')
+def import_form_inputs(form: model.interface.Form, input_files: dict, input_values: dict, input_definition: dict):
 
     if input_files or input_values:
-        if inputs:
+        if input_definition:
             raise ValueError(f'Form[{form.internal_name}] Cannot use form.inputs with form.inputFiles or form.inputValues')
-        legacy_input_definition = {import_legacy_input_definitions(form, input_files, input_values)}
+        input_definition_instance = import_legacy_input_definitions(form, input_files, input_values)
     else:
-        legacy_input_definition = set()
+        input_definition_instance = None
 
     collection_diff(
         obj=form,
@@ -353,14 +343,8 @@ def import_form_inputs(form: model.interface.Form, input_files: dict, input_valu
         }
     )
 
-    collection_diff(
-        obj=form,
-        collection_name='input_definitions',
-        loader=lambda: {
-            import_input_definition(form, name, sequence, attrs, support_legacy=False)
-            for sequence, (name, attrs) in enumerate(inputs.items())
-        } | legacy_input_definition
-    )
+    if input_definition and not input_definition_instance:
+        import_input_definition(form, input_definition, support_legacy=False)
 
 
 def import_instance(app, internal_name, attributes):
@@ -528,7 +512,6 @@ def import_menu_item(item, menu_type, parent=None):
         menu_item.key = item
         menu_item.type = 'leaf'
     return menu_item
-
 
 
 def import_config(config, formatter=None, restrict_apps=None):

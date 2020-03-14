@@ -35,8 +35,6 @@ class TestBasicSchemaCeleryApp(BasicBaseTestSuite):
         cls.delete_test_job()
 
     def test_job_input_values(self):
-        assert self.job_values == {
-            'data': {
-                'streams': 2,
-            }
+        assert self.job_data == {
+            'streams': 2,
         }

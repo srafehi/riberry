@@ -19,6 +19,8 @@ class JobValidationType(Enum):
 class JobBuilder:
     """ Creates a new job for the given form and input data. """
 
+    input_value_instance_key = '__InputDefinition_data'
+
     def __init__(
             self,
             form: Union[riberry.model.interface.Form, str],
@@ -41,10 +43,7 @@ class JobBuilder:
     def input_definition(self) -> Optional[riberry.model.interface.InputDefinition]:
         """ Returns the input definition for the given form. """
 
-        input_definitions: List[riberry.model.interface.InputDefinition] = self.form.input_definitions
-        if input_definitions:
-            assert len(input_definitions) == 1, 'Forms with 2 or more InputDefinitions are not yet supported.'
-            return input_definitions[0]
+        return self.form.input_definition
 
     def build(self) -> riberry.model.job.Job:
         """ Builds and returns a new job. """
@@ -78,8 +77,9 @@ class JobBuilder:
 
         return self.validator.validate(raise_on_errors=raise_on_errors)
 
-    @staticmethod
+    @classmethod
     def build_input_instances(
+            cls,
             input_definition: riberry.model.interface.InputDefinition,
             input_data: Any,
     ) -> Tuple[
@@ -102,7 +102,7 @@ class JobBuilder:
             )
             input_value = riberry.model.interface.InputValueInstance(
                 name=input_definition.name,
-                internal_name=input_definition.internal_name,
+                internal_name=cls.input_value_instance_key,
             )
             input_value.value = input_data
             return [input_value], input_files
@@ -131,7 +131,7 @@ class JobBuilder:
             input_data, input_files = extractor.extract()
             input_value = riberry.model.interface.InputValueInstance(
                 name=input_definition.name,
-                internal_name=input_definition.internal_name,
+                internal_name=cls.input_value_instance_key,
             )
             input_value.value = input_data
             return [input_value], input_files

@@ -21,12 +21,11 @@ applications:
         instance: test.celery.instance
         name: Basic Form (Schema)
         input:
-          data:
-            schema:
-              type: object
-              required: [streams]
-              properties:
-                streams:
-                  type: integer
+          schema:
+            type: object
+            required: [streams]
+            properties:
+              streams:
+                type: integer
         groups:
           - default

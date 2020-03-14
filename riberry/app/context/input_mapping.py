@@ -17,6 +17,12 @@ class InputMappings:
         self.values: InputValueMapping = InputValueMapping(context=context)
         self.files: InputFileMapping = InputFileMapping(context=context)
 
+    @property
+    def data(self) -> Any:
+        """ Returns the input value for job's InputDefinition. """
+
+        return self.values.get(riberry.services.job.JobBuilder.input_value_instance_key)
+
 
 class InputMapping(Mapping, metaclass=abc.ABCMeta):
     """ Base class for reading a job's inputs based on internal_names. """

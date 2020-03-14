@@ -55,11 +55,11 @@ class Form(base.Base):
         order_by=lambda: InputFileDefinition.id.asc(),
         back_populates='form'
     )
-    input_definitions: List['InputDefinition'] = relationship(
+    input_definition: 'InputDefinition' = relationship(
         'InputDefinition',
         cascade='save-update, merge, delete, delete-orphan',
-        order_by=lambda: InputDefinition.sequence.asc(),
         back_populates='form',
+        uselist=False,
     )
     metrics: List['model.job.JobExecutionMetric'] = relationship(
         'JobExecutionMetric',
@@ -79,21 +79,19 @@ class Form(base.Base):
 
 class InputDefinition(base.Base):
     __tablename__ = 'input_definition'
-    __reprattrs__ = ['name', 'internal_name', 'type']
+    __reprattrs__ = ['name', 'type']
 
     # columns
     id = base.id_builder.build()
     form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
 
-    sequence: int = Column(Integer, nullable=False)
     name: str = Column(String(64), nullable=False)
-    internal_name: str = Column(String(64), nullable=False)
     type: str = Column(String(32), nullable=False)
     description: str = Column(String(256))
     definition_string: str = Column('definition', Text, nullable=False)
 
     # associations
-    form: 'Form' = relationship('Form', back_populates='input_definitions')
+    form: 'Form' = relationship('Form', back_populates='input_definition')
 
     @property
     def definition(self):

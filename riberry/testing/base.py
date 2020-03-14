@@ -1,5 +1,5 @@
 import uuid
-from typing import Union, Callable
+from typing import Union, Callable, Any
 
 import riberry
 from riberry import testing
@@ -47,27 +47,32 @@ class TestApplication:
     job_values: dict = None
     job_files: dict = None
 
-    @classmethod
-    def __job(cls):
-        return riberry.model.job.Job.query().filter_by(id=cls.job_id).one()
-
-    @classmethod
-    def __execution(cls) -> riberry.model.job.JobExecution:
-        return riberry.model.job.JobExecution.query().filter_by(id=cls.execution_id).one()
-
-    @classmethod
-    def setup_test_scenario(cls, job_specification: JobSpecification):
-        testing.helpers.setup_test_scenario(test_app=cls, job_specification=job_specification)
-
-    @classmethod
-    def delete_test_job(cls):
-        riberry.model.conn.delete(cls.__job())
-        riberry.model.conn.commit()
+    @property
+    def execution(self) -> riberry.model.job.JobExecution:
+        return self.__execution()
 
     @property
     def job(self) -> riberry.model.job.Job:
         return self.__job()
 
     @property
-    def execution(self) -> riberry.model.job.JobExecution:
-        return self.__execution()
+    def job_data(self) -> Any:
+        input_value_instance_key = riberry.services.job.JobBuilder.input_value_instance_key
+        return self.job_values.get(input_value_instance_key) if self.job_values else None
+
+    @classmethod
+    def delete_test_job(cls):
+        riberry.model.conn.delete(cls.__job())
+        riberry.model.conn.commit()
+
+    @classmethod
+    def setup_test_scenario(cls, job_specification: JobSpecification):
+        testing.helpers.setup_test_scenario(test_app=cls, job_specification=job_specification)
+
+    @classmethod
+    def __execution(cls) -> riberry.model.job.JobExecution:
+        return riberry.model.job.JobExecution.query().filter_by(id=cls.execution_id).one()
+
+    @classmethod
+    def __job(cls):
+        return riberry.model.job.Job.query().filter_by(id=cls.job_id).one()
