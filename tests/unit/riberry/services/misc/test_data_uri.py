@@ -1,4 +1,5 @@
 import io
+import json
 import tempfile
 from pathlib import Path
 
@@ -76,6 +77,15 @@ class TestDataUri:
 
 
 class TestDataUriBuilder:
+
+    def test_for_serializable_content(self):
+        assert DataUriBuilder.for_serializable({"Hello": "World"}).content == '{"Hello": "World"}'
+
+    def test_for_serializable_filename(self):
+        assert DataUriBuilder.for_serializable({"Hello": "World"}, filename='filename').filename == 'filename'
+
+    def test_for_serializable_json_kwargs(self):
+        assert DataUriBuilder.for_serializable({"Hello": "World"}, indent=1).content == '{\n "Hello": "World"\n}'
 
     @staticmethod
     @pytest.mark.parametrize('content,filename,data_uri', [

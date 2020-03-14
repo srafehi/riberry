@@ -1,4 +1,5 @@
 import base64
+import json
 import mimetypes
 from email.message import Message
 from functools import lru_cache
@@ -94,3 +95,12 @@ class DataUriBuilder:
 
         properties = f'name={self.filename};' if self.filename else ''
         return f'data:{self.mimetype};{properties}base64,{self.content_encoded}'
+
+    @classmethod
+    def for_serializable(cls, serializable, *, filename=None, **dumps_kwargs):
+        """ Helper method to create a builder for JSON serializable objects. """
+
+        return cls(
+            content=json.dumps(serializable, **dumps_kwargs),
+            filename=filename,
+        )
