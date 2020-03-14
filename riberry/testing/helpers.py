@@ -4,7 +4,6 @@ from typing import List, Type, Union, Callable
 import riberry
 from riberry import testing
 from riberry.celery.background.events.events import process as _process_events
-from riberry.services.job.job_builder import JobBuilder
 
 
 def setup_test_scenario(
@@ -88,14 +87,15 @@ def create_job(
         execute: bool = True,
 ):
     """ Creates a test job for the given form. """
-    user = riberry.model.auth.User.query().filter_by(username=username).one()
-    with riberry.services.policy.policy_scope(user=user):
-        job = JobBuilder(
+
+    with riberry.services.policy.policy_scope(user=username):
+        job = riberry.services.job.create_job(
             form=form_internal_name,
             job_name=f'{job_prefix}{job_name() if callable(job_name) else job_name}',
             input_data=input_data,
             execute_on_creation=execute,
-        ).build()
+        )
+
         riberry.model.conn.commit()
         return job
 

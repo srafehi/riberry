@@ -1,22 +1,28 @@
+from typing import Union, Any, Optional
+
 import riberry
 from ..env import current_context
 
 
-def create_job(form_name, job_name=None, input_values=None, input_files=None, owner=None, execute=True):
-    form: riberry.model.interface.Form = riberry.model.interface.Form.query().filter_by(
-        internal_name=form_name,
-    ).first()
-
+def create_job(
+        form: Union[riberry.model.interface.Form, str],
+        job_name: Optional[str] = None,
+        input_data: Any = None,
+        execute_on_creation: bool = True,
+        owner: Optional[Union[riberry.model.auth.User, str]] = None,
+):
     job_execution = current_context.current.job_execution
-    job_execution_user = owner if owner else job_execution.creator
+    owner = owner if owner else job_execution.creator if job_execution else riberry.policy.context.subject
 
-    with riberry.services.policy.policy_scope(user=job_execution_user):
+    if job_execution:
+        job_name = job_name or f'Via {job_execution.job.name} / #{job_execution.id}'
+
+    with riberry.services.policy.policy_scope(user=owner):
         job = riberry.services.job.create_job(
-            form_id=form.id,
-            name=job_name or f'Via {job_execution.job.name} / #{job_execution.id}',
-            input_values=input_values or {},
-            input_files=input_files or {},
-            execute=execute,
+            form=form,
+            job_name=job_name,
+            input_data=input_data,
+            execute_on_creation=execute_on_creation,
             parent_execution=job_execution,
         )
 
