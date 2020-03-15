@@ -45,7 +45,6 @@ class DataUri:
         return dict(properties_items)
 
     @staticmethod
-    @lru_cache(maxsize=2)
     def _open_data_uri(data_uri):
         """ Creates and returns a file-like object for the data-uri. """
 
