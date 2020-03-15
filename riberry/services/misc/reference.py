@@ -21,7 +21,7 @@ class Reference:
             self,
             type: str,
             path: Any,
-            properties: Optional[Dict],
+            properties: Optional[Dict] = None,
     ):
         self.type: str = type
         self.path: str = _cleanse_path(_make_path(path))
@@ -37,7 +37,7 @@ class Reference:
             netloc=self.type,
             path=_make_path(obj=self.path),
             params='',
-            query=urlencode(self.properties or {}),
+            query=urlencode(_cleanse_properties(self.properties) or {}),
             fragment='',
         ).geturl()
 
@@ -57,7 +57,8 @@ class Reference:
         if not isinstance(url, str):
             return False
         result = _parse_url(url)
-        return result.scheme == cls.scheme
+        print(result)
+        return result.scheme == cls.scheme and bool(result.netloc) and bool(result.path)
 
     @classmethod
     def _from_parse_result(cls, result: ParseResult) -> 'Reference':
@@ -79,7 +80,7 @@ class ModelReference(Reference):
     def __init__(
             self,
             model,
-            properties: Optional[Dict],
+            properties: Optional[Dict] = None,
     ):
         assert self.is_model(model=model)
         super().__init__(type=ModelReference.type, path=model, properties=properties)
@@ -113,7 +114,7 @@ class ModelReference(Reference):
 
         try:
             return bool(cls.resolve_model(model))
-        except KeyError:
+        except ValueError:
             return False
 
     @classmethod
@@ -161,6 +162,35 @@ class ModelReference(Reference):
         )
 
 
+def _cleanse_path(path: str) -> str:
+    """ Strips out the leading forward slash from the path. """
+
+    return path.lstrip('/') if path else ''
+
+
+def _cleanse_properties(properties: dict) -> dict:
+    """ Remove any None values. """
+
+    return {key: value for key, value in properties.items() if value is not None}
+
+
+def _make_path(obj: Any) -> str:
+    """ Converts the given object into a string, suitable for a path component. """
+
+    if isinstance(obj, str):
+        return obj
+    elif hasattr(obj, '__name__'):
+        return obj.__name__
+    else:
+        return type(obj).__name__
+
+
+def _parse_query(query: str) -> Dict[str, str]:
+    """ Returns a mapping for the given query string. """
+
+    return dict(parse_qsl(query or ''))
+
+
 @lru_cache()
 def _parse_url(url: str) -> ParseResult:
     """ Returns an object containing the components of the parsed url. """
@@ -175,21 +205,3 @@ def _parse_url(url: str) -> ParseResult:
         query=result.query,
         fragment=result.fragment,
     )
-
-
-def _cleanse_path(path: str) -> str:
-    """ Strips out the leading forward slash from the path """
-
-    return path.lstrip('/') if path else ''
-
-
-def _parse_query(query: str) -> Dict[str, str]:
-    """ Returns a mapping for the given query string. """
-
-    return dict(parse_qsl(query or ''))
-
-
-def _make_path(obj: Any) -> str:
-    """ Converts the given object into a string, suitable for a path component. """
-
-    return (obj if isinstance(obj, str) else getattr(obj, '__name__', obj)) if obj else ''
