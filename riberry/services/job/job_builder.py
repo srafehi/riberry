@@ -98,7 +98,7 @@ class JobBuilder:
             input_data = InputFileExtractor.extract_from_value(
                 input_data=input_data,
                 files=input_files,
-                parent=input_definition.internal_name,
+                parent=cls.input_value_instance_key,
             )
             input_value = riberry.model.interface.InputValueInstance(
                 name=input_definition.name,

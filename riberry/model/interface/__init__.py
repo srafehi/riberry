@@ -86,7 +86,7 @@ class InputDefinition(base.Base):
     form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
 
     name: str = Column(String(64), nullable=False)
-    type: str = Column(String(32), nullable=False)
+    type: str = Column(String(32), nullable=False, default='jsonschema')
     description: str = Column(String(256))
     definition_string: str = Column('definition', Text, nullable=False)
 

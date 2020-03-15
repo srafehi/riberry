@@ -3,8 +3,6 @@ from datetime import timedelta
 import pendulum
 
 from riberry.model import auth
-# noinspection PyUnresolvedReferences
-from tests.unit.riberry.fixtures import dummy_user, init_model
 
 
 class TestAuthToken:
