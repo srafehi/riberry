@@ -18,6 +18,7 @@ class TestDataUri:
         ('data:text/plain;charset=utf-8;,Hello%20World', b'Hello World'),
         ('data:text/plain;charset=utf-8;,', b''),
         ('data:text/plain;charset=utf-8;,12345', b'12345'),
+        ('data:,', b''),
     ])
     def test_data_uri_binary(data_uri_string, binary):
         assert DataUri(data_uri=data_uri_string).binary == binary
