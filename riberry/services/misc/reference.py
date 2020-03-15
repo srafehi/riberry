@@ -57,7 +57,6 @@ class Reference:
         if not isinstance(url, str):
             return False
         result = _parse_url(url)
-        print(result)
         return result.scheme == cls.scheme and bool(result.netloc) and bool(result.path)
 
     @classmethod
