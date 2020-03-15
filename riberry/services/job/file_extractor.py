@@ -1,5 +1,5 @@
 import hashlib
-from typing import Any, Tuple, List
+from typing import Any, Tuple, List, Optional
 
 from riberry.model.helpers import max_string_length
 from riberry.model.interface import InputFileInstance
@@ -13,11 +13,11 @@ class InputFileExtractor:
     def __init__(self, input_data: Any):
         self.input_data: Any = input_data
 
-    def extract(self) -> Tuple[Any, List[InputFileInstance]]:
+    def extract(self, root: Optional[str] = None) -> Tuple[Any, List[InputFileInstance]]:
         """ Returns converted input data and extracted InputFileInstance instances. """
 
         files: List[InputFileInstance] = []
-        input_data = self.extract_from_value(self.input_data, files=files)
+        input_data = self.extract_from_value(self.input_data, files=files, parent=root)
         return input_data, files
 
     @classmethod
@@ -25,7 +25,7 @@ class InputFileExtractor:
             cls,
             input_data: Any,
             files: List[InputFileInstance],
-            parent=None,
+            parent: Optional[str] = None,
     ):
         """ Recursively extracts any data-uris and stores them as InputFileInstance instances
         in the provided `files` list.
