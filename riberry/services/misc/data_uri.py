@@ -2,7 +2,6 @@ import base64
 import json
 import mimetypes
 from email.message import Message
-from functools import lru_cache
 from typing import Dict, Optional, Any
 from urllib.parse import parse_qsl
 from urllib.request import urlopen
