@@ -69,28 +69,36 @@ class ApplicationInstanceSchedule(CrudPermissions):
     PERM_READ_BUILTIN = 'READ_BUILTIN'
 
 
+class CapacityConfiguration(CrudPermissions):
+    pass
+
+
 PERMISSION_ROLES = {
-    'FormRole.RESTRICTED': {
+    'Role.Form.RESTRICTED': {
         ApplicationInstanceSchedule.PERM_READ_BUILTIN,
         Job.PERM_CREATE,
         *Job.own_permissions,
     },
-    'FormRole.BASIC': {
+    'Role.Form.BASIC': {
         ApplicationInstanceSchedule.PERM_READ_BUILTIN,
         Job.PERM_READ,
         Job.PERM_CREATE,
         *Job.own_permissions - {Job.PERM_READ_SELF, Job.PERM_PRIORITIZE},
     },
-    'FormRole.ELEVATED': {
+    'Role.Form.ELEVATED': {
         ApplicationInstanceSchedule.PERM_READ_BUILTIN,
         *Job.permissions - Job.own_permissions - {Job.PERM_PRIORITIZE},
     },
-    'FormRole.MANAGER': {
+    'Role.Form.MANAGER': {
         ApplicationInstanceSchedule.PERM_READ_BUILTIN,
         *Job.permissions - Job.own_permissions,
     },
-    'ApplicationRole.MANAGER': {
-        *ApplicationInstanceSchedule.permissions,
+    'Role.Application.MANAGER': {
+        *ApplicationInstanceSchedule.permissions - {ApplicationInstanceSchedule.PERM_READ_BUILTIN},
+    },
+    'Role.System.ADMINISTRATOR': {
+        *ApplicationInstanceSchedule.permissions - {ApplicationInstanceSchedule.PERM_READ_BUILTIN},
+        *CapacityConfiguration.permissions,
     }
 }
 
