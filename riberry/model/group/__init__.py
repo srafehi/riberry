@@ -90,8 +90,8 @@ class GroupPermission(base.Base):
 
     # columns
     id = base.id_builder.build()
-    group_id = Column(ForeignKey('groups.id'), nullable=False)
-    name: str = Column(String(128), nullable=False)
+    group_id = Column(ForeignKey('groups.id'), nullable=False, index=True)
+    name: str = Column(String(128), nullable=False, index=True)
 
     # associations
     group: 'Group' = relationship('Group', back_populates='permissions')
