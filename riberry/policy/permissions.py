@@ -69,7 +69,7 @@ class ApplicationInstanceSchedule(CrudPermissions):
     PERM_READ_BUILTIN = 'READ_BUILTIN'
 
 
-PERMISSIONS = {
+PERMISSION_ROLES = {
     'FormRole.RESTRICTED': {
         ApplicationInstanceSchedule.PERM_READ_BUILTIN,
         Job.PERM_CREATE,
