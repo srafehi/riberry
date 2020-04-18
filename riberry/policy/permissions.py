@@ -78,6 +78,7 @@ PERMISSION_ROLES = {
     'FormRole.BASIC': {
         ApplicationInstanceSchedule.PERM_READ_BUILTIN,
         Job.PERM_READ,
+        Job.PERM_CREATE,
         *Job.own_permissions - {Job.PERM_READ_SELF, Job.PERM_PRIORITIZE},
     },
     'FormRole.ELEVATED': {
@@ -94,7 +95,7 @@ PERMISSION_ROLES = {
 }
 
 if __name__ == '__main__':
-    for _key, _values in PERMISSIONS.items():
+    for _key, _values in PERMISSION_ROLES.items():
         print('::', _key)
         for _value in sorted(_values):
             print('   >', _value)
