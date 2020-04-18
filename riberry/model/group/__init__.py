@@ -61,6 +61,7 @@ class Group(base.Base):
             ResourceGroupAssociation.resource_type == model.misc.ResourceType.form
         )
     )
+    permissions: List['GroupPermission'] = relationship('GroupPermission', back_populates='group')
 
     @property
     def display_name(self):
@@ -83,5 +84,14 @@ class Group(base.Base):
         ).all()
 
 
+class GroupPermission(base.Base):
+    __tablename__ = 'group_permission'
+    __reprattrs__ = ['name']
 
+    # columns
+    id = base.id_builder.build()
+    group_id = Column(ForeignKey('groups.id'), nullable=False)
+    name: str = Column(String(128), nullable=False)
 
+    # associations
+    group: 'Group' = relationship('Group', back_populates='permissions')
