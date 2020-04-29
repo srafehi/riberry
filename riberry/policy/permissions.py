@@ -2,7 +2,6 @@ from typing import Set
 
 
 class MetaPermissions(type):
-
     permission_prefix = 'PERM_'
 
     def __new__(mcs, name, bases, dict_):
@@ -38,12 +37,10 @@ class MetaPermissions(type):
 
 
 class PermissionsBase(metaclass=MetaPermissions):
-    __domain__ = None
+    pass
 
 
 class FormDomain(PermissionsBase):
-    __domain__ = 'Form'
-
     PERM_ACCESS = 'ACCESS'
     PERM_JOB_READ_SELF = 'JOB_READ_SELF'
     PERM_JOB_CREATE_SELF = 'JOB_CREATE_SELF'
@@ -62,15 +59,11 @@ class FormDomain(PermissionsBase):
 
 
 class ApplicationDomain(PermissionsBase):
-    __domain__ = 'Application'
-
     PERM_ACCESS = 'ACCESS'
     PERM_APP_SCHEDULES_MANAGE = 'APP_SCHEDULES_MANAGE'
 
 
 class SystemDomain(PermissionsBase):
-    __domain__ = 'System'
-
     PERM_ACCESS = 'ACCESS'
     PERM_CAPACITY_CONFIG_MANAGE = 'CAPACITY_CONFIG_MANAGE'
 
