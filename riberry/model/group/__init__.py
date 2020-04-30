@@ -64,11 +64,11 @@ class Group(base.Base):
     permissions: List['GroupPermission'] = relationship('GroupPermission', back_populates='group')
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return self._display_name or self.name
 
     @property
-    def users(self):
+    def users(self) -> List['model.auth.User']:
         return model.auth.User.query().filter(
             (ResourceGroupAssociation.group_id == self.id) &
             (ResourceGroupAssociation.resource_type == model.misc.ResourceType.user) &
@@ -76,11 +76,19 @@ class Group(base.Base):
         ).all()
 
     @property
-    def forms(self):
+    def forms(self) -> List['model.interface.Form']:
         return model.interface.Form.query().filter(
             (ResourceGroupAssociation.group_id == self.id) &
             (ResourceGroupAssociation.resource_type == model.misc.ResourceType.form) &
             (model.interface.Form.id == ResourceGroupAssociation.resource_id)
+        ).all()
+
+    @property
+    def applications(self) -> List['model.application.Application']:
+        return model.application.Application.query().filter(
+            (ResourceGroupAssociation.group_id == self.id) &
+            (ResourceGroupAssociation.resource_type == model.misc.ResourceType.application) &
+            (model.application.Application.id == ResourceGroupAssociation.resource_id)
         ).all()
 
 
