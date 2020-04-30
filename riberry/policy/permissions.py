@@ -1,14 +1,14 @@
 from typing import Set
 
 
-class MetaPermissions(type):
+class MetaPermissionDomain(type):
     permission_prefix = 'PERM_'
 
     def __new__(mcs, name, bases, dict_):
         permissions = set()
         actions = {
             action for base in bases
-            if isinstance(base, MetaPermissions)
+            if isinstance(base, MetaPermissionDomain)
             for action in base.actions
         }
 
@@ -35,13 +35,15 @@ class MetaPermissions(type):
     def actions(self) -> Set:
         return self._actions
 
+    def __contains__(self, item) -> bool:
+        return item in self.permissions
 
-class PermissionsBase(metaclass=MetaPermissions):
-    pass
 
-
-class FormDomain(PermissionsBase):
+class BasePermissionDomain(metaclass=MetaPermissionDomain):
     PERM_ACCESS = 'ACCESS'
+
+
+class FormDomain(BasePermissionDomain):
     PERM_JOB_READ_SELF = 'JOB_READ_SELF'
     PERM_JOB_CREATE_SELF = 'JOB_CREATE_SELF'
     PERM_JOB_UPDATE_SELF = 'JOB_UPDATE_SELF'
@@ -58,13 +60,11 @@ class FormDomain(PermissionsBase):
     PERM_APP_SCHEDULES_READ_BUILTIN = 'APP_SCHEDULES_READ_BUILTIN'
 
 
-class ApplicationDomain(PermissionsBase):
-    PERM_ACCESS = 'ACCESS'
+class ApplicationDomain(BasePermissionDomain):
     PERM_APP_SCHEDULES_MANAGE = 'APP_SCHEDULES_MANAGE'
 
 
-class SystemDomain(PermissionsBase):
-    PERM_ACCESS = 'ACCESS'
+class SystemDomain(BasePermissionDomain):
     PERM_CAPACITY_CONFIG_MANAGE = 'CAPACITY_CONFIG_MANAGE'
 
 
