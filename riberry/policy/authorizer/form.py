@@ -146,7 +146,7 @@ def form_filter(query: Query, context):
         if context.permissions.get(self_permission):
             self_expression = form_cls.id.in_(context.permissions[self_permission])
             if riberry.model.job.Job in context.traversed:
-                self_expression |= riberry.model.job.Job.creator_id == context.subject
+                self_expression &= riberry.model.job.Job.creator_id == context.subject.id
             expression |= self_expression
 
     return StepResult(

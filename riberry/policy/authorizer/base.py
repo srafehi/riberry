@@ -3,13 +3,15 @@ from typing import Iterable
 
 from sqlalchemy.orm import Query
 
+from riberry.model.auth import User
 from riberry.typing import ModelType
 
 
 class QueryAuthorizerContext:
 
-    def __init__(self, permissions, requested_permission):
-        self.permissions = permissions
+    def __init__(self, subject: User, requested_permission):
+        self.subject: User = subject
+        self.permissions = subject.permissions_to_domain_ids()
         self.traversed = set()
         self.requested_permission = requested_permission
 
@@ -40,7 +42,7 @@ class PermissionDomainQueryAuthorizer:
     ) -> ModelType:
         if not models:
             assert len(query.column_descriptions) == 1
-            return query.column_descriptions[0]['type']
+            return query.column_descriptions[0]['entity']
         elif isinstance(models, Iterable):
             for model in models:
                 if model in self.step_resolvers:
