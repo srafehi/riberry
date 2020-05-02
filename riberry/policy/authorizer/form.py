@@ -29,106 +29,41 @@ Forms via the following dependency tree:
 from sqlalchemy.orm import Query
 
 import riberry
-from .base import StepResult, PermissionDomainQueryAuthorizer
+from .base import StepResult, PermissionDomainQueryAuthorizer, Node
 
 form_authorizer = PermissionDomainQueryAuthorizer()
 
-form_authorizer.register_chain(
-    riberry.model.job.JobExecutionStreamStep,
-    riberry.model.job.JobExecutionStream,
-    riberry.model.job.JobExecution,
-)
+_node_tree = Node(riberry.model.interface.Form, (
+    Node(riberry.model.application.Application),
+    Node(riberry.model.application.ApplicationInstance, (
+        Node(riberry.model.application.Heartbeat),
+        Node(riberry.model.application.ApplicationInstanceSchedule),
+    )),
+    Node(riberry.model.interface.InputValueDefinition, (
+        Node(riberry.model.interface.InputValueEnum),
+    )),
+    Node(riberry.model.interface.InputFileDefinition),
+    Node(riberry.model.job.Job, (
+        Node(riberry.model.interface.InputFileInstance),
+        Node(riberry.model.interface.InputValueInstance),
+        Node(riberry.model.job.JobSchedule),
+        Node(riberry.model.job.JobExecution, (
+            Node(riberry.model.job.JobExecutionReport),
+            Node(riberry.model.job.JobExecutionExternalTask),
+            Node(riberry.model.job.JobExecutionProgress),
+            Node(riberry.model.job.JobExecutionMetric),
+            Node(riberry.model.job.JobExecutionStream, (
+                Node(riberry.model.job.JobExecutionStreamStep),
+            )),
+            Node(riberry.model.job.JobExecutionArtifact, (
+                Node(riberry.model.job.JobExecutionArtifactBinary),
+                Node(riberry.model.job.JobExecutionArtifactData),
+            )),
+        )),
+    ))
+))
 
-form_authorizer.register_chain(
-    riberry.model.job.JobExecutionArtifactData,
-    riberry.model.job.JobExecutionArtifact,
-)
-
-form_authorizer.register_chain(
-    riberry.model.job.JobExecutionArtifactBinary,
-    riberry.model.job.JobExecutionArtifact,
-)
-
-form_authorizer.register_chain(
-    riberry.model.job.JobExecutionArtifact,
-    riberry.model.job.JobExecution,
-)
-
-form_authorizer.register_chain(
-    riberry.model.job.JobExecutionMetric,
-    riberry.model.job.JobExecution,
-)
-
-form_authorizer.register_chain(
-    riberry.model.job.JobExecutionProgress,
-    riberry.model.job.JobExecution,
-)
-
-form_authorizer.register_chain(
-    riberry.model.job.JobExecutionExternalTask,
-    riberry.model.job.JobExecution,
-)
-
-form_authorizer.register_chain(
-    riberry.model.job.JobExecutionReport,
-    riberry.model.job.JobExecution,
-)
-
-form_authorizer.register_chain(
-    riberry.model.job.JobExecution,
-    riberry.model.job.Job,
-)
-
-form_authorizer.register_chain(
-    riberry.model.job.JobSchedule,
-    riberry.model.job.Job,
-)
-
-form_authorizer.register_chain(
-    riberry.model.interface.InputValueInstance,
-    riberry.model.job.Job,
-)
-
-form_authorizer.register_chain(
-    riberry.model.interface.InputFileInstance,
-    riberry.model.job.Job,
-)
-
-form_authorizer.register_chain(
-    riberry.model.job.Job,
-    riberry.model.interface.Form,
-)
-
-form_authorizer.register_chain(
-    riberry.model.interface.InputFileDefinition,
-    riberry.model.interface.Form,
-)
-
-form_authorizer.register_chain(
-    riberry.model.interface.InputValueEnum,
-    riberry.model.interface.InputValueDefinition,
-    riberry.model.interface.Form,
-)
-
-form_authorizer.register_chain(
-    riberry.model.application.Application,
-    riberry.model.interface.Form,
-)
-
-form_authorizer.register_chain(
-    riberry.model.application.ApplicationInstance,
-    riberry.model.interface.Form,
-)
-
-form_authorizer.register_chain(
-    riberry.model.application.ApplicationInstanceSchedule,
-    riberry.model.application.ApplicationInstance,
-)
-
-form_authorizer.register_chain(
-    riberry.model.application.Heartbeat,
-    riberry.model.application.ApplicationInstance,
-)
+form_authorizer.register_node(node=_node_tree)
 
 
 @form_authorizer.register_resolver(riberry.model.interface.Form)

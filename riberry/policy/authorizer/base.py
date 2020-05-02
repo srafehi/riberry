@@ -1,10 +1,17 @@
 import functools
-from typing import Iterable
+from typing import Iterable, Tuple
 
 from sqlalchemy.orm import Query
 
 from riberry.model.auth import User
 from riberry.typing import ModelType
+
+
+class Node:
+
+    def __init__(self, model: ModelType, dependents: Tuple['Node'] = ()):
+        self.model: ModelType = model
+        self.dependents: Tuple[Node] = tuple(dependents)
 
 
 class QueryAuthorizerContext:
@@ -65,18 +72,14 @@ class PermissionDomainQueryAuthorizer:
 
         return query, expression
 
-    def register_chain(self, *models):
-        for source, target in zip(models, models[1:]):
-            self.register_step(source, target)
-
-    def register_resolver(self, model):
+    def register_resolver(self, model: ModelType):
         def inner(func):
             self._add_step_resolver(model, func)
             return func
 
         return inner
 
-    def register_step(self, source, target):
+    def register_step(self, source: ModelType, target: ModelType):
         self._add_step_resolver(
             source,
             functools.partial(self._resolve, model=target),
@@ -89,3 +92,11 @@ class PermissionDomainQueryAuthorizer:
     @staticmethod
     def _resolve(query, model, context) -> StepResult:
         return StepResult(context.unique_join(query, model), model)
+
+    def register_node(self, node: Node):
+        nodes = [node]
+        while nodes:
+            current_node: Node = nodes.pop(0)
+            for dependent in current_node.dependents:
+                self.register_step(source=dependent.model, target=current_node.model)
+                nodes.append(dependent)

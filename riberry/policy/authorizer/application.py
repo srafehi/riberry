@@ -12,24 +12,18 @@ Applications via the following dependency tree:
 from sqlalchemy.orm import Query
 
 import riberry
-from .base import StepResult, PermissionDomainQueryAuthorizer
+from .base import StepResult, PermissionDomainQueryAuthorizer, Node
 
 application_authorizer = PermissionDomainQueryAuthorizer()
 
-application_authorizer.register_chain(
-    riberry.model.application.ApplicationInstanceSchedule,
-    riberry.model.application.ApplicationInstance,
-)
+_node_tree = Node(riberry.model.application.Application, (
+    Node(riberry.model.application.ApplicationInstance, (
+        Node(riberry.model.application.Heartbeat),
+        Node(riberry.model.application.ApplicationInstanceSchedule),
+    )),
+))
 
-application_authorizer.register_chain(
-    riberry.model.application.Heartbeat,
-    riberry.model.application.ApplicationInstance,
-)
-
-application_authorizer.register_chain(
-    riberry.model.application.ApplicationInstance,
-    riberry.model.application.Application,
-)
+application_authorizer.register_node(node=_node_tree)
 
 
 @application_authorizer.register_resolver(riberry.model.application.Application)
