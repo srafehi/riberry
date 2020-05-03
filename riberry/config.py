@@ -26,7 +26,6 @@ CONF_DEFAULT_BG_METRIC_STEP_LIMIT = 25_000
 CONF_DEFAULT_DB_CONN_PATH = APP_DIR_USER_DATA / 'model.db'
 CONF_DEFAULT_DB_CONN_URL = f'sqlite:///{CONF_DEFAULT_DB_CONN_PATH}'
 
-CONF_DEFAULT_POLICY_PROVIDER = 'default'
 CONF_DEFAULT_AUTH_PROVIDER = 'default'
 CONF_DEFAULT_AUTH_TOKEN_PROVIDER = 'jwt'
 CONF_DEFAULT_AUTH_TOKEN_PATH = APP_DIR_USER_DATA / 'auth.key'
@@ -135,26 +134,6 @@ class AuthenticationConfig:
             self[provider_name].on_enabled()
 
 
-class PolicyProviderConfig:
-
-    def __init__(self, config_dict):
-        self.raw_config = config_dict or {}
-        self.provider_name = self.raw_config.get('provider') or CONF_DEFAULT_POLICY_PROVIDER
-        self._provider = None
-
-    @property
-    def provider(self):
-        if self._provider is None:
-            for provider in riberry.plugins.plugin_register['policies']:
-                if provider.name == self.provider_name:
-                    self._provider = provider
-                    break
-            else:
-                raise ValueError(f'PolicyProviderConfig.provider:: '
-                                 f'could not find register provider {self.provider_name!r}')
-        return self._provider
-
-
 class EmailNotificationConfig:
 
     def __init__(self, config_dict):
@@ -214,7 +193,6 @@ class RiberryConfig:
     def __init__(self, config_dict):
         self.raw_config = config_dict
         self.authentication = AuthenticationConfig(self.raw_config.get('authentication') or {})
-        self.policies = PolicyProviderConfig(self.raw_config.get('policies') or {})
         self.database = DatabaseConfig(self.raw_config.get('database') or {})
         if 'notification' in self.raw_config and isinstance(self.raw_config['notification'], dict):
             email_config = self.raw_config['notification'].get('email') or {}

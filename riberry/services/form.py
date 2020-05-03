@@ -6,24 +6,20 @@ from riberry import model, policy
 from riberry import services
 
 
-@policy.context.post_filter(action='view')
 def all_forms() -> List[model.interface.Form]:
     return model.interface.Form.query().all()
 
 
-@policy.context.post_authorize(action='view')
 def form_by_id(form_id) -> model.interface.Form:
     return model.interface.Form.query().filter_by(id=form_id).one()
 
 
-@policy.context.post_authorize(action='view')
 def form_by_internal_name(internal_name) -> model.interface.Form:
     return model.interface.Form.query().filter_by(
         internal_name=internal_name,
     ).one()
 
 
-@policy.context.post_filter(action='view')
 def forms_by_application_id(application_id):
     application = services.application.application_by_id(application_id=application_id)
     return application.forms
@@ -41,7 +37,6 @@ def create_form(application, instance, name, internal_name, version, description
         input_value_definitions=[model.interface.InputValueDefinition(**d) for d in input_values]
     )
 
-    policy.context.authorize(form, action='create')
     model.conn.add(form)
     return form
 
@@ -52,7 +47,6 @@ def update_form(form: model.interface.Form, attributes: Dict):
     return form
 
 
-@policy.context.post_authorize(action='view')
 def file_definition_by_internal_name(form, internal_name) -> model.interface.InputFileDefinition:
     return model.interface.InputFileDefinition.query().filter_by(
         form=form,
@@ -60,7 +54,6 @@ def file_definition_by_internal_name(form, internal_name) -> model.interface.Inp
     ).one()
 
 
-@policy.context.post_authorize(action='view')
 def value_definition_by_internal_name(form, internal_name) -> model.interface.InputValueDefinition:
     return model.interface.InputValueDefinition.query().filter_by(
         form=form,

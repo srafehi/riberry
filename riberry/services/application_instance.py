@@ -1,30 +1,31 @@
 from typing import List, Dict
 
-from riberry import model, policy, services
+from riberry import model, services
 
 
-@policy.context.post_filter(action='view')
 def all_application_instances() -> List[model.application.ApplicationInstance]:
     return model.application.ApplicationInstance.query().all()
 
 
-@policy.context.post_authorize(action='view')
 def application_instance_by_id(application_instance_id) -> model.application.ApplicationInstance:
     return model.application.ApplicationInstance.query().filter_by(id=application_instance_id).one()
 
 
-@policy.context.post_authorize(action='view')
 def application_instance_by_internal_name(internal_name) -> model.application.ApplicationInstance:
     return model.application.ApplicationInstance.query().filter_by(internal_name=internal_name).one()
 
 
-@policy.context.post_filter(action='view')
 def instances_by_application_id(application_id) -> List[model.application.ApplicationInstance]:
     application = services.application.application_by_id(application_id=application_id)
     return application.instances
 
 
-def create_application_instance(application, name, internal_name, schedules: List[Dict]) -> model.application.ApplicationInstance:
+def create_application_instance(
+        application,
+        name,
+        internal_name,
+        schedules: List[Dict],
+) -> model.application.ApplicationInstance:
     application_instance = model.application.ApplicationInstance(
         application=application,
         name=name,
@@ -32,7 +33,6 @@ def create_application_instance(application, name, internal_name, schedules: Lis
         schedules=create_application_instance_schedules(attributes_dict=schedules),
     )
 
-    policy.context.authorize(application_instance, action='create')
     model.conn.add(application_instance)
     return application_instance
 
