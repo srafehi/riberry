@@ -1,13 +1,16 @@
 import os
 from typing import Union, Any
+
 import sqlalchemy
+import sqlalchemy.engine
+import sqlalchemy.event
 import sqlalchemy.orm
 import sqlalchemy.pool
-import sqlalchemy.engine
+from sqlalchemy.orm import Query
 
-from . import misc, application, group, auth, interface, job, base
-from ..util.misc import import_from_string
+from . import misc, application, group, auth, interface, job, base, events
 from .. import log
+from ..util.misc import import_from_string
 
 log = log.make(__name__)
 
@@ -79,3 +82,6 @@ def init(url='sqlite://', engine_settings=None, connection_arguments=None):
     )
     __ModelProxy.raw_session = sqlalchemy.orm.scoped_session(sqlalchemy.orm.sessionmaker(bind=__ModelProxy.raw_engine))
     base.Base.metadata.create_all(__ModelProxy.raw_engine)
+
+    sqlalchemy.event.listen(target=__ModelProxy.raw_session, identifier='after_flush', fn=events.after_flush)
+    sqlalchemy.event.listen(target=Query, identifier='before_compile', fn=events.before_compile, retval=True)

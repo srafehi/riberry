@@ -48,8 +48,9 @@ class PermissionDomainQueryAuthorizer:
             models: Iterable[ModelType],
     ) -> ModelType:
         if not models:
-            assert len(query.column_descriptions) == 1
-            return query.column_descriptions[0]['entity']
+            for desc in query.column_descriptions:
+                if desc['entity'] is not None:
+                    return desc['entity']
         elif isinstance(models, Iterable):
             for model in models:
                 if model in self.step_resolvers:
