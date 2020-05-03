@@ -97,7 +97,7 @@ class User(base.Base):
             expanded_permissions = set()
             for permission in group.permissions:
                 expanded_permissions.update(
-                    riberry.policy.permissions.PERMISSION_ROLES.get(permission.name, {permission.name}))
+                    riberry.policy.permissions.roles.PERMISSION_ROLES.get(permission.name, {permission.name}))
             for permission in expanded_permissions:
                 # Map groups to their permissions
                 # e.g. D1.P1 -> {G1, G2}
