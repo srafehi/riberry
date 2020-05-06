@@ -46,11 +46,12 @@ class PolicyContext:
 
     @contextmanager
     def disabled_scope(self):
+        _original_value = self.enabled
         try:
             self.enabled = False
             yield
         finally:
-            self.enabled = True
+            self.enabled = _original_value
 
     def configure(
             self,
