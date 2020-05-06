@@ -30,6 +30,11 @@ def init_riberry():
         email='test@riberry.app',
     )
     groups.add_user_to_group(username='admin', group_name='default')
+    group: riberry.model.group.Group = riberry.model.group.Group.query().filter_by(name='default').one()
+    group.permissions += [
+        riberry.model.group.GroupPermission(name=riberry.policy.permissions.SystemDomain.PERM_ACCESS),
+    ]
+    riberry.model.conn.commit()
 
 
 @pytest.fixture(scope='module')
