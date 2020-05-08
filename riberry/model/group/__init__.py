@@ -74,6 +74,10 @@ class Group(base.Base):
     def display_name(self) -> str:
         return self._display_name or self.name
 
+    @display_name.setter
+    def display_name(self, value):
+        self._display_name = value
+
     @property
     def users(self) -> List['model.auth.User']:
         return model.auth.User.query().filter(
