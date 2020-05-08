@@ -20,5 +20,3 @@ forms:
   sample_app.form.sample:
     name: Sample form
     instance: sample_app.instance.primary
-    groups:
-      - SampleGroup
