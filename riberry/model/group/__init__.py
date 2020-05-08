@@ -51,14 +51,21 @@ class Group(base.Base):
         'ResourceGroupAssociation',
         primaryjoin=lambda: sql.and_(
             ResourceGroupAssociation.group_id == Group.id,
-            ResourceGroupAssociation.resource_type == model.misc.ResourceType.user
+            ResourceGroupAssociation.resource_type == model.misc.ResourceType.user,
         )
     )
     form_associations: List['ResourceGroupAssociation'] = relationship(
         'ResourceGroupAssociation',
         primaryjoin=lambda: sql.and_(
             ResourceGroupAssociation.group_id == Group.id,
-            ResourceGroupAssociation.resource_type == model.misc.ResourceType.form
+            ResourceGroupAssociation.resource_type == model.misc.ResourceType.form,
+        )
+    )
+    application_associations: List['ResourceGroupAssociation'] = relationship(
+        'ResourceGroupAssociation',
+        primaryjoin=lambda: sql.and_(
+            ResourceGroupAssociation.group_id == Group.id,
+            ResourceGroupAssociation.resource_type == model.misc.ResourceType.application,
         )
     )
     permissions: List['GroupPermission'] = relationship('GroupPermission', back_populates='group')
