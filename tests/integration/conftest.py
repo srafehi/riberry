@@ -29,11 +29,7 @@ def init_riberry():
         department='Test Department',
         email='test@riberry.app',
     )
-    groups.add_user_to_group(username='admin', group_name='default')
-    group: riberry.model.group.Group = riberry.model.group.Group.query().filter_by(name='default').one()
-    group.permissions += [
-        riberry.model.group.GroupPermission(name=riberry.policy.permissions.SystemDomain.PERM_ACCESS),
-    ]
+    groups.add_user_to_group(username='admin', group_name='sysadmin')
     riberry.model.conn.commit()
 
 

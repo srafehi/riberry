@@ -1,12 +1,15 @@
 import json
 import os
 import uuid
+from itertools import chain
+from typing import List, Dict
 
 import yaml
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.exc import NoResultFound
 
 from riberry import model, services, policy
+from riberry.typing import ModelType
 from riberry.util.common import variable_substitution
 
 
@@ -280,44 +283,100 @@ def import_instance(app, internal_name, attributes):
     return instance
 
 
-def import_groups(applications, restrict):
-    created_groups = {}
-    for application, properties in applications.items():
-        if restrict and application not in restrict:
-            continue
+def merge_permissions(
+    group: model.group.Group,
+    permission_names: List[str],
+):
+    unprocessed_permissions = {permission.name: permission for permission in group.permissions}
+    for permission_name in permission_names:
+        if permission_name in unprocessed_permissions:
+            unprocessed_permissions.pop(permission_name)
+        else:
+            permission = model.group.GroupPermission(name=permission_name, group=group)
+            model.conn.add(permission)
+    stale_permissions = list(unprocessed_permissions.values())
+    return stale_permissions
 
-        for form_internal_name, form_info in properties.get('forms', {}).items():
-            groups = form_info.get('groups') or []
 
-            form: model.interface.Form = model.interface.Form.query().filter_by(
-                internal_name=form_internal_name,
-            ).first()
+def merge_associations(
+    group: model.group.Group,
+    resource_ids: List[int],
+    resource_type: List[model.misc.ResourceType],
+    model_type: ModelType,
+):
+    stale_instances = {
+        model_type.get(association.resource_id).id: association
+        for association in group.resource_associations
+        if association.resource_type == resource_type
+    }
 
-            if not form:
-                print(f'import_groups:: Form {form_internal_name} not found, skipping {application}')
-                continue
+    for resource_id in resource_ids:
+        if resource_id in stale_instances:
+            stale_instances.pop(resource_id)
+        else:
+            association = model.group.ResourceGroupAssociation(
+                resource_id=resource_id,
+                resource_type=resource_type,
+                group=group,
+            )
+            model.conn.add(association)
 
-            associations = {assoc.group.name: assoc for assoc in form.group_associations}
-            stale_assocs = set(associations) - set(groups)
-            for stale in stale_assocs:
-                model.conn.delete(associations[stale])
+    return list(stale_instances.values())
 
-            for group_name in groups:
-                if group_name in associations:
-                    continue
-                group = model.group.Group.query().filter_by(name=group_name).first()
-                if not group:
-                    group = created_groups.get(group_name)
-                if not group:
-                    group = services.auth.create_group(name=group_name)
-                    created_groups[group_name] = group
 
-                association = model.group.ResourceGroupAssociation(
-                    resource_id=form.id,
-                    resource_type=model.misc.ResourceType.form,
-                    group=group
-                )
-                model.conn.add(association)
+def import_groups(group_definitions: Dict[str, Dict]):
+
+    def get_ids(model_type: ModelType, internal_names: List[str]) -> List[int]:
+        return [
+            instance.id
+            for instance in model_type.query().filter(model_type.internal_name.in_(internal_names)).all()
+        ]
+
+    group_definitions = {
+        group_name: {
+            'name': group_name,
+            'display_name': group_definition.get('name'),
+            'description': group_definition.get('description'),
+            'permissions': group_definition.get('permissions') or [],
+            'applications': get_ids(model.application.Application, group_definition.get('applications') or []),
+            'forms': get_ids(model.interface.Form, group_definition.get('forms') or []),
+        }
+        for group_name, group_definition in group_definitions.items()
+    }
+
+    groups = {group.name: group for group in model.group.Group.query().all()}
+    for group_name, definition in group_definitions.items():
+        if group_name not in groups:
+            groups[group_name] = services.auth.create_group(name=group_name)
+
+        group: model.group.Group = groups.pop(group_name)
+        group.display_name = definition.get('display_name')
+        group.description = definition.get('description')
+        model.conn.add(group)
+
+        stale_permissions = merge_permissions(
+            group=group,
+            permission_names=definition['permissions'],
+        )
+
+        stale_applications = merge_associations(
+            group=group,
+            resource_ids=definition['applications'],
+            resource_type=model.misc.ResourceType.application,
+            model_type=model.application.Application,
+        )
+
+        stale_forms = merge_associations(
+            group=group,
+            resource_ids=definition['forms'],
+            resource_type=model.misc.ResourceType.form,
+            model_type=model.interface.Form,
+        )
+
+        for association in chain(stale_applications, stale_forms, stale_permissions):
+            model.conn.delete(association)
+        if not group.resource_associations and not group.permissions:
+            model.conn.delete(group)
 
 
 def _convert_value(value):
@@ -387,7 +446,6 @@ def import_menu_item(item, menu_type, parent=None):
     return menu_item
 
 
-
 def import_config(config, formatter=None, restrict_apps=None):
     applications = config.get('applications') or {}
     import_applications(applications=applications, restrict=restrict_apps)
@@ -398,7 +456,7 @@ def import_config(config, formatter=None, restrict_apps=None):
     model.conn.flush()
 
     import_menu_for_forms(menu=config.get('menues', {}).get('forms', {}))
-    import_groups(applications=applications, restrict=restrict_apps)
+    import_groups(group_definitions=config.get('groups', {}))
 
     for k, v in session_diff().items():
         if k in diff:

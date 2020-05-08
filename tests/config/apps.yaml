@@ -15,5 +15,12 @@ applications:
             description: Number of streams to create
             type: number
             required: yes
-        groups:
-          - default
+
+groups:
+  sysadmin:
+    name: System Administrators
+    description: Riberry System Administrators
+    permissions:
+      - SystemDomain.ACCESS
+    forms:
+      - test.celery.form.basic
