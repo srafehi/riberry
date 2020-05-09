@@ -5,7 +5,7 @@ import subprocess
 import pytest
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def init_riberry(app_yaml):
     import riberry
     from riberry.util import config_importer, user, groups
