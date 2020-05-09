@@ -23,7 +23,12 @@ class User(base.Base):
     username = Column(String(48), nullable=False, unique=True)
     password = Column(String(512))
     auth_provider = Column(String(32), nullable=False, default=config.authentication.providers.default)
-    details: 'UserDetails' = relationship('UserDetails', uselist=False, back_populates='user')
+    details: 'UserDetails' = relationship(
+        'UserDetails',
+        cascade='save-update, merge, delete, delete-orphan',
+        uselist=False,
+        back_populates='user',
+    )
 
     # associations
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
