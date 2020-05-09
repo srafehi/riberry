@@ -11,6 +11,15 @@ CELERY_APP_PATH = str(ROOT / 'apps' / 'celery')
 os.environ['RIBERRY_CONFIG_PATH'] = RIB_TOML
 
 
+@pytest.fixture
+def recreate_database():
+    from riberry import model
+    model.base.Base.metadata.drop_all(model.conn.raw_engine)
+    model.base.Base.metadata.create_all(model.conn.raw_engine)
+    yield
+    model.base.Base.metadata.drop_all(model.conn.raw_engine)
+
+
 @pytest.fixture(scope='session')
 def rib_toml():
     return RIB_TOML
