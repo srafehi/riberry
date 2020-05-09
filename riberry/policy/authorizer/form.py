@@ -77,13 +77,13 @@ def form_filter(query: Query, context):
     form_ids = context.permissions.get(context.requested_permission, set())
     self_form_ids = context.permissions.get(self_permission, set())
 
-    if riberry.model.job.Job not in context.traversed | select_entities:
-        expression = form_cls.id.in_(form_ids | self_form_ids)
-    else:
+    if riberry.model.job.Job in context.traversed | select_entities:
         expression = form_cls.id.in_(form_ids) | (
-            form_cls.id.in_(self_form_ids) &
-            (riberry.model.job.Job.creator_id == context.subject.id)
+                form_cls.id.in_(self_form_ids) &
+                (riberry.model.job.Job.creator_id == context.subject.id)
         )
+    else:
+        expression = form_cls.id.in_(form_ids | self_form_ids)
 
     return StepResult(
         query,
