@@ -41,9 +41,24 @@ class __ModelProxy:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
-            self.raw_session.rollback()
-        self.dispose_session()
+        try:
+            if exc_type is not None:
+                # an unhandled exception occurred during this session,
+                # rollback any changes made
+                self.raw_session.rollback()
+                raise
+            else:
+                try:
+                    # commit any pending changes
+                    self.raw_session.commit()
+                except:
+                    # an exception occurred on commit, rollback all
+                    # changes
+                    self.raw_session.rollback()
+                    raise
+        finally:
+            # ensure session is always disposed
+            self.dispose_session()
 
     def dispose_engine(self):
         """ Disposes of the current SQLAlchemy engine. """
