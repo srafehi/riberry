@@ -9,4 +9,8 @@ def policy_scope(user=None, environment=None):
         user = model.auth.User.query().filter_by(username=user).one()
 
     with policy.context.scope(subject=user, environment=environment):
-        yield
+        try:
+            model.conn.expire_all()
+            yield
+        finally:
+            model.conn.expire_all()
