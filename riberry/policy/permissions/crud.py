@@ -26,7 +26,10 @@ CRUD_PERMISSIONS = {
     riberry.model.application.Application: _CRUD_APP_FRM_READONLY,
     riberry.model.application.ApplicationInstance: _CRUD_APP_FRM_READONLY,
     riberry.model.application.ApplicationInstanceSchedule: {
-        READ: _ACCESS_APP | {FormDomain.PERM_APP_SCHEDULES_READ_BUILTIN},
+        READ: _ACCESS_APP | {
+            FormDomain.PERM_APP_SCHEDULES_READ_BUILTIN,
+            FormDomain.PERM_APP_SCHEDULES_READ,
+        },
         CREATE: {ApplicationDomain.PERM_APP_SCHEDULES_MANAGE},
         UPDATE: {ApplicationDomain.PERM_APP_SCHEDULES_MANAGE},
         DELETE: {ApplicationDomain.PERM_APP_SCHEDULES_MANAGE},

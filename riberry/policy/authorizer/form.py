@@ -85,6 +85,14 @@ def form_filter(query: Query, context):
     else:
         expression = form_cls.id.in_(form_ids | self_form_ids)
 
+    if riberry.model.application.ApplicationInstanceSchedule in select_entities:
+        if context.requested_permission == riberry.policy.permissions.FormDomain.PERM_APP_SCHEDULES_READ_BUILTIN:
+            expression &= riberry.model.application.ApplicationInstanceSchedule.parameter.in_([
+                'active'  # TODO define all "built-in" schedules
+            ])
+        elif context.requested_permission != riberry.policy.permissions.FormDomain.PERM_APP_SCHEDULES_READ:
+            expression &= riberry.model.application.ApplicationInstanceSchedule.parameter.in_([])
+
     return StepResult(
         query,
         None,
