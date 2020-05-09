@@ -8,7 +8,8 @@ import sqlalchemy.orm
 import sqlalchemy.pool
 from sqlalchemy.orm import Query
 
-from . import misc, application, group, auth, interface, job, base, events
+
+from . import misc, application, group, auth, interface, job, base, events, helpers
 from .. import log
 from ..util.misc import import_from_string
 

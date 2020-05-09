@@ -6,15 +6,25 @@ applications:
       test.celery.instance:
         name: Test Celery Application Instance
     forms:
-      test.celery.form.basic:
+      test.celery.form.basic.legacy:
         instance: test.celery.instance
-        name: Basic Form
+        name: Basic Form (Legacy)
         inputValues:
           streams:
             name: Streams
             description: Number of streams to create
             type: number
             required: yes
+      test.celery.form.basic.schema:
+        instance: test.celery.instance
+        name: Basic Form (Schema)
+        input:
+          schema:
+            type: object
+            required: [streams]
+            properties:
+              streams:
+                type: integer
 
 groups:
   sysadmin:
@@ -23,4 +33,5 @@ groups:
     permissions:
       - SystemDomain.ACCESS
     forms:
-      - test.celery.form.basic
+      - test.celery.form.basic.legacy
+      - test.celery.form.basic.schema

@@ -66,7 +66,8 @@ class ContextCurrent:
 
     @property
     def job_execution(self) -> Optional[riberry.model.job.JobExecution]:
-        return riberry.model.job.JobExecution.query().filter_by(task_id=self.root_id).first()
+        if self.root_id is not None:
+            return riberry.model.job.JobExecution.query().filter_by(task_id=self.root_id).first()
 
     @property
     def job(self) -> Optional[riberry.model.job.Job]:

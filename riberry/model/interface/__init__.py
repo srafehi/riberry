@@ -2,9 +2,8 @@ import json
 import mimetypes
 from typing import List
 
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime, desc, asc
+from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime, desc, asc, Text
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship, deferred
 
 from riberry import model
@@ -56,6 +55,12 @@ class Form(base.Base):
         order_by=lambda: InputFileDefinition.id.asc(),
         back_populates='form'
     )
+    input_definition: 'InputDefinition' = relationship(
+        'InputDefinition',
+        cascade='save-update, merge, delete, delete-orphan',
+        back_populates='form',
+        uselist=False,
+    )
     metrics: List['model.job.JobExecutionMetric'] = relationship(
         'JobExecutionMetric',
         cascade='save-update, merge, delete, delete-orphan',
@@ -70,6 +75,31 @@ class Form(base.Base):
 
     # proxies
     groups: List['model.group.Group'] = association_proxy('group_associations', 'group')
+
+
+class InputDefinition(base.Base):
+    __tablename__ = 'input_definition'
+    __reprattrs__ = ['name', 'type']
+
+    # columns
+    id = base.id_builder.build()
+    form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
+
+    name: str = Column(String(64), nullable=False)
+    type: str = Column(String(32), nullable=False, default='jsonschema')
+    description: str = Column(String(256))
+    definition_string: str = Column('definition', Text, nullable=False)
+
+    # associations
+    form: 'Form' = relationship('Form', back_populates='input_definition')
+
+    @property
+    def definition(self):
+        return json.loads(self.definition_string) if self.definition_string else None
+
+    @definition.setter
+    def definition(self, value):
+        self.definition_string = json.dumps(value, indent=2)
 
 
 class FormSchedule(base.Base):
@@ -89,7 +119,7 @@ class InputFileDefinition(base.Base):
     """The InputFileDefinition object defines the properties of an input file."""
 
     __tablename__ = 'input_file_definition'
-    __reprattrs__ = ['name', 'type']
+    __reprattrs__ = ['name', 'internal_name', 'type']
 
     # columns
     id = base.id_builder.build()
@@ -110,7 +140,7 @@ class InputValueDefinition(base.Base):
     """The InputFileDefinition object defines the properties of an input value."""
 
     __tablename__ = 'input_value_definition'
-    __reprattrs__ = ['name', 'type']
+    __reprattrs__ = ['name', 'internal_name', 'type']
 
     # columns
     id = base.id_builder.build()
@@ -139,7 +169,7 @@ class InputValueDefinition(base.Base):
     def allowed_values(self):
         return [json.loads(v.decode()) for v in self.allowed_binaries]
 
-    @hybrid_property
+    @property
     def default_value(self):
         return json.loads(self.default_binary.decode()) if self.default_binary else None
 
@@ -168,6 +198,7 @@ class InputValueInstance(base.Base):
     """The InputValueInstance object contains data for a InputValueDefinition and is linked to a Job."""
 
     __tablename__ = 'input_value_instance'
+    __reprattrs__ = ['internal_name']
 
     # columns
     id = base.id_builder.build()
@@ -180,10 +211,6 @@ class InputValueInstance(base.Base):
     job: 'model.job.Job' = relationship('Job', back_populates='values')
 
     @property
-    def definition(self):
-        return self.job.form
-
-    @hybrid_property
     def value(self):
         return json.loads(self.raw_value.decode()) if self.raw_value else None
 
@@ -196,7 +223,7 @@ class InputFileInstance(base.Base):
     """The InputFileInstance object contains data for a InputFileDefinition and is linked to a Job."""
 
     __tablename__ = 'input_file_instance'
-    __reprattrs__ = ['filename', 'size']
+    __reprattrs__ = ['internal_name', 'filename', 'size']
 
     # columns
     id = base.id_builder.build()

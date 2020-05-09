@@ -47,6 +47,16 @@ def update_form(form: model.interface.Form, attributes: Dict):
     return form
 
 
+def input_definition_by_internal_name(
+        form: model.interface.Form,
+        internal_name: str
+) -> model.interface.InputDefinition:
+    return model.interface.InputDefinition.query().filter_by(
+        form=form,
+        internal_name=internal_name,
+    ).one()
+
+
 def file_definition_by_internal_name(form, internal_name) -> model.interface.InputFileDefinition:
     return model.interface.InputFileDefinition.query().filter_by(
         form=form,
@@ -59,6 +69,16 @@ def value_definition_by_internal_name(form, internal_name) -> model.interface.In
         form=form,
         internal_name=internal_name,
     ).one()
+
+
+def update_input_definition(
+        definition: model.interface.InputDefinition,
+        attributes: Dict,
+) -> model.interface.InputDefinition:
+    for attr in {'type', 'name', 'description', 'sequence', 'definition'} & set(attributes):
+        setattr(definition, attr, attributes[attr])
+
+    return definition
 
 
 def update_file_definition(definition: model.interface.InputFileDefinition, attributes: Dict):

@@ -19,8 +19,20 @@ rib = RiberryApplication(name='test.celery', backend=backend)
 cxt = rib.context
 
 
-@rib.entry_point('test.celery.form.basic', stream='Stream Entry', step='entry_point')
-def entry_point():
+@rib.entry_point('test.celery.form.basic.schema', stream='Stream Entry', step='entry_point_schema')
+def entry_point_schema():
+    """
+    Triggered when a new job execution is created for the
+    'apps.celery.basic.form.basic' form.
+    """
+
+    # Extract "streams" input value
+    stream_count = cxt.input.data['streams']
+    _create_workflow(stream_count=stream_count)
+
+
+@rib.entry_point('test.celery.form.basic.legacy', stream='Stream Entry', step='entry_point_legacy')
+def entry_point_legacy():
     """
     Triggered when a new job execution is created for the
     'apps.celery.basic.form.basic' form.
@@ -28,6 +40,11 @@ def entry_point():
 
     # Extract "streams" input value
     stream_count = cxt.input.values['streams']
+    _create_workflow(stream_count=stream_count)
+
+
+def _create_workflow(stream_count: int):
+    """ Creates a workflow with the given stream count. """
 
     chains = []
     for num in range(stream_count):

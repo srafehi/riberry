@@ -5,11 +5,13 @@ from itertools import chain
 from typing import List, Dict
 
 import yaml
+from jsonschema import Draft7Validator
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.exc import NoResultFound
 
 from riberry import model, services, policy
 from riberry.typing import ModelType
+from riberry.model.helpers import max_string_length
 from riberry.util.common import variable_substitution
 
 
@@ -162,6 +164,7 @@ def import_form(app, internal_name, attributes):
         form=form,
         input_files=attributes.get('inputFiles') or {},
         input_values=attributes.get('inputValues') or {},
+        input_definition=attributes.get('input') or {},
     )
 
     return form
@@ -203,7 +206,128 @@ def import_input_value_definition(form, internal_name, attributes):
     return definition
 
 
-def import_form_inputs(form, input_files, input_values):
+def import_legacy_input_definitions(
+        form: model.interface.Form,
+        input_files: dict,
+        input_values: dict
+) -> model.interface.InputDefinition:
+    required = []
+    properties = {}
+    ui_schema = {}
+
+    for internal_name, attributes in input_values.items():
+        parameter = {}
+
+        if attributes.get('required'):
+            required.append(internal_name)
+
+        if attributes.get('name'):
+            parameter['title'] = attributes['name']
+
+        if attributes.get('description'):
+            parameter['description'] = attributes['description']
+
+        if attributes.get('default') is not None:
+            parameter['default'] = attributes['default']
+
+        if attributes['type'] == 'text':
+            parameter['type'] = 'string'
+        elif attributes['type'] == 'datetime-local':
+            parameter['type'] = 'string'
+            parameter['format'] = 'datetime'
+
+        if attributes.get('enumerations'):
+            parameter['enum'] = attributes['enumerations']
+
+        properties[internal_name] = parameter
+
+    for internal_name, attributes in input_files.items():
+        parameter = {
+            'type': 'string',
+            'format': 'data-url',
+        }
+
+        if attributes.get('required'):
+            required.append(internal_name)
+
+        if attributes.get('name'):
+            parameter['title'] = attributes['name']
+
+        if attributes.get('description'):
+            parameter['description'] = attributes['description']
+
+        if attributes.get('accept'):
+            ui_schema[internal_name] = {
+                'ui:options': {
+                    'accept': attributes['accept'],
+                }
+            }
+
+        properties[internal_name] = parameter
+
+    return import_input_definition(
+        form=form,
+        attributes={
+            'type': 'jsonschema',
+            'schema': {
+                'type': 'object',
+                'required': required,
+                'properties': properties,
+            },
+            'uiSchema': ui_schema,
+        },
+        support_legacy=True,
+    )
+
+
+def import_input_definition(
+        form: model.interface.Form,
+        attributes: dict,
+        support_legacy: bool,
+) -> model.interface.InputDefinition:
+    attributes = dict(attributes)
+
+    if 'type' not in attributes:
+        attributes['type'] = 'jsonschema'
+
+    if attributes['type'] != 'jsonschema':
+        raise NotImplementedError(f'Form[{form.internal_name}] Only "jsonschema" for form.input.type is supported')
+
+    json_schema = attributes.pop('schema')
+    ui_schema = attributes.pop('uiSchema', {})
+    options = attributes.pop('options', {})
+
+    if 'name' not in attributes:
+        attributes['name'] = json_schema.get('title') or 'Form Input'
+
+    if 'description' not in attributes:
+        attributes['description'] = json_schema.get('description', '')[:256] or None
+
+    if support_legacy:
+        options['flatten'] = True
+
+    Draft7Validator.check_schema(schema=json_schema)
+
+    definition = {'schema': json_schema, 'uiSchema': ui_schema, 'options': options}
+    attributes['definition'] = definition
+
+    if form.input_definition:
+        services.form.update_input_definition(form.input_definition, attributes)
+    else:
+        form.input_definition = model.interface.InputDefinition(**attributes)
+        model.conn.add(form.input_definition)
+    return form.input_definition
+
+
+def import_form_inputs(form: model.interface.Form, input_files: dict, input_values: dict, input_definition: dict):
+
+    if input_files or input_values:
+        if input_definition:
+            raise ValueError(f'Form[{form.internal_name}] Cannot use form.inputs with form.inputFiles or form.inputValues')
+        input_definition_instance = import_legacy_input_definitions(form, input_files, input_values)
+    else:
+        input_definition_instance = None
+
     collection_diff(
         obj=form,
         collection_name='input_file_definitions',
@@ -221,6 +345,9 @@ def import_form_inputs(form, input_files, input_values):
             for name, attrs in input_values.items()
         }
     )
+
+    if input_definition and not input_definition_instance:
+        import_input_definition(form, input_definition, support_legacy=False)
 
 
 def import_instance(app, internal_name, attributes):

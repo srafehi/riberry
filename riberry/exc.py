@@ -64,12 +64,12 @@ class UnknownError(BaseError):
         super(UnknownError, self).__init__()
 
 
-class InputErrorGroup(BaseError):
-    __msg__ = 'One or more errors occurred while validating the request.'
+class ErrorGroup(BaseError):
+    __msg__ = 'One or more errors occurred.'
     __http_code__ = 400
 
     def __init__(self, *errors):
-        super(InputErrorGroup, self).__init__(
+        super(ErrorGroup, self).__init__(
             target=None,
             data={'errors': []}
         )
@@ -77,6 +77,10 @@ class InputErrorGroup(BaseError):
 
     def extend(self, errors):
         self.exc_data['errors'] += [e.output() if isinstance(e, BaseError) else e for e in errors]
+
+
+class InputErrorGroup(ErrorGroup):
+    __msg__ = 'One or more errors occurred while validating the request.'
 
 
 class RequiredInputError(BaseError):
@@ -130,3 +134,10 @@ class UniqueInputConstraintError(BaseError):
 
     def __init__(self, target, field, value):
         super(UniqueInputConstraintError, self).__init__(target=target, field=field, value=value)
+
+
+class GenericValidationError(BaseError):
+    __msg__ = '{message}'
+
+    def __init__(self, message):
+        super(GenericValidationError, self).__init__(message=message)
