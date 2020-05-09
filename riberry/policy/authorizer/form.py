@@ -39,6 +39,7 @@ _node_tree = Node(riberry.model.interface.Form, (
         Node(riberry.model.application.Heartbeat),
         Node(riberry.model.application.ApplicationInstanceSchedule),
     )),
+    Node(riberry.model.interface.InputDefinition),
     Node(riberry.model.interface.InputValueDefinition, (
         Node(riberry.model.interface.InputValueEnum),
     )),
