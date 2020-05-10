@@ -1,8 +1,9 @@
 import functools
 import operator
+from collections import defaultdict
 from typing import List, Optional
 
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, Session
 
 import riberry
 from riberry.typing import ModelType
@@ -20,6 +21,24 @@ def starting_models(query: Query, selected_model=None) -> ModelType:
         if desc['entity'] is not None
         if (desc['entity'] == selected_model if selected_model else True)
     )
+
+
+def apply_auth_for_session_states(session: Session, *states: str):
+    mapping = {
+        'new': riberry.policy.permissions.crud.CREATE,
+        'dirty': riberry.policy.permissions.crud.UPDATE,
+        'deleted': riberry.policy.permissions.crud.DELETE,
+    }
+
+    model_state_mappings = defaultdict(lambda: defaultdict(set))
+    for state in states:
+        for item in getattr(session, state):
+            if state == 'deleted' or session.is_modified(item, include_collections=False):
+                model_state_mappings[type(item)][mapping[state]].add(item)
+
+    for model_type, state_mappings in model_state_mappings.items():
+        for state, entities in state_mappings.items():
+            riberry.policy.authorizer.apply_auth_for_entities(model_type, entities, state)
 
 
 def apply_auth_for_entities(model_type, entities: List, state: str):

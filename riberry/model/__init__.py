@@ -84,5 +84,6 @@ def init(url='sqlite://', engine_settings=None, connection_arguments=None):
     __ModelProxy.raw_session = sqlalchemy.orm.scoped_session(sqlalchemy.orm.sessionmaker(bind=__ModelProxy.raw_engine))
     base.Base.metadata.create_all(__ModelProxy.raw_engine)
 
+    sqlalchemy.event.listen(target=__ModelProxy.raw_session, identifier='before_flush', fn=events.before_flush)
     sqlalchemy.event.listen(target=__ModelProxy.raw_session, identifier='after_flush', fn=events.after_flush)
     sqlalchemy.event.listen(target=Query, identifier='before_compile', fn=events.before_compile, retval=True)
