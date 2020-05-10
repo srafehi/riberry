@@ -29,7 +29,7 @@ def apply_auth_for_entities(model_type, entities: List, state: str):
     with riberry.policy.context.disabled_scope():
         new_ids = {id_ for (id_,) in new_query.all()}
     if ids != new_ids:
-        raise Exception(f'{model_type.__name__}[{state!r}]: {ids} -> {new_ids}')
+        raise riberry.exc.AuthorizationError(model_type=model_type, state=state)
 
 
 def apply_auth_to_query(query: Query, state: str, starting_model: Optional[ModelType] = None) -> Query:

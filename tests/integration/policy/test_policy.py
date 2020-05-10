@@ -3,8 +3,9 @@ import pytest
 import riberry
 from riberry.model.application import Application, ApplicationInstance, Heartbeat, ApplicationInstanceSchedule
 from riberry.model.auth import User
-from riberry.model.group import Group, GroupPermission
+from riberry.model.group import Group
 from riberry.model.interface import Form, InputDefinition, InputValueDefinition, InputValueEnum, InputFileDefinition
+from riberry.model.job import Job
 from riberry.policy.permissions import FormDomain, SystemDomain, ApplicationDomain
 
 
@@ -19,7 +20,7 @@ def scenario_single_group_user_form(create_user, create_group, create_form):
 @pytest.fixture
 def scenario_single_form_domain_unassociated(scenario_single_group_user_form, associate):
     group, user, form = scenario_single_group_user_form
-    group.permissions.append(GroupPermission(name=FormDomain.PERM_ACCESS))
+    associate(group, FormDomain.PERM_ACCESS)
     associate(group, user)
     yield scenario_single_group_user_form
 
@@ -27,7 +28,7 @@ def scenario_single_form_domain_unassociated(scenario_single_group_user_form, as
 @pytest.fixture
 def scenario_single_form_domain_associated(scenario_single_group_user_form, associate):
     group, user, form = scenario_single_group_user_form
-    group.permissions.append(GroupPermission(name=FormDomain.PERM_ACCESS))
+    associate(group, FormDomain.PERM_ACCESS)
     associate(group, user)
     associate(group, form)
     yield scenario_single_group_user_form
@@ -36,7 +37,7 @@ def scenario_single_form_domain_associated(scenario_single_group_user_form, asso
 @pytest.fixture
 def scenario_single_sys_domain(scenario_single_group_user_form, associate):
     group, user, form = scenario_single_group_user_form
-    group.permissions.append(GroupPermission(name=SystemDomain.PERM_ACCESS))
+    associate(group, SystemDomain.PERM_ACCESS)
     associate(group, user)
     yield scenario_single_group_user_form
 
@@ -44,7 +45,7 @@ def scenario_single_sys_domain(scenario_single_group_user_form, associate):
 @pytest.fixture
 def scenario_single_app_domain_unassociated(scenario_single_group_user_form, associate):
     group, user, form = scenario_single_group_user_form
-    group.permissions.append(GroupPermission(name=ApplicationDomain.PERM_ACCESS))
+    associate(group, ApplicationDomain.PERM_ACCESS)
     associate(group, user)
     yield scenario_single_group_user_form
 
@@ -52,7 +53,7 @@ def scenario_single_app_domain_unassociated(scenario_single_group_user_form, ass
 @pytest.fixture
 def scenario_single_app_domain_associated(scenario_single_group_user_form, associate):
     group, user, form = scenario_single_group_user_form
-    group.permissions.append(GroupPermission(name=ApplicationDomain.PERM_ACCESS))
+    associate(group, ApplicationDomain.PERM_ACCESS)
     associate(group, user)
     associate(group, form.application)
     yield scenario_single_group_user_form
@@ -185,15 +186,15 @@ def test_form_domain_user_with_no_access_to_instance_schedules(scenario_single_f
         assert not _query_all(ApplicationInstanceSchedule)
 
 
-def test_form_domain_user_with_access_to_builtin_instance_schedules(scenario_single_form_domain_associated):
+def test_form_domain_user_with_access_to_builtin_instance_schedules(scenario_single_form_domain_associated, associate):
     group, user, form = scenario_single_form_domain_associated
-    group.permissions.append(GroupPermission(name=FormDomain.PERM_APP_SCHEDULES_READ_BUILTIN))
+    associate(group, FormDomain.PERM_APP_SCHEDULES_READ_BUILTIN)
     with riberry.services.policy.policy_scope(user):
         assert [sched.parameter for sched in _query_all(ApplicationInstanceSchedule)] == ['active']
 
 
-def test_form_domain_user_with_access_to_all_instance_schedules(scenario_single_form_domain_associated):
+def test_form_domain_user_with_access_to_all_instance_schedules(scenario_single_form_domain_associated, associate):
     group, user, form = scenario_single_form_domain_associated
-    group.permissions.append(GroupPermission(name=FormDomain.PERM_APP_SCHEDULES_READ))
+    associate(group, FormDomain.PERM_APP_SCHEDULES_READ)
     with riberry.services.policy.policy_scope(user):
         assert [sched.parameter for sched in _query_all(ApplicationInstanceSchedule)] == ['active', 'custom']

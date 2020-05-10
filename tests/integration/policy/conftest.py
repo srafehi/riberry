@@ -3,7 +3,7 @@ import pytest
 import riberry
 from riberry.model.application import Application, ApplicationInstance, Heartbeat, ApplicationInstanceSchedule
 from riberry.model.auth import User
-from riberry.model.group import Group, ResourceGroupAssociation
+from riberry.model.group import Group, ResourceGroupAssociation, GroupPermission
 from riberry.model.interface import Form, InputDefinition, InputValueDefinition, InputValueEnum, InputFileDefinition
 from riberry.model.misc import ResourceType
 
@@ -17,6 +17,11 @@ def session_scope(empty_database):
 @pytest.fixture
 def associate():
     def _associate(group, resource):
+
+        if isinstance(resource, str):
+            group.permissions.append(GroupPermission(name=resource))
+            return
+
         resource_type = (
             ResourceType.user if isinstance(resource, User) else
             ResourceType.form if isinstance(resource, Form) else

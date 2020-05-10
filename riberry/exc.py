@@ -39,11 +39,11 @@ class SessionExpired(BaseError):
 
 
 class AuthorizationError(BaseError):
-    __msg__ = 'User does not have access to the given resource.'
+    __msg__ = 'User does not have access to perform {state!r} operation on {model_type.__name__}.'
     __http_code__ = 403
 
-    def __init__(self):
-        super(AuthorizationError, self).__init__(target='user')
+    def __init__(self, model_type, state):
+        super(AuthorizationError, self).__init__(model_type=model_type, state=state)
 
 
 class ResourceNotFound(BaseError):
