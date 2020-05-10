@@ -10,10 +10,10 @@ from riberry.policy.permissions import FormDomain, SystemDomain, ApplicationDoma
 
 
 @pytest.fixture
-def scenario_single_group_user_form(create_user, create_group, create_form):
-    group: Group = create_group('group', permissions=[])
-    user: User = create_user('user')
-    form: Form = create_form('form')
+def scenario_single_group_user_form(empty_database, create_user, create_group, create_form):
+    group: Group = create_group('policy_group', permissions=[])
+    user: User = create_user('policy_user')
+    form: Form = create_form('policy_form')
     yield group, user, form
 
 
@@ -57,6 +57,17 @@ def scenario_single_app_domain_associated(scenario_single_group_user_form, assoc
     associate(group, user)
     associate(group, form.application)
     yield scenario_single_group_user_form
+
+
+@pytest.fixture
+def scenario_multiple_group_user_form(empty_database, create_user, create_group, create_form):
+    group1: Group = create_group('policy_group1', permissions=[])
+    group2: Group = create_group('policy_group2', permissions=[])
+    user1: User = create_user('policy_user1')
+    user2: User = create_user('policy_user2')
+    form1: Form = create_form('policy_form1')
+    form2: Form = create_form('policy_form2')
+    yield (group1, group2), (user1, user2), (form1, form2)
 
 
 def _query_all(model_type, *_):
@@ -198,3 +209,234 @@ def test_form_domain_user_with_access_to_all_instance_schedules(scenario_single_
     associate(group, FormDomain.PERM_APP_SCHEDULES_READ)
     with riberry.services.policy.policy_scope(user):
         assert [sched.parameter for sched in _query_all(ApplicationInstanceSchedule)] == ['active', 'custom']
+
+
+def test_form_domain_user_with_no_access_to_create_job(scenario_single_form_domain_associated, associate):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+    form_id = form.id
+    with riberry.services.policy.policy_scope(user):
+        with pytest.raises(riberry.exc.AuthorizationError):
+            job = Job(name='job', form_id=form_id, creator=user)
+            riberry.model.conn.add(job)
+            riberry.model.conn.commit()
+
+
+@pytest.mark.parametrize(['permission'], [
+    [FormDomain.PERM_JOB_CREATE],
+    [FormDomain.PERM_JOB_CREATE_SELF],
+])
+def test_form_domain_user_with_access_to_create_job(scenario_single_form_domain_associated, associate, permission):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, permission)
+
+    with riberry.services.policy.policy_scope(user):
+        job = Job(name='job', form_id=form.id, creator=user)
+        riberry.model.conn.add(job)
+        riberry.model.conn.commit()
+        assert job.id
+
+
+@pytest.mark.parametrize(['permission'], [
+    [FormDomain.PERM_JOB_READ],
+    [FormDomain.PERM_JOB_READ_SELF],
+])
+def test_form_domain_user_with_access_to_read_own_job(scenario_single_form_domain_associated, associate, permission):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, permission)
+    job = Job(name='job', form=form, creator=user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        assert Job.query().get(job_id)
+
+
+def test_form_domain_user_with_no_access_to_read_other_job(scenario_single_form_domain_associated, associate, create_user):
+    group, user, form = scenario_single_form_domain_associated
+    other_user = create_user('other_user')
+    associate(group, FormDomain.PERM_JOB_READ_SELF)
+
+    job = Job(name='job', form=form, creator=other_user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        assert not Job.query().get(job_id)
+
+
+def test_form_domain_user_with_access_to_read_other_job(scenario_single_form_domain_associated, associate, create_user):
+    group, user, form = scenario_single_form_domain_associated
+    other_user = create_user('other_user')
+    associate(group, FormDomain.PERM_JOB_READ)
+
+    job = Job(name='job', form=form, creator=other_user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        assert Job.query().get(job_id)
+
+
+def test_form_domain_user_with_no_access_to_update_own_job(scenario_single_form_domain_associated, associate):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+
+    job = Job(name='job', form=form, creator=user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        job = Job.query().get(job_id)
+        with pytest.raises(riberry.exc.AuthorizationError):
+            job.name = 'new_name'
+            riberry.model.conn.add(job)
+            riberry.model.conn.commit()
+
+
+@pytest.mark.parametrize(['permission'], [
+    [FormDomain.PERM_JOB_UPDATE_SELF],
+    [FormDomain.PERM_JOB_UPDATE],
+])
+def test_form_domain_user_with_access_to_update_own_job(scenario_single_form_domain_associated, associate, permission):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, permission)
+
+    job = Job(name='job', form=form, creator=user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        job = Job.query().get(job_id)
+        job.name = 'new_name'
+        riberry.model.conn.add(job)
+        riberry.model.conn.commit()
+
+
+@pytest.mark.parametrize(['permission'], [
+    [None],
+    [FormDomain.PERM_JOB_UPDATE_SELF],
+])
+def test_form_domain_user_with_no_access_to_update_other_job(scenario_single_form_domain_associated, associate, create_user, permission):
+    group, user, form = scenario_single_form_domain_associated
+    other_user = create_user('other_user')
+    associate(group, FormDomain.PERM_JOB_READ)
+    if permission:
+        associate(group, permission)
+
+    job = Job(name='job', form=form, creator=other_user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        job = Job.query().get(job_id)
+        with pytest.raises(riberry.exc.AuthorizationError):
+            job.name = 'new_name'
+            riberry.model.conn.add(job)
+            riberry.model.conn.commit()
+
+
+def test_form_domain_user_with_access_to_update_other_job(scenario_single_form_domain_associated, associate, create_user):
+    group, user, form = scenario_single_form_domain_associated
+    other_user = create_user('other_user')
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, FormDomain.PERM_JOB_UPDATE)
+
+    job = Job(name='job', form=form, creator=other_user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        job = Job.query().get(job_id)
+        job.name = 'new_name'
+        riberry.model.conn.add(job)
+        riberry.model.conn.commit()
+        riberry.model.conn.expire(job)
+        assert job.name == 'new_name'
+
+
+def test_form_domain_user_with_no_access_to_delete_own_job(scenario_single_form_domain_associated, associate):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+
+    job = Job(name='job', form=form, creator=user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        job = Job.query().get(job_id)
+        with pytest.raises(riberry.exc.AuthorizationError):
+            riberry.model.conn.delete(job)
+            riberry.model.conn.flush()
+
+
+@pytest.mark.parametrize(['permission'], [
+    [FormDomain.PERM_JOB_DELETE_SELF],
+    [FormDomain.PERM_JOB_DELETE],
+])
+def test_form_domain_user_with_access_to_delete_own_job(scenario_single_form_domain_associated, associate, permission):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, permission)
+
+    job = Job(name='job', form=form, creator=user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        job = Job.query().get(job_id)
+        riberry.model.conn.delete(job)
+        riberry.model.conn.commit()
+        assert not Job.query().get(job_id)
+
+
+@pytest.mark.parametrize(['permission'], [
+    [None],
+    [FormDomain.PERM_JOB_DELETE_SELF],
+])
+def test_form_domain_user_with_no_access_to_delete_other_job(scenario_single_form_domain_associated, associate, create_user, permission):
+    group, user, form = scenario_single_form_domain_associated
+    other_user = create_user('other_user')
+    associate(group, FormDomain.PERM_JOB_READ)
+    if permission:
+        associate(group, permission)
+
+    job = Job(name='job', form=form, creator=other_user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        job = Job.query().get(job_id)
+        with pytest.raises(riberry.exc.AuthorizationError):
+            riberry.model.conn.delete(job)
+            riberry.model.conn.commit()
+
+
+def test_form_domain_user_with_access_to_delete_other_job(scenario_single_form_domain_associated, associate, create_user):
+    group, user, form = scenario_single_form_domain_associated
+    other_user = create_user('other_user')
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, FormDomain.PERM_JOB_DELETE)
+
+    job = Job(name='job', form=form, creator=other_user)
+    riberry.model.conn.add(job)
+    riberry.model.conn.commit()
+    job_id = job.id
+
+    with riberry.services.policy.policy_scope(user):
+        job = Job.query().get(job_id)
+        riberry.model.conn.delete(job)
+        riberry.model.conn.commit()
+        assert not Job.query().get(job_id)

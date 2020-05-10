@@ -8,12 +8,6 @@ from riberry.model.interface import Form, InputDefinition, InputValueDefinition,
 from riberry.model.misc import ResourceType
 
 
-@pytest.fixture(autouse=True)
-def session_scope(empty_database):
-    with riberry.model.conn:
-        yield
-
-
 @pytest.fixture
 def associate():
     def _associate(group, resource):

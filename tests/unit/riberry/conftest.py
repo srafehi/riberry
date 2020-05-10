@@ -1,21 +1,7 @@
 import pytest
 
-from riberry.model import init, conn, auth, base
+from riberry.model import conn, auth, base
 from riberry.plugins.defaults.authentication import hash_password
-
-
-@pytest.fixture(autouse=True, scope='module')
-def init_model():
-    base.Base.metadata.drop_all(conn.raw_engine)
-    base.Base.metadata.create_all(conn.raw_engine)
-    yield
-    base.Base.metadata.drop_all(conn.raw_engine)
-
-
-@pytest.fixture(autouse=True)
-def init_model():
-    with conn:
-        yield
 
 
 @pytest.fixture
@@ -29,7 +15,6 @@ def dummy_user():
 
     with conn:
         user = auth.User.query().filter_by(username='johndoe').one()
-        conn.delete(user.details)
         conn.delete(user)
         conn.commit()
 

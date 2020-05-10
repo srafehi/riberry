@@ -1,8 +1,9 @@
-import contextlib
 import os
 import pathlib
 
 import pytest
+import helpers
+
 
 ROOT = pathlib.Path(__file__).parent
 RIB_TOML = str(ROOT / 'config' / 'riberry.toml')
@@ -12,23 +13,26 @@ CELERY_APP_PATH = str(ROOT / 'apps' / 'celery')
 os.environ['RIBERRY_CONFIG_PATH'] = RIB_TOML
 
 
+@pytest.fixture(autouse=True)
+def session_scope():
+    import riberry
+    with riberry.model.conn:
+        yield
+
+
+@pytest.fixture(autouse=True, scope='session')
+def _session_recreate_database():
+    helpers.recreate_database()
+
+
 @pytest.fixture
 def recreate_database():
-    from riberry import model
-    model.base.Base.metadata.drop_all(model.conn.raw_engine)
-    model.base.Base.metadata.create_all(model.conn.raw_engine)
-    yield
-    model.base.Base.metadata.drop_all(model.conn.raw_engine)
+    helpers.recreate_database()
 
 
 @pytest.fixture
 def empty_database():
-    from riberry import model
-    with contextlib.closing(model.conn.raw_engine.connect()) as connection:
-        transaction = connection.begin()
-        for table in reversed(model.base.Base.metadata.sorted_tables):
-            connection.execute(table.delete())
-        transaction.commit()
+    helpers.empty_database()
 
 
 @pytest.fixture(scope='session')
