@@ -601,3 +601,61 @@ def test_form_domain_user_with_access_to_delete_own_job_execution_and_children(s
     with riberry.services.policy.policy_scope(user):
         riberry.model.conn.delete(execution)
         riberry.model.conn.commit()
+
+
+def test_form_domain_user_with_no_access_to_prioritize_execution_on_creation(scenario_single_form_domain_associated, associate, create_job):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, FormDomain.PERM_JOB_EXECUTE)
+
+    job = create_job(name='job', form=form, creator=user)
+
+    with riberry.services.policy.policy_scope(user):
+        with pytest.raises(riberry.exc.AuthorizationError):
+            execution = JobExecution(job=job, creator=user, priority=1)
+            riberry.model.conn.add(execution)
+            riberry.model.conn.commit()
+
+
+def test_form_domain_user_with_access_to_prioritize_execution_on_creation(scenario_single_form_domain_associated, associate, create_job):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, FormDomain.PERM_JOB_EXECUTE)
+    associate(group, FormDomain.PERM_JOB_PRIORITIZE)
+
+    job = create_job(name='job', form=form, creator=user)
+
+    with riberry.services.policy.policy_scope(user):
+        execution = JobExecution(job=job, creator=user, priority=1)
+        riberry.model.conn.add(execution)
+        riberry.model.conn.commit()
+
+
+def test_form_domain_user_with_no_access_to_prioritize_execution_on_update(scenario_single_form_domain_associated, associate, create_job, create_execution):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, FormDomain.PERM_JOB_EXECUTE)
+
+    job = create_job(name='job', form=form, creator=user)
+    execution = create_execution(job)
+
+    with riberry.services.policy.policy_scope(user):
+        with pytest.raises(riberry.exc.AuthorizationError):
+            execution.priority = 1
+            riberry.model.conn.add(execution)
+            riberry.model.conn.commit()
+
+
+def test_form_domain_user_with_access_to_prioritize_execution_on_update(scenario_single_form_domain_associated, associate, create_job, create_execution):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, FormDomain.PERM_JOB_EXECUTE)
+    associate(group, FormDomain.PERM_JOB_PRIORITIZE)
+
+    job = create_job(name='job', form=form, creator=user)
+    execution = create_execution(job)
+
+    with riberry.services.policy.policy_scope(user):
+        execution.priority = 1
+        riberry.model.conn.add(execution)
+        riberry.model.conn.commit()
