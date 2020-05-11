@@ -47,7 +47,8 @@ CRUD_PERMISSIONS = {
     riberry.model.job.Job: _CRUD_JOB,
     riberry.model.job.JobExecution: {
         **_CRUD_JOB,
-        **{CREATE: {FormDomain.PERM_JOB_EXECUTE}},
+        **{CREATE: {FormDomain.PERM_JOB_EXECUTE, FormDomain.PERM_JOB_PRIORITIZE}},
+        **{UPDATE: {*_CRUD_JOB[UPDATE], FormDomain.PERM_JOB_PRIORITIZE}},
     },
     riberry.model.job.JobSchedule: {
         **_CRUD_JOB,
