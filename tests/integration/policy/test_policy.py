@@ -5,7 +5,7 @@ from riberry.model.application import Application, ApplicationInstance, Heartbea
 from riberry.model.auth import User
 from riberry.model.group import Group
 from riberry.model.interface import Form, InputDefinition, InputValueDefinition, InputValueEnum, InputFileDefinition
-from riberry.model.job import Job, JobExecution, JobSchedule
+from riberry.model.job import Job, JobExecution, JobSchedule, JobExecutionStream, JobExecutionStreamStep
 from riberry.policy.permissions import FormDomain, SystemDomain, ApplicationDomain
 
 
@@ -546,4 +546,58 @@ def test_form_domain_user_with_access_to_schedule_other_job(scenario_single_form
     with riberry.services.policy.policy_scope(user):
         schedule = JobSchedule(job=job, creator=user, cron='* * * * *')
         riberry.model.conn.add(schedule)
+        riberry.model.conn.commit()
+
+
+def test_form_domain_user_with_no_access_to_delete_own_job_execution_and_children(scenario_single_form_domain_associated, associate, create_job):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+
+    job = create_job(name='job', form=form, creator=user)
+    execution = JobExecution(job=job, creator=user)
+    riberry.model.conn.add(execution)
+    execution.streams.append(
+        JobExecutionStream(
+            name='stream',
+            task_id='JobExecutionStream',
+            steps=[
+                JobExecutionStreamStep(
+                    name='step',
+                    task_id='JobExecutionStreamStep',
+                )
+            ]
+        )
+    )
+    riberry.model.conn.commit()
+
+    with riberry.services.policy.policy_scope(user):
+        with pytest.raises(riberry.exc.AuthorizationError):
+            riberry.model.conn.delete(execution)
+            riberry.model.conn.commit()
+
+
+def test_form_domain_user_with_access_to_delete_own_job_execution_and_children(scenario_single_form_domain_associated, associate, create_job):
+    group, user, form = scenario_single_form_domain_associated
+    associate(group, FormDomain.PERM_JOB_READ)
+    associate(group, FormDomain.PERM_JOB_DELETE)
+
+    job = create_job(name='job', form=form, creator=user)
+    execution = JobExecution(job=job, creator=user)
+    riberry.model.conn.add(execution)
+    execution.streams.append(
+        JobExecutionStream(
+            name='stream',
+            task_id='JobExecutionStream',
+            steps=[
+                JobExecutionStreamStep(
+                    name='step',
+                    task_id='JobExecutionStreamStep',
+                )
+            ]
+        )
+    )
+    riberry.model.conn.commit()
+
+    with riberry.services.policy.policy_scope(user):
+        riberry.model.conn.delete(execution)
         riberry.model.conn.commit()
