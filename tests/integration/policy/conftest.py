@@ -5,6 +5,7 @@ from riberry.model.application import Application, ApplicationInstance, Heartbea
 from riberry.model.auth import User
 from riberry.model.group import Group, ResourceGroupAssociation, GroupPermission
 from riberry.model.interface import Form, InputDefinition, InputValueDefinition, InputValueEnum, InputFileDefinition
+from riberry.model.job import Job
 from riberry.model.misc import ResourceType
 
 
@@ -123,4 +124,14 @@ def create_form(create_application):
         riberry.model.conn.flush()
         return instance
 
+    return _create
+
+
+@pytest.fixture
+def create_job():
+    def _create(name, form, creator):
+        instance = Job(name=name, form=form, creator=creator)
+        riberry.model.conn.add(instance)
+        riberry.model.conn.flush()
+        return instance
     return _create
