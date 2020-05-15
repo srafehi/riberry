@@ -3,7 +3,6 @@ import operator
 from collections import defaultdict
 from typing import List, Optional
 
-from sqlalchemy import inspect
 from sqlalchemy.orm import Query, Session
 
 import riberry
@@ -40,32 +39,6 @@ def apply_auth_for_session_states(session: Session, *states: str):
     for model_type, state_mappings in model_state_mappings.items():
         for state, entities in state_mappings.items():
             riberry.policy.authorizer.apply_auth_for_entities(model_type, entities, state)
-
-
-def custom_filters(query: Query, context: QueryAuthorizerContext) -> Query:
-    # TODO(Shady) considering pushing down to authorizers
-    if (
-        context.source_model == riberry.model.job.JobExecution and
-        context.requested_permission == riberry.policy.permissions.FormDomain.PERM_JOB_PRIORITIZE and
-        riberry.policy.permissions.FormDomain.PERM_JOB_PRIORITIZE not in context.permissions and
-        context.target_entities
-    ):
-        invalid_ids = None
-        if context.requested_operation == riberry.policy.permissions.crud.CREATE:
-            default_value = riberry.model.helpers.default_value(riberry.model.job.JobExecution.priority)
-            invalid_ids = {
-                entity.id for entity in context.target_entities
-                if entity.priority != default_value
-            }
-        elif context.requested_operation == riberry.policy.permissions.crud.UPDATE:
-            invalid_ids = {
-                entity.id for entity in context.target_entities
-                if inspect(entity).attrs.priority.load_history().added
-            }
-        if invalid_ids:
-            return query.filter(riberry.model.job.JobExecution.id.notin_(invalid_ids))
-
-    return query
 
 
 def apply_auth_for_entities(model_type, entities: List, state: str):
@@ -121,7 +94,6 @@ def apply_auth_to_query(
                             source_model=model_type,
                             target_entities=entities,
                         )
-                        query = custom_filters(query, context)
                         query, expression = authorizer.apply_filter(query.enable_assertions(False), context=context)
                         if expression is not None:
                             expressions.append(expression)

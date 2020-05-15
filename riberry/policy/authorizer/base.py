@@ -1,17 +1,10 @@
 import functools
-from typing import Iterable, Tuple, Set, Dict, Optional, List
+from typing import Iterable, Tuple, Set, Dict, Optional, List, Callable
 
 from sqlalchemy.orm import Query
 
 from riberry.model.auth import User
 from riberry.typing import ModelType, Model
-
-
-class Node:
-
-    def __init__(self, model: ModelType, dependents: Tuple['Node'] = ()):
-        self.model: ModelType = model
-        self.dependents: Tuple[Node] = tuple(dependents)
 
 
 class QueryAuthorizerContext:
@@ -37,6 +30,22 @@ class QueryAuthorizerContext:
         if model in (c.entity for c in getattr(query, '_join_entities')):
             return query
         return query.join(model)
+
+
+StepQueryProcessor = Callable[[Query, QueryAuthorizerContext], Query]
+
+
+class Node:
+
+    def __init__(
+            self,
+            model: ModelType,
+            dependents: Tuple['Node'] = (),
+            processor: Optional[StepQueryProcessor] = None
+    ):
+        self.model: ModelType = model
+        self.dependents: Tuple[Node] = tuple(dependents)
+        self.processor: Optional[StepQueryProcessor] = processor
 
 
 class StepResult:
@@ -90,24 +99,38 @@ class PermissionDomainQueryAuthorizer:
 
         return inner
 
-    def register_step(self, source: ModelType, target: ModelType):
+    def register_step(
+            self,
+            source: ModelType,
+            target: ModelType,
+            processor: Optional[StepQueryProcessor] = None,
+    ):
         self._add_step_resolver(
             source,
-            functools.partial(self._resolve, model=target),
+            functools.partial(self._resolve, model=target, processor=processor),
         )
 
-    def _add_step_resolver(self, source, func):
+    def _add_step_resolver(self, source: ModelType, func):
         assert source not in self.step_resolvers
         self.step_resolvers[source] = func
 
     @staticmethod
-    def _resolve(query, model, context) -> StepResult:
-        return StepResult(context.unique_join(query, model), model)
+    def _resolve(
+            query: Query,
+            model: ModelType,
+            context: QueryAuthorizerContext,
+            processor: Optional[StepQueryProcessor] = None,
+    ) -> StepResult:
+        query = context.unique_join(query, model)
+        return StepResult(
+            query=processor(query, context) if processor else query,
+            next_model=model,
+        )
 
     def register_node(self, node: Node):
         nodes = [node]
         while nodes:
             current_node: Node = nodes.pop(0)
             for dependent in current_node.dependents:
-                self.register_step(source=dependent.model, target=current_node.model)
+                self.register_step(source=dependent.model, target=current_node.model, processor=dependent.processor)
                 nodes.append(dependent)

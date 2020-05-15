@@ -25,13 +25,48 @@ Forms via the following dependency tree:
       * JobExecutionStream
         * JobExecutionStreamStep
 """
-
+from sqlalchemy import inspect
 from sqlalchemy.orm import Query
 
 import riberry
-from .base import StepResult, PermissionDomainQueryAuthorizer, Node
+from .base import StepResult, PermissionDomainQueryAuthorizer, Node, QueryAuthorizerContext
 
 form_authorizer = PermissionDomainQueryAuthorizer()
+
+
+def check_job_prioritization_access(query: Query, context: QueryAuthorizerContext) -> Query:
+    """ Ensures that any change to JobExecution.priority is made only by those who
+    have the permissions to do so. """
+
+    if (
+        context.target_entities and
+        context.source_model == riberry.model.job.JobExecution and
+        context.requested_permission == riberry.policy.permissions.FormDomain.PERM_JOB_PRIORITIZE and
+        riberry.policy.permissions.FormDomain.PERM_JOB_PRIORITIZE not in context.permissions
+    ):
+        invalid_ids = None
+
+        # ensure created executions have not had their priorities changed
+        if context.requested_operation == riberry.policy.permissions.crud.CREATE:
+            default_value = riberry.model.helpers.default_value(riberry.model.job.JobExecution.priority)
+            invalid_ids = {
+                entity.id for entity in context.target_entities
+                if entity.priority != default_value
+            }
+
+        # ensure updated executions have not had their priorities changed
+        elif context.requested_operation == riberry.policy.permissions.crud.UPDATE:
+            invalid_ids = {
+                entity.id for entity in context.target_entities
+                if inspect(entity).attrs.priority.load_history().added
+            }
+
+        # invalidate the query if any invalid changes to priority have been made
+        if invalid_ids:
+            return query.filter(riberry.model.job.JobExecution.id.notin_(invalid_ids))
+
+    return query
+
 
 _node_tree = Node(riberry.model.interface.Form, (
     Node(riberry.model.application.Application),
@@ -48,7 +83,7 @@ _node_tree = Node(riberry.model.interface.Form, (
         Node(riberry.model.interface.InputFileInstance),
         Node(riberry.model.interface.InputValueInstance),
         Node(riberry.model.job.JobSchedule),
-        Node(riberry.model.job.JobExecution, (
+        Node(riberry.model.job.JobExecution, processor=check_job_prioritization_access, dependents=(
             Node(riberry.model.job.JobExecutionReport),
             Node(riberry.model.job.JobExecutionExternalTask),
             Node(riberry.model.job.JobExecutionProgress),
