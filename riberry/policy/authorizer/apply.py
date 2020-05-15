@@ -5,10 +5,9 @@ from typing import List, Optional
 
 from sqlalchemy import inspect
 from sqlalchemy.orm import Query, Session
-from sqlalchemy.orm.state import AttributeState
 
 import riberry
-from riberry.typing import ModelType
+from riberry.typing import ModelType, Model
 from .application import application_authorizer
 from .base import QueryAuthorizerContext
 from .form import form_authorizer
@@ -43,19 +42,26 @@ def apply_auth_for_session_states(session: Session, *states: str):
             riberry.policy.authorizer.apply_auth_for_entities(model_type, entities, state)
 
 
-def custom_filters(model_type: ModelType, query: Query, context: QueryAuthorizerContext, entities: List, state) -> Query:
+def custom_filters(query: Query, context: QueryAuthorizerContext) -> Query:
     # TODO(Shady) considering pushing down to authorizers
     if (
-        model_type == riberry.model.job.JobExecution and
+        context.source_model == riberry.model.job.JobExecution and
         context.requested_permission == riberry.policy.permissions.FormDomain.PERM_JOB_PRIORITIZE and
-        riberry.policy.permissions.FormDomain.PERM_JOB_PRIORITIZE not in context.permissions
+        riberry.policy.permissions.FormDomain.PERM_JOB_PRIORITIZE not in context.permissions and
+        context.target_entities
     ):
         invalid_ids = None
-        if state == riberry.policy.permissions.crud.CREATE:
+        if context.requested_operation == riberry.policy.permissions.crud.CREATE:
             default_value = riberry.model.helpers.default_value(riberry.model.job.JobExecution.priority)
-            invalid_ids = {entity.id for entity in entities if entity.priority != default_value}
-        elif state == riberry.policy.permissions.crud.UPDATE:
-            invalid_ids = {entity.id for entity in entities if inspect(entity).attrs.priority.load_history().added}
+            invalid_ids = {
+                entity.id for entity in context.target_entities
+                if entity.priority != default_value
+            }
+        elif context.requested_operation == riberry.policy.permissions.crud.UPDATE:
+            invalid_ids = {
+                entity.id for entity in context.target_entities
+                if inspect(entity).attrs.priority.load_history().added
+            }
         if invalid_ids:
             return query.filter(riberry.model.job.JobExecution.id.notin_(invalid_ids))
 
@@ -72,7 +78,12 @@ def apply_auth_for_entities(model_type, entities: List, state: str):
         raise riberry.exc.AuthorizationError(model_type=model_type, state=state)
 
 
-def apply_auth_to_query(query: Query, state: str, starting_model: Optional[ModelType] = None, entities = None) -> Query:
+def apply_auth_to_query(
+        query: Query,
+        state: str,
+        starting_model: Optional[ModelType] = None,
+        entities: Optional[List[Model]] = None,
+) -> Query:
     if not riberry.policy.context.enabled:
         return query
 
@@ -103,8 +114,14 @@ def apply_auth_to_query(query: Query, state: str, starting_model: Optional[Model
                             authorizer = application_authorizer
                         else:
                             continue
-                        context = QueryAuthorizerContext(subject, permission)
-                        query = custom_filters(model_type, query, context, entities, state)
+                        context = QueryAuthorizerContext(
+                            subject=subject,
+                            requested_permission=permission,
+                            requested_operation=state,
+                            source_model=model_type,
+                            target_entities=entities,
+                        )
+                        query = custom_filters(query, context)
                         query, expression = authorizer.apply_filter(query.enable_assertions(False), context=context)
                         if expression is not None:
                             expressions.append(expression)

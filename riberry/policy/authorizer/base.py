@@ -1,10 +1,10 @@
 import functools
-from typing import Iterable, Tuple
+from typing import Iterable, Tuple, Set, Dict, Optional, List
 
 from sqlalchemy.orm import Query
 
 from riberry.model.auth import User
-from riberry.typing import ModelType
+from riberry.typing import ModelType, Model
 
 
 class Node:
@@ -16,11 +16,21 @@ class Node:
 
 class QueryAuthorizerContext:
 
-    def __init__(self, subject: User, requested_permission):
+    def __init__(
+            self,
+            subject: User,
+            requested_permission: str,
+            requested_operation: str,
+            source_model: Optional[ModelType] = None,
+            target_entities: Optional[List[Model]] = None,
+    ):
         self.subject: User = subject
-        self.permissions = subject.permissions_to_domain_ids()
+        self.permissions: Dict[str, Set[str]] = subject.permissions_to_domain_ids()
         self.traversed = set()
-        self.requested_permission = requested_permission
+        self.requested_permission: str = requested_permission
+        self.requested_operation: str = requested_operation
+        self.source_model: Optional[ModelType] = source_model
+        self.target_entities: Optional[List[Model]] = target_entities
 
     @staticmethod
     def unique_join(query: Query, model: ModelType) -> Query:
