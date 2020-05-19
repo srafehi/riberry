@@ -3,7 +3,6 @@ from sqlalchemy.exc import IntegrityError
 
 from riberry.model import auth, conn
 from riberry.plugins.defaults.authentication import hash_password
-# noinspection PyUnresolvedReferences
 
 
 class TestUser:

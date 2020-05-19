@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from typing import Union, Optional, Any
 
 import riberry
 from .artifact import Artifact
@@ -36,12 +37,18 @@ class Context:
         ):
             yield
 
-    def spawn(self, form_name, job_name=None, input_values=None, input_files=None, owner=None, execute=True):
+    def spawn(
+            self,
+            form: Union[riberry.model.interface.Form, str],
+            job_name: Optional[str] = None,
+            input_data: Any = None,
+            execute_on_creation: bool = False,
+            owner: Optional[Union[riberry.model.auth.User, str]] = None,
+    ) -> riberry.model.job.Job:
         return riberry.app.actions.jobs.create_job(
-            form_name=form_name,
+            form=form,
             job_name=job_name,
-            input_files=input_files,
-            input_values=input_values,
+            input_data=input_data,
+            execute_on_creation=execute_on_creation,
             owner=owner,
-            execute=execute,
         )

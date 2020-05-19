@@ -4,22 +4,16 @@ import subprocess
 
 import pytest
 
-RIB_TOML = str(pathlib.Path(__file__).parent.parent / 'config' / 'riberry.toml')
-APP_YAML = str(pathlib.Path(__file__).parent.parent / 'config' / 'apps.yaml')
-CELERY_APP_PATH = str(pathlib.Path(__file__).parent.parent / 'apps' / 'celery')
 
-os.environ['RIBERRY_CONFIG_PATH'] = RIB_TOML
-
-
-@pytest.fixture(scope="session", autouse=True)
-def init_riberry():
+@pytest.fixture(scope="module", autouse=True)
+def init_riberry(app_yaml):
     import riberry
     from riberry.util import config_importer, user, groups
 
     riberry.model.base.Base.metadata.drop_all(riberry.model.conn.raw_engine)
     riberry.model.base.Base.metadata.create_all(riberry.model.conn.raw_engine)
 
-    config_importer.import_from_file(config_path=APP_YAML, dry_run=False)
+    config_importer.import_from_file(config_path=app_yaml, dry_run=False)
     user.add_user(
         username='admin',
         password='password',
@@ -29,15 +23,16 @@ def init_riberry():
         department='Test Department',
         email='test@riberry.app',
     )
-    groups.add_user_to_group(username='admin', group_name='default')
+    groups.add_user_to_group(username='admin', group_name='sysadmin')
+    riberry.model.conn.commit()
 
 
 @pytest.fixture(scope='module')
-def start_celery_worker(request):
+def start_celery_worker(celery_app_path, request):
     def start(cmd, riberry_instance, app_path=None):
         proc = subprocess.Popen(
             cmd,
-            cwd=app_path or CELERY_APP_PATH,
+            cwd=app_path or celery_app_path,
             env={**os.environ, **{'RIBERRY_INSTANCE': riberry_instance}},
         )
         request.addfinalizer(proc.kill)

@@ -46,11 +46,6 @@ pool_recycle = 360
 timeout = 60
 
 
-[policies]
-
-provider = "default"
-
-
 [authentication.providers]
 
 supported = ["default", "ldap"]

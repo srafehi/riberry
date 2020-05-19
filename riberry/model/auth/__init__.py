@@ -1,11 +1,13 @@
 import datetime
 import re
-from typing import List, Optional
+from collections import defaultdict
+from typing import Dict, List, Set, Optional
 
 from sqlalchemy import Column, String, ForeignKey, DateTime, desc, Index
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, validates, joinedload
 
+import riberry
 from riberry import model, exc
 from riberry.config import config
 from riberry.model import base
@@ -20,7 +22,12 @@ class User(base.Base):
     username = Column(String(48), nullable=False, unique=True)
     password = Column(String(512))
     auth_provider = Column(String(32), nullable=False, default=config.authentication.providers.default)
-    details: 'UserDetails' = relationship('UserDetails', uselist=False, back_populates='user')
+    details: 'UserDetails' = relationship(
+        'UserDetails',
+        cascade='save-update, merge, delete, delete-orphan',
+        uselist=False,
+        back_populates='user',
+    )
     tokens: 'UserToken' = relationship('UserToken', back_populates='user')
 
     # associations
@@ -87,6 +94,47 @@ class User(base.Base):
         provider = config.authentication[provider_name or config.authentication.providers.default]
         password = provider.secure_password(password=password)
         return password
+
+    def permissions_to_domain_ids(self) -> Dict[str, Set[int]]:
+
+        permissions_to_groups = defaultdict(set)
+        permission_domain_to_groups = defaultdict(set)
+        for group in self.groups:
+            expanded_permissions = set()
+            for permission in group.permissions:
+                expanded_permissions.update(
+                    riberry.policy.permissions.roles.PERMISSION_ROLES.get(permission.name, {permission.name}))
+            for permission in expanded_permissions:
+                # Map groups to their permissions
+                # e.g. D1.P1 -> {G1, G2}
+                permissions_to_groups[permission].add(group)
+
+                # Map permissions and groups to their permission domain
+                # D1 -> {(D1.P1, G1), (D1.P1, G2)}
+                permission_domain = permission.split('.', 1)[0]
+                permission_domain_to_groups[permission_domain].add((permission, group))
+
+        # Map each group with the ACCESS domain permission to the domain instances
+        # which it's providing permissions for.
+        # e.g. D1 -> G1 -> {I1, I2}
+        domain_to_group_domain_ids = defaultdict(lambda: defaultdict(set))
+        for group in permissions_to_groups[riberry.policy.permissions.FormDomain.PERM_ACCESS]:
+            domain_to_group_domain_ids['FormDomain'][group].update(o.id for o in group.forms)
+        for group in permissions_to_groups[riberry.policy.permissions.ApplicationDomain.PERM_ACCESS]:
+            domain_to_group_domain_ids['ApplicationDomain'][group].update(o.id for o in group.applications)
+        for group in permissions_to_groups[riberry.policy.permissions.SystemDomain.PERM_ACCESS]:
+            domain_to_group_domain_ids['SystemDomain'][group].add(group.id)
+
+        # Map individual permissions to the domain objects they represent. Note that
+        # domain permissions will only be considered if the group they're associated
+        # with also have an ACCESS permission for that domain.
+        # e.g. D1.P1 -> {I1, I2}
+        permissions_to_domain_ids = defaultdict(set)
+        for domain, domain_mapping in domain_to_group_domain_ids.items():
+            for permission, group in permission_domain_to_groups[domain]:
+                permissions_to_domain_ids[permission].update(domain_mapping[group])
+
+        return dict(permissions_to_domain_ids)
 
 
 class UserDetails(base.Base):

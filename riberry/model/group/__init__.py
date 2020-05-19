@@ -51,23 +51,35 @@ class Group(base.Base):
         'ResourceGroupAssociation',
         primaryjoin=lambda: sql.and_(
             ResourceGroupAssociation.group_id == Group.id,
-            ResourceGroupAssociation.resource_type == model.misc.ResourceType.user
+            ResourceGroupAssociation.resource_type == model.misc.ResourceType.user,
         )
     )
     form_associations: List['ResourceGroupAssociation'] = relationship(
         'ResourceGroupAssociation',
         primaryjoin=lambda: sql.and_(
             ResourceGroupAssociation.group_id == Group.id,
-            ResourceGroupAssociation.resource_type == model.misc.ResourceType.form
+            ResourceGroupAssociation.resource_type == model.misc.ResourceType.form,
         )
     )
+    application_associations: List['ResourceGroupAssociation'] = relationship(
+        'ResourceGroupAssociation',
+        primaryjoin=lambda: sql.and_(
+            ResourceGroupAssociation.group_id == Group.id,
+            ResourceGroupAssociation.resource_type == model.misc.ResourceType.application,
+        )
+    )
+    permissions: List['GroupPermission'] = relationship('GroupPermission', back_populates='group')
 
     @property
-    def display_name(self):
+    def display_name(self) -> str:
         return self._display_name or self.name
 
+    @display_name.setter
+    def display_name(self, value):
+        self._display_name = value
+
     @property
-    def users(self):
+    def users(self) -> List['model.auth.User']:
         return model.auth.User.query().filter(
             (ResourceGroupAssociation.group_id == self.id) &
             (ResourceGroupAssociation.resource_type == model.misc.ResourceType.user) &
@@ -75,13 +87,30 @@ class Group(base.Base):
         ).all()
 
     @property
-    def forms(self):
+    def forms(self) -> List['model.interface.Form']:
         return model.interface.Form.query().filter(
             (ResourceGroupAssociation.group_id == self.id) &
             (ResourceGroupAssociation.resource_type == model.misc.ResourceType.form) &
             (model.interface.Form.id == ResourceGroupAssociation.resource_id)
         ).all()
 
+    @property
+    def applications(self) -> List['model.application.Application']:
+        return model.application.Application.query().filter(
+            (ResourceGroupAssociation.group_id == self.id) &
+            (ResourceGroupAssociation.resource_type == model.misc.ResourceType.application) &
+            (model.application.Application.id == ResourceGroupAssociation.resource_id)
+        ).all()
 
 
+class GroupPermission(base.Base):
+    __tablename__ = 'group_permission'
+    __reprattrs__ = ['name']
 
+    # columns
+    id = base.id_builder.build()
+    group_id = Column(ForeignKey('groups.id'), nullable=False, index=True)
+    name: str = Column(String(128), nullable=False, index=True)
+
+    # associations
+    group: 'Group' = relationship('Group', back_populates='permissions')

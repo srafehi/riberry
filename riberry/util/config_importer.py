@@ -1,12 +1,17 @@
 import json
 import os
 import uuid
+from itertools import chain
+from typing import List, Dict
 
 import yaml
+from jsonschema import Draft7Validator
 from sqlalchemy.inspection import inspect
 from sqlalchemy.orm.exc import NoResultFound
 
 from riberry import model, services, policy
+from riberry.typing import ModelType
+from riberry.model.helpers import max_string_length
 from riberry.util.common import variable_substitution
 
 
@@ -159,6 +164,7 @@ def import_form(app, internal_name, attributes):
         form=form,
         input_files=attributes.get('inputFiles') or {},
         input_values=attributes.get('inputValues') or {},
+        input_definition=attributes.get('input') or {},
     )
 
     return form
@@ -200,7 +206,128 @@ def import_input_value_definition(form, internal_name, attributes):
     return definition
 
 
-def import_form_inputs(form, input_files, input_values):
+def import_legacy_input_definitions(
+        form: model.interface.Form,
+        input_files: dict,
+        input_values: dict
+) -> model.interface.InputDefinition:
+    required = []
+    properties = {}
+    ui_schema = {}
+
+    for internal_name, attributes in input_values.items():
+        parameter = {}
+
+        if attributes.get('required'):
+            required.append(internal_name)
+
+        if attributes.get('name'):
+            parameter['title'] = attributes['name']
+
+        if attributes.get('description'):
+            parameter['description'] = attributes['description']
+
+        if attributes.get('default') is not None:
+            parameter['default'] = attributes['default']
+
+        if attributes['type'] == 'text':
+            parameter['type'] = 'string'
+        elif attributes['type'] == 'datetime-local':
+            parameter['type'] = 'string'
+            parameter['format'] = 'datetime'
+
+        if attributes.get('enumerations'):
+            parameter['enum'] = attributes['enumerations']
+
+        properties[internal_name] = parameter
+
+    for internal_name, attributes in input_files.items():
+        parameter = {
+            'type': 'string',
+            'format': 'data-url',
+        }
+
+        if attributes.get('required'):
+            required.append(internal_name)
+
+        if attributes.get('name'):
+            parameter['title'] = attributes['name']
+
+        if attributes.get('description'):
+            parameter['description'] = attributes['description']
+
+        if attributes.get('accept'):
+            ui_schema[internal_name] = {
+                'ui:options': {
+                    'accept': attributes['accept'],
+                }
+            }
+
+        properties[internal_name] = parameter
+
+    return import_input_definition(
+        form=form,
+        attributes={
+            'type': 'jsonschema',
+            'schema': {
+                'type': 'object',
+                'required': required,
+                'properties': properties,
+            },
+            'uiSchema': ui_schema,
+        },
+        support_legacy=True,
+    )
+
+
+def import_input_definition(
+        form: model.interface.Form,
+        attributes: dict,
+        support_legacy: bool,
+) -> model.interface.InputDefinition:
+    attributes = dict(attributes)
+
+    if 'type' not in attributes:
+        attributes['type'] = 'jsonschema'
+
+    if attributes['type'] != 'jsonschema':
+        raise NotImplementedError(f'Form[{form.internal_name}] Only "jsonschema" for form.input.type is supported')
+
+    json_schema = attributes.pop('schema')
+    ui_schema = attributes.pop('uiSchema', {})
+    options = attributes.pop('options', {})
+
+    if 'name' not in attributes:
+        attributes['name'] = json_schema.get('title') or 'Form Input'
+
+    if 'description' not in attributes:
+        attributes['description'] = json_schema.get('description', '')[:256] or None
+
+    if support_legacy:
+        options['flatten'] = True
+
+    Draft7Validator.check_schema(schema=json_schema)
+
+    definition = {'schema': json_schema, 'uiSchema': ui_schema, 'options': options}
+    attributes['definition'] = definition
+
+    if form.input_definition:
+        services.form.update_input_definition(form.input_definition, attributes)
+    else:
+        form.input_definition = model.interface.InputDefinition(**attributes)
+        model.conn.add(form.input_definition)
+    return form.input_definition
+
+
+def import_form_inputs(form: model.interface.Form, input_files: dict, input_values: dict, input_definition: dict):
+
+    if input_files or input_values:
+        if input_definition:
+            raise ValueError(f'Form[{form.internal_name}] Cannot use form.inputs with form.inputFiles or form.inputValues')
+        input_definition_instance = import_legacy_input_definitions(form, input_files, input_values)
+    else:
+        input_definition_instance = None
+
     collection_diff(
         obj=form,
         collection_name='input_file_definitions',
@@ -218,6 +345,9 @@ def import_form_inputs(form, input_files, input_values):
             for name, attrs in input_values.items()
         }
     )
+
+    if input_definition and not input_definition_instance:
+        import_input_definition(form, input_definition, support_legacy=False)
 
 
 def import_instance(app, internal_name, attributes):
@@ -280,44 +410,100 @@ def import_instance(app, internal_name, attributes):
     return instance
 
 
-def import_groups(applications, restrict):
-    created_groups = {}
-    for application, properties in applications.items():
-        if restrict and application not in restrict:
-            continue
+def merge_permissions(
+    group: model.group.Group,
+    permission_names: List[str],
+):
+    unprocessed_permissions = {permission.name: permission for permission in group.permissions}
+    for permission_name in permission_names:
+        if permission_name in unprocessed_permissions:
+            unprocessed_permissions.pop(permission_name)
+        else:
+            permission = model.group.GroupPermission(name=permission_name, group=group)
+            model.conn.add(permission)
+    stale_permissions = list(unprocessed_permissions.values())
+    return stale_permissions
 
-        for form_internal_name, form_info in properties.get('forms', {}).items():
-            groups = form_info.get('groups') or []
 
-            form: model.interface.Form = model.interface.Form.query().filter_by(
-                internal_name=form_internal_name,
-            ).first()
+def merge_associations(
+    group: model.group.Group,
+    resource_ids: List[int],
+    resource_type: List[model.misc.ResourceType],
+    model_type: ModelType,
+):
+    stale_instances = {
+        model_type.get(association.resource_id).id: association
+        for association in group.resource_associations
+        if association.resource_type == resource_type
+    }
 
-            if not form:
-                print(f'import_groups:: Form {form_internal_name} not found, skipping {application}')
-                continue
+    for resource_id in resource_ids:
+        if resource_id in stale_instances:
+            stale_instances.pop(resource_id)
+        else:
+            association = model.group.ResourceGroupAssociation(
+                resource_id=resource_id,
+                resource_type=resource_type,
+                group=group,
+            )
+            model.conn.add(association)
 
-            associations = {assoc.group.name: assoc for assoc in form.group_associations}
-            stale_assocs = set(associations) - set(groups)
-            for stale in stale_assocs:
-                model.conn.delete(associations[stale])
+    return list(stale_instances.values())
 
-            for group_name in groups:
-                if group_name in associations:
-                    continue
-                group = model.group.Group.query().filter_by(name=group_name).first()
-                if not group:
-                    group = created_groups.get(group_name)
-                if not group:
-                    group = services.auth.create_group(name=group_name)
-                    created_groups[group_name] = group
 
-                association = model.group.ResourceGroupAssociation(
-                    resource_id=form.id,
-                    resource_type=model.misc.ResourceType.form,
-                    group=group
-                )
-                model.conn.add(association)
+def import_groups(group_definitions: Dict[str, Dict]):
+
+    def get_ids(model_type: ModelType, internal_names: List[str]) -> List[int]:
+        return [
+            instance.id
+            for instance in model_type.query().filter(model_type.internal_name.in_(internal_names)).all()
+        ]
+
+    group_definitions = {
+        group_name: {
+            'name': group_name,
+            'display_name': group_definition.get('name'),
+            'description': group_definition.get('description'),
+            'permissions': group_definition.get('permissions') or [],
+            'applications': get_ids(model.application.Application, group_definition.get('applications') or []),
+            'forms': get_ids(model.interface.Form, group_definition.get('forms') or []),
+        }
+        for group_name, group_definition in group_definitions.items()
+    }
+
+    groups = {group.name: group for group in model.group.Group.query().all()}
+    for group_name, definition in group_definitions.items():
+        if group_name not in groups:
+            groups[group_name] = services.auth.create_group(name=group_name)
+
+        group: model.group.Group = groups.pop(group_name)
+        group.display_name = definition.get('display_name')
+        group.description = definition.get('description')
+        model.conn.add(group)
+
+        stale_permissions = merge_permissions(
+            group=group,
+            permission_names=definition['permissions'],
+        )
+
+        stale_applications = merge_associations(
+            group=group,
+            resource_ids=definition['applications'],
+            resource_type=model.misc.ResourceType.application,
+            model_type=model.application.Application,
+        )
+
+        stale_forms = merge_associations(
+            group=group,
+            resource_ids=definition['forms'],
+            resource_type=model.misc.ResourceType.form,
+            model_type=model.interface.Form,
+        )
+
+        for association in chain(stale_applications, stale_forms, stale_permissions):
+            model.conn.delete(association)
+        if not group.resource_associations and not group.permissions:
+            model.conn.delete(group)
 
 
 def _convert_value(value):
@@ -387,7 +573,6 @@ def import_menu_item(item, menu_type, parent=None):
     return menu_item
 
 
-
 def import_config(config, formatter=None, restrict_apps=None):
     applications = config.get('applications') or {}
     import_applications(applications=applications, restrict=restrict_apps)
@@ -398,7 +583,7 @@ def import_config(config, formatter=None, restrict_apps=None):
     model.conn.flush()
 
     import_menu_for_forms(menu=config.get('menues', {}).get('forms', {}))
-    import_groups(applications=applications, restrict=restrict_apps)
+    import_groups(group_definitions=config.get('groups', {}))
 
     for k, v in session_diff().items():
         if k in diff:

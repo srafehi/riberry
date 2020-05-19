@@ -5,31 +5,9 @@ import pytest
 from riberry import testing
 
 
-@pytest.fixture(scope='module', autouse=True)
-def start_basic_app(start_celery_worker):
-    start_celery_worker(
-        cmd=['celery', 'worker', '-A', 'basic', '-l', 'debug'],
-        riberry_instance='test.celery.instance',
-    )
+class BasicBaseTestSuite(testing.base.TestApplication):
 
-
-class TestBasicCeleryApp(testing.base.TestApplication):
-
-    @classmethod
-    def setup_class(cls):
-        cls.setup_test_scenario(
-            job_specification=testing.base.JobSpecification(
-                form_internal_name='test.celery.form.basic',
-                username='admin',
-                input_values={
-                    'streams': 2,
-                }
-            )
-        )
-
-    @classmethod
-    def teardown_class(cls):
-        cls.delete_test_job()
+    entry_point_step_name = None
 
     def test_execution_successful(self):
         testing.helpers.verify_execution_completion(
@@ -43,7 +21,7 @@ class TestBasicCeleryApp(testing.base.TestApplication):
             execution=self.execution,
             expected={
                 'Stream Entry': {
-                    'entry_point': 1,
+                    self.entry_point_step_name: 1,
                     'save_all': 1,
                 },
                 'Stream #0': {
@@ -79,9 +57,6 @@ class TestBasicCeleryApp(testing.base.TestApplication):
             }
         )
 
-    def test_job_input_values(self):
-        assert self.job_values == {'streams': 2}
-
     def test_job_input_files(self):
         assert not self.job_files
 
@@ -99,3 +74,6 @@ class TestBasicCeleryApp(testing.base.TestApplication):
             {'number': 0, 'output': 0},
             {'number': 1, 'output': 1},
         ]
+
+    def test_job_input_values(self):
+        raise NotImplementedError

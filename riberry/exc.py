@@ -39,11 +39,11 @@ class SessionExpired(BaseError):
 
 
 class AuthorizationError(BaseError):
-    __msg__ = 'User does not have access to the given resource.'
+    __msg__ = 'User does not have access to perform {state!r} operation on {model_type.__name__}.'
     __http_code__ = 403
 
-    def __init__(self):
-        super(AuthorizationError, self).__init__(target='user')
+    def __init__(self, model_type, state):
+        super(AuthorizationError, self).__init__(model_type=model_type, state=state)
 
 
 class ResourceNotFound(BaseError):
@@ -64,12 +64,12 @@ class UnknownError(BaseError):
         super(UnknownError, self).__init__()
 
 
-class InputErrorGroup(BaseError):
-    __msg__ = 'One or more errors occurred while validating the request.'
+class ErrorGroup(BaseError):
+    __msg__ = 'One or more errors occurred.'
     __http_code__ = 400
 
     def __init__(self, *errors):
-        super(InputErrorGroup, self).__init__(
+        super(ErrorGroup, self).__init__(
             target=None,
             data={'errors': []}
         )
@@ -77,6 +77,10 @@ class InputErrorGroup(BaseError):
 
     def extend(self, errors):
         self.exc_data['errors'] += [e.output() if isinstance(e, BaseError) else e for e in errors]
+
+
+class InputErrorGroup(ErrorGroup):
+    __msg__ = 'One or more errors occurred while validating the request.'
 
 
 class RequiredInputError(BaseError):
@@ -138,3 +142,11 @@ class InvalidApiKeyError(BaseError):
 
     def __init__(self):
         super(InvalidApiKeyError, self).__init__(target='user')
+
+
+class GenericValidationError(BaseError):
+    __msg__ = '{message}'
+
+    def __init__(self, message):
+        super(GenericValidationError, self).__init__(message=message)
+

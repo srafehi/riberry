@@ -10,7 +10,7 @@ from riberry.model import auth
 
 
 @pytest.fixture
-def token_builder(dummy_user: auth.User):
+def token_builder(request, dummy_user: auth.User):
     def _token_builder(type='test', token='TOKEN'):
         token = auth.UserToken(
             user_id=dummy_user.id,
@@ -20,6 +20,13 @@ def token_builder(dummy_user: auth.User):
         )
         model.conn.add(token)
         model.conn.commit()
+
+        def cleanup():
+            model.conn.refresh(token)
+            model.conn.delete(token)
+            model.conn.commit()
+
+        request.addfinalizer(cleanup)
         return token
 
     return _token_builder

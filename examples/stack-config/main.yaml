@@ -1,6 +1,19 @@
 applications:
   sample_app: !include sample_app.yaml
 
+groups:
+  SampleGroup:
+    name: Sample Group
+    description: A sample group
+    permissions:
+      - FormDomain.ROLE_BASIC
+    forms:
+      - sample_app.form.sample
+  SystemAdmin:
+    name: System Admistrators
+    permissions:
+      - SystemDomain.ACCESS
+
 capacity-configuration:
   requested-capacity:
     strategy: binpack
