@@ -28,7 +28,11 @@ class User(base.Base):
         uselist=False,
         back_populates='user',
     )
-    tokens: 'UserToken' = relationship('UserToken', back_populates='user')
+    tokens: 'UserToken' = relationship(
+        'UserToken',
+        cascade='save-update, merge, delete, delete-orphan',
+        back_populates='user',
+    )
 
     # associations
     group_associations: List[
