@@ -26,9 +26,9 @@ def worker_process_init(*args, **kwargs):
 @signals.worker_ready.connect
 def worker_ready(sender, **_):
     """
-    Patch "celery.concurrency.asynpool.AsynPool.on_process_up" to dispose of
-    Riberry's SQLAlchemy engine whenever a new worker process is created via
-    prefork.
+    Patch "celery.concurrency.asynpool.AsynPool._create_worker_process" to
+    dispose of Riberry's SQLAlchemy engine whenever a new worker process is
+    created via prefork.
 
     This is used to prevent database sessions being mistakenly used by both
     the parent and child process.
@@ -38,13 +38,15 @@ def worker_ready(sender, **_):
     if pool is None:
         return
 
-    on_process_up_original = pool.on_process_up
+    _create_worker_process_original = getattr(pool, '_create_worker_process', None)
+    if _create_worker_process_original is None:
+        return
 
-    def on_process_up(proc):
+    def _create_worker_process(*args, **kwargs):
         riberry.model.conn.dispose_engine()
-        on_process_up_original(proc)
+        return _create_worker_process_original(*args, **kwargs)
 
-    pool.on_process_up = on_process_up
+    pool._create_worker_process = _create_worker_process
     riberry.model.conn.dispose_engine()
 
 
