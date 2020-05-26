@@ -32,7 +32,6 @@ class Form(base.Base):
     # associations
     instance: 'model.application.ApplicationInstance' = relationship('ApplicationInstance', back_populates='forms')
     application: 'model.application.Application' = relationship('Application', back_populates='forms')
-    schedules: List['FormSchedule'] = relationship('FormSchedule', back_populates='form')
     jobs: List['model.job.Job'] = relationship(
         'Job',
         cascade='save-update, merge, delete, delete-orphan',
@@ -100,19 +99,6 @@ class InputDefinition(base.Base):
     @definition.setter
     def definition(self, value):
         self.definition_string = json.dumps(value, indent=2)
-
-
-class FormSchedule(base.Base):
-    __tablename__ = 'sched_form'
-
-    # columns
-    id = base.id_builder.build()
-    form_id = Column(base.id_builder.type, ForeignKey('form.id'), nullable=False)
-    start = Column(DateTime(timezone=True), nullable=False)
-    end = Column(DateTime(timezone=True), nullable=False)
-
-    # associations
-    form: 'Form' = relationship('Form', back_populates='schedules')
 
 
 class InputFileDefinition(base.Base):
