@@ -94,7 +94,7 @@ def apply_auth_to_query(
                             source_model=model_type,
                             target_entities=entities,
                         )
-                        query, expression = authorizer.apply_filter(query.enable_assertions(False), context=context)
+                        query, expression = authorizer.apply_filter(query.enable_assertions(False), model_type, context=context)
                         if expression is not None:
                             expressions.append(expression)
 
