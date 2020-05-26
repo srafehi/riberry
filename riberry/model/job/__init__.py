@@ -83,6 +83,7 @@ class JobSchedule(base.Base):
     """
 
     __tablename__ = 'sched_job'
+    __reprattrs__ = ['cron', 'total_runs']
 
     # columns
     id = base.id_builder.build()
@@ -99,6 +100,13 @@ class JobSchedule(base.Base):
 
     # associations
     job: 'Job' = relationship('Job', back_populates='schedules')
+    form: 'model.interface.Form' = relationship(
+        'Form',
+        secondary=lambda: model.job.Job.__table__,
+        back_populates='job_schedules',
+        viewonly=True,
+        uselist=False,
+    )
     creator: 'model.auth.User' = relationship('User')
 
     def run(self):
@@ -178,6 +186,13 @@ class JobExecution(base.Base):
     # associations
     creator: 'model.auth.User' = relationship('User')
     job: 'Job' = relationship('Job', back_populates='executions')
+    form: 'model.interface.Form' = relationship(
+        'Form',
+        secondary=lambda: model.job.Job.__table__,
+        back_populates='job_executions',
+        viewonly=True,
+        uselist=False,
+    )
     streams: List['JobExecutionStream'] = relationship(
         'JobExecutionStream',
         cascade='save-update, merge, delete, delete-orphan',

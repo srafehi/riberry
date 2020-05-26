@@ -38,6 +38,18 @@ class Form(base.Base):
         order_by=lambda: desc(model.job.Job.created),
         back_populates='form'
     )
+    job_executions: List['model.job.JobExecution'] = relationship(
+        'JobExecution',
+        secondary=lambda: model.job.Job.__table__,
+        viewonly=True,
+        back_populates='form',
+    )
+    job_schedules: List['model.job.JobSchedule'] = relationship(
+        'JobSchedule',
+        secondary=lambda: model.job.Job.__table__,
+        viewonly=True,
+        back_populates='form',
+    )
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(
         resource_id=id,
         resource_type=model.misc.ResourceType.form
