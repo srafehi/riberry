@@ -29,6 +29,8 @@ class QueryAuthorizerContext:
 
     @staticmethod
     def unique_join(query: Query, model: ModelType) -> Query:
+        if model in (d['entity'] for d in query.column_descriptions):
+            return query
         if model in (c.entity for c in getattr(query, '_join_entities')):
             return query
         return query.join(model)
