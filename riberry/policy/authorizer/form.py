@@ -34,6 +34,11 @@ from .base import StepResult, PermissionDomainQueryAuthorizer, Node, QueryAuthor
 form_authorizer = PermissionDomainQueryAuthorizer()
 
 
+def job_form_joiner(query: Query, context: QueryAuthorizerContext) -> Query:
+    """ TODO """
+    return query.filter(riberry.model.job.Job.form_id == riberry.model.interface.Form.id)
+
+
 def check_job_prioritization_access(query: Query, context: QueryAuthorizerContext) -> Query:
     """ Ensures that any change to JobExecution.priority is made only by those who
     have the permissions to do so. """
@@ -79,7 +84,7 @@ _node_tree = Node(riberry.model.interface.Form, (
         Node(riberry.model.interface.InputValueEnum),
     )),
     Node(riberry.model.interface.InputFileDefinition),
-    Node(riberry.model.job.Job, (
+    Node(riberry.model.job.Job, joiner=job_form_joiner, dependents=(
         Node(riberry.model.interface.InputFileInstance),
         Node(riberry.model.interface.InputValueInstance),
         Node(riberry.model.job.JobSchedule),

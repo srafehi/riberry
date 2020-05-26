@@ -4,6 +4,8 @@ from typing import Iterable, Tuple, Set, Dict, Optional, List, Callable
 from sqlalchemy.orm import Query
 
 from riberry.model.auth import User
+from riberry.model.interface import Form
+from riberry.model.job import JobExecution, Job
 from riberry.typing import ModelType, Model
 
 
@@ -33,6 +35,7 @@ class QueryAuthorizerContext:
 
 
 StepQueryProcessor = Callable[[Query, QueryAuthorizerContext], Query]
+StepJoiner = Callable[[Query, QueryAuthorizerContext], Query]
 
 
 class Node:
@@ -41,11 +44,13 @@ class Node:
             self,
             model: ModelType,
             dependents: Tuple['Node'] = (),
-            processor: Optional[StepQueryProcessor] = None
+            processor: Optional[StepQueryProcessor] = None,
+            joiner: Optional[StepJoiner] = None,
     ):
         self.model: ModelType = model
         self.dependents: Tuple[Node] = tuple(dependents)
         self.processor: Optional[StepQueryProcessor] = processor
+        self.joiner: Optional[StepJoiner] = joiner
 
 
 class StepResult:
@@ -104,10 +109,11 @@ class PermissionDomainQueryAuthorizer:
             source: ModelType,
             target: ModelType,
             processor: Optional[StepQueryProcessor] = None,
+            joiner: Optional[StepJoiner] = None
     ):
         self._add_step_resolver(
             source,
-            functools.partial(self._resolve, model=target, processor=processor),
+            functools.partial(self._resolve, model=target, processor=processor, joiner=joiner),
         )
 
     def _add_step_resolver(self, source: ModelType, func):
@@ -120,8 +126,12 @@ class PermissionDomainQueryAuthorizer:
             model: ModelType,
             context: QueryAuthorizerContext,
             processor: Optional[StepQueryProcessor] = None,
+            joiner: Optional[StepJoiner] = None,
     ) -> StepResult:
-        query = context.unique_join(query, model)
+        if joiner:
+            query = joiner(query, context)
+        else:
+            query = context.unique_join(query, model)
         return StepResult(
             query=processor(query, context) if processor else query,
             next_model=model,
@@ -132,5 +142,10 @@ class PermissionDomainQueryAuthorizer:
         while nodes:
             current_node: Node = nodes.pop(0)
             for dependent in current_node.dependents:
-                self.register_step(source=dependent.model, target=current_node.model, processor=dependent.processor)
+                self.register_step(
+                    source=dependent.model,
+                    target=current_node.model,
+                    processor=dependent.processor,
+                    joiner=dependent.joiner,
+                )
                 nodes.append(dependent)
