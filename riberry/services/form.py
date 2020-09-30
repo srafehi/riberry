@@ -25,7 +25,7 @@ def forms_by_application_id(application_id):
     return application.forms
 
 
-def create_form(application, instance, name, internal_name, version, description, input_files, input_values) -> model.interface.Form:
+def create_form(application, instance, name, internal_name, version, description) -> model.interface.Form:
     form = model.interface.Form(
         application=application,
         instance=instance,
@@ -33,8 +33,6 @@ def create_form(application, instance, name, internal_name, version, description
         internal_name=internal_name,
         version=version,
         description=description,
-        input_file_definitions=[model.interface.InputFileDefinition(**d) for d in input_files],
-        input_value_definitions=[model.interface.InputValueDefinition(**d) for d in input_values]
     )
 
     model.conn.add(form)
@@ -57,49 +55,12 @@ def input_definition_by_internal_name(
     ).one()
 
 
-def file_definition_by_internal_name(form, internal_name) -> model.interface.InputFileDefinition:
-    return model.interface.InputFileDefinition.query().filter_by(
-        form=form,
-        internal_name=internal_name,
-    ).one()
-
-
-def value_definition_by_internal_name(form, internal_name) -> model.interface.InputValueDefinition:
-    return model.interface.InputValueDefinition.query().filter_by(
-        form=form,
-        internal_name=internal_name,
-    ).one()
-
-
 def update_input_definition(
         definition: model.interface.InputDefinition,
         attributes: Dict,
 ) -> model.interface.InputDefinition:
     for attr in {'type', 'name', 'description', 'sequence', 'definition'} & set(attributes):
         setattr(definition, attr, attributes[attr])
-
-    return definition
-
-
-def update_file_definition(definition: model.interface.InputFileDefinition, attributes: Dict):
-    for attr in {'required', 'type', 'name', 'description', 'accept'} & set(attributes):
-        setattr(definition, attr, attributes[attr])
-
-    return definition
-
-
-def update_value_definition(definition: model.interface.InputValueDefinition, attributes: Dict):
-    for attr in {'required', 'type', 'name', 'description', 'default_binary'} & set(attributes):
-        setattr(definition, attr, attributes[attr])
-
-    if 'allowed_binaries' in attributes:
-        current = set(definition.allowed_binaries)
-        present = set(attributes['allowed_binaries'])
-        removed = current - present
-        if current != present:
-            definition.allowed_binaries = [enum for enum in attributes['allowed_binaries'] if enum not in removed]
-    elif definition.allowed_binaries:
-        definition.allowed_binaries = []
 
     return definition
 

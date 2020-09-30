@@ -4,7 +4,7 @@ import riberry
 from riberry.model.application import Application, ApplicationInstance, Heartbeat, ApplicationInstanceSchedule
 from riberry.model.auth import User
 from riberry.model.group import Group, ResourceGroupAssociation, GroupPermission
-from riberry.model.interface import Form, InputDefinition, InputValueDefinition, InputValueEnum, InputFileDefinition
+from riberry.model.interface import Form, InputDefinition
 from riberry.model.job import Job, JobExecution
 from riberry.model.misc import ResourceType
 
@@ -104,21 +104,6 @@ def create_form(create_application):
                 name='input_definition',
                 definition_string='{}',
             ),
-            input_value_definitions=[
-                InputValueDefinition(
-                    name='input_value_definition',
-                    internal_name='input_value_definition',
-                    type='text',
-                    allowed_value_enumerations=[InputValueEnum(value=b'enum')],
-                )
-            ],
-            input_file_definitions=[
-                InputFileDefinition(
-                    name='input_file_definition',
-                    internal_name='input_file_definition',
-                    type='csv',
-                )
-            ]
         )
         riberry.model.conn.add(instance)
         riberry.model.conn.flush()

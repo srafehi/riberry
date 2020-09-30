@@ -147,8 +147,6 @@ def import_form(app, internal_name, attributes):
             internal_name=internal_name,
             version=attributes.get('version'),
             description=attributes.get('description'),
-            input_files=[],
-            input_values=[]
         )
 
     if attributes.get('document'):
@@ -168,42 +166,6 @@ def import_form(app, internal_name, attributes):
     )
 
     return form
-
-
-def import_input_file_definition(form, internal_name, attributes):
-    try:
-        if not form.id:
-            raise NoResultFound
-        definition = services.form.file_definition_by_internal_name(form=form, internal_name=internal_name)
-        definition = services.form.update_file_definition(definition, attributes)
-    except NoResultFound:
-        definition = model.interface.InputFileDefinition(internal_name=internal_name, **attributes)
-        model.conn.add(definition)
-
-    return definition
-
-
-def import_input_value_definition(form, internal_name, attributes):
-    mapping = {
-        'enumerations': ('allowed_binaries', lambda values: [json.dumps(v).encode() for v in values]),
-        'default': ('default_binary', lambda v: json.dumps(v).encode()),
-    }
-
-    attributes = dict(
-        (mapping[k][0], mapping[k][1](v)) if k in mapping else (k, v)
-        for k, v in attributes.items()
-    )
-
-    try:
-        if not form.id:
-            raise NoResultFound
-        definition = services.form.value_definition_by_internal_name(form=form, internal_name=internal_name)
-        definition = services.form.update_value_definition(definition, attributes)
-    except NoResultFound:
-        definition = model.interface.InputValueDefinition(internal_name=internal_name, **attributes)
-        model.conn.add(definition)
-
-    return definition
 
 
 def import_legacy_input_definitions(
@@ -324,29 +286,8 @@ def import_form_inputs(form: model.interface.Form, input_files: dict, input_valu
     if input_files or input_values:
         if input_definition:
             raise ValueError(f'Form[{form.internal_name}] Cannot use form.inputs with form.inputFiles or form.inputValues')
-        input_definition_instance = import_legacy_input_definitions(form, input_files, input_values)
-    else:
-        input_definition_instance = None
-
-    collection_diff(
-        obj=form,
-        collection_name='input_file_definitions',
-        loader=lambda: {
-            import_input_file_definition(form, name, attrs)
-            for name, attrs in input_files.items()
-        }
-    )
-
-    collection_diff(
-        obj=form,
-        collection_name='input_value_definitions',
-        loader=lambda: {
-            import_input_value_definition(form, name, attrs)
-            for name, attrs in input_values.items()
-        }
-    )
-
-    if input_definition and not input_definition_instance:
+        import_legacy_input_definitions(form, input_files, input_values)
+    elif input_definition:
         import_input_definition(form, input_definition, support_legacy=False)
 
 

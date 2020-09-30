@@ -7,9 +7,6 @@ Forms via the following dependency tree:
   * ApplicationInstance
     * Heartbeat
     * ApplicationInstanceSchedule
-  * InputValueDefinition
-    * InputValueEnum
-  * InputFileDefinition
   * Job
     * InputFileInstance
     * InputValueInstance
@@ -80,10 +77,6 @@ _node_tree = Node(riberry.model.interface.Form, (
         Node(riberry.model.application.ApplicationInstanceSchedule),
     )),
     Node(riberry.model.interface.InputDefinition),
-    Node(riberry.model.interface.InputValueDefinition, (
-        Node(riberry.model.interface.InputValueEnum),
-    )),
-    Node(riberry.model.interface.InputFileDefinition),
     Node(riberry.model.job.Job, joiner=job_form_joiner, dependents=(
         Node(riberry.model.interface.InputFileInstance),
         Node(riberry.model.interface.InputValueInstance),

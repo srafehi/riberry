@@ -38,9 +38,6 @@ CRUD_PERMISSIONS = {
 
     riberry.model.interface.Form: _CRUD_FRM_READONLY,
     riberry.model.interface.InputDefinition: _CRUD_FRM_READONLY,
-    riberry.model.interface.InputValueDefinition: _CRUD_FRM_READONLY,
-    riberry.model.interface.InputValueEnum: _CRUD_FRM_READONLY,
-    riberry.model.interface.InputFileDefinition: _CRUD_FRM_READONLY,
     riberry.model.interface.InputValueInstance: _CRUD_JOB,
     riberry.model.interface.InputFileInstance: _CRUD_JOB,
 

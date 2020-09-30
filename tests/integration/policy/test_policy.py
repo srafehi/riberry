@@ -4,7 +4,7 @@ import riberry
 from riberry.model.application import Application, ApplicationInstance, Heartbeat, ApplicationInstanceSchedule
 from riberry.model.auth import User
 from riberry.model.group import Group
-from riberry.model.interface import Form, InputDefinition, InputValueDefinition, InputValueEnum, InputFileDefinition
+from riberry.model.interface import Form, InputDefinition
 from riberry.model.job import Job, JobExecution, JobSchedule, JobExecutionStream, JobExecutionStreamStep
 from riberry.policy.permissions import FormDomain, SystemDomain, ApplicationDomain
 
@@ -99,18 +99,6 @@ COMMON_TESTS = [
     (InputDefinition, lambda f: f.input_definition.id, _query_get),
     (InputDefinition, lambda f: f.input_definition.id, _query_filter_by),
     (InputDefinition, lambda f: f.input_definition.id, _query_filter),
-    (InputFileDefinition, None, _query_all),
-    (InputFileDefinition, lambda f: f.input_definition.id, _query_get),
-    (InputFileDefinition, lambda f: f.input_definition.id, _query_filter_by),
-    (InputFileDefinition, lambda f: f.input_definition.id, _query_filter),
-    (InputValueDefinition, None, _query_all),
-    (InputValueDefinition, lambda f: f.input_definition.id, _query_get),
-    (InputValueDefinition, lambda f: f.input_definition.id, _query_filter_by),
-    (InputValueDefinition, lambda f: f.input_definition.id, _query_filter),
-    (InputValueEnum, None, _query_all),
-    (InputValueEnum, lambda f: f.input_definition.id, _query_get),
-    (InputValueEnum, lambda f: f.input_definition.id, _query_filter_by),
-    (InputValueEnum, lambda f: f.input_definition.id, _query_filter),
     (ApplicationInstance, lambda f: f.instance_id, _query_all),
     (ApplicationInstance, lambda f: f.instance_id, _query_get),
     (ApplicationInstance, lambda f: f.instance_id, _query_filter_by),
