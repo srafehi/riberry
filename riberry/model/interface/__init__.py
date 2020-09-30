@@ -42,12 +42,14 @@ class Form(base.Base):
         'JobExecution',
         secondary=lambda: model.job.Job.__table__,
         viewonly=True,
+        sync_backref=False,
         back_populates='form',
     )
     job_schedules: List['model.job.JobSchedule'] = relationship(
         'JobSchedule',
         secondary=lambda: model.job.Job.__table__,
         viewonly=True,
+        sync_backref=False,
         back_populates='form',
     )
     group_associations: List['model.group.ResourceGroupAssociation'] = model.group.ResourceGroupAssociation.make_relationship(

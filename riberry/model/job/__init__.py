@@ -105,6 +105,7 @@ class JobSchedule(base.Base):
         secondary=lambda: model.job.Job.__table__,
         back_populates='job_schedules',
         viewonly=True,
+        sync_backref=False,
         uselist=False,
     )
     creator: 'model.auth.User' = relationship('User')
@@ -191,6 +192,7 @@ class JobExecution(base.Base):
         secondary=lambda: model.job.Job.__table__,
         back_populates='job_executions',
         viewonly=True,
+        sync_backref=False,
         uselist=False,
     )
     streams: List['JobExecutionStream'] = relationship(
@@ -233,6 +235,7 @@ class JobExecution(base.Base):
         primaryjoin=lambda: JobExecution.id == _job_execution_select_latest_progress().c.job_execution_id,
         secondaryjoin=lambda: JobExecutionProgress.id == _job_execution_select_latest_progress().c.id,
         viewonly=True,
+        sync_backref=False,
         uselist=False,
     )
     metrics: List['JobExecutionMetric'] = relationship(
