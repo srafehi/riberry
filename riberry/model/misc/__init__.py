@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Binary, String, Column, Float, ForeignKey, Boolean, DateTime, Index, Enum, UniqueConstraint, sql
+from sqlalchemy import Binary, String, Column, Float, ForeignKey, Boolean, DateTime, Index, Text, Enum, UniqueConstraint, sql
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
@@ -128,18 +128,18 @@ class ResourceData(base.Base):
     resource_id = Column(base.id_builder.type, nullable=True)
     resource_type = Column(Enum(ResourceType), nullable=False)
     name: str = Column(String(256))
-    raw_value: bytes = Column('value', Binary, nullable=True)
+    value_string: str = Column('value', Text, nullable=True)
     lock: str = Column(String(72), nullable=True)
     expiry: datetime = Column(DateTime(timezone=True), nullable=True)
     marked_for_refresh: bool = Column(Boolean(name='resource_data_marked_for_refresh'), nullable=False, default=False)
 
     @hybrid_property
     def value(self):
-        return json.loads(self.raw_value.decode()) if self.raw_value else None
+        return json.loads(self.value_string) if self.value_string else None
 
     @value.setter
     def value(self, value):
-        self.raw_value = json.dumps(value).encode()
+        self.value_string = json.dumps(value).encode()
 
     @classmethod
     def make_relationship(cls, resource_id, resource_type):
