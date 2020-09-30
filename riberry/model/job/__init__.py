@@ -3,15 +3,14 @@ import functools
 import json
 import mimetypes
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Iterator
 
 import pendulum
 from croniter import croniter
 from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, LargeBinary, Index, Enum, desc, Float, asc, \
-    UniqueConstraint, select, func, sql
+    select, func
 from sqlalchemy.ext.associationproxy import association_proxy
-from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import relationship, deferred, validates, foreign, remote
+from sqlalchemy.orm import relationship, deferred, validates
 
 from riberry import model
 from riberry.model import base
@@ -96,7 +95,7 @@ class JobSchedule(base.Base):
     limit: int = Column(Integer, default=0, comment='The amount of valid runs for this schedule.')
     total_runs: int = Column(Integer, default=0, comment='The total amount of runs for this schedule.')
     timezone = Column(String(128), nullable=False, default='UTC', comment='The timezone of the schedule.')
-    run_when_online: bool = Column(Boolean(name='sched_job_run_when_online'), default=True, nullable=False, comment='Create execution only if form is online.')
+    run_when_online: bool = Column(Boolean(name='sched_job_run_when_online'), default=True, nullable=False, comment='Activate schedule only if form\'s instance is online.')
 
     # associations
     job: 'Job' = relationship('Job', back_populates='schedules')
@@ -110,32 +109,58 @@ class JobSchedule(base.Base):
     )
     creator: 'model.auth.User' = relationship('User')
 
-    def run(self):
-        if not self.enabled or (self.run_when_online and self.job.instance.status != 'online'):
+    @property
+    def active(self) -> bool:
+        """ Indicates whether the schedule is active. """
+
+        return self.enabled and (not self.run_when_online or self.job.instance.status == 'online')
+
+    @property
+    def next_run(self) -> Optional[pendulum.DateTime]:
+        """ Returns the next run time for this schedule's cron. """
+
+        if not self.active:
             return
 
-        ready_run = None
-        for cron_time in croniter(self.cron, start_time=self.last_run or self.created, ret_type=pendulum.DateTime):
-            cron_time = pendulum.instance(cron_time)
+        for cron_time in self._cron_iterable(apply_timezone=True, limit=1):
+            return cron_time
+
+    def next_runs(self, limit: int, apply_timezone=True) -> List[pendulum.DateTime]:
+        """ Returns a list of the next run times. """
+
+        return list(self._cron_iterable(apply_timezone=apply_timezone, limit=limit or 0))
+
+    def run(self):
+        """ Executes the dependent job if the schedule is active and the schedule's next run time has passed. """
+
+        if not self.active:
+            return
+
+        # find the next run time
+        ready_run: Optional[pendulum.DateTime] = None
+        for cron_time in self._cron_iterable(apply_timezone=True):
             if cron_time > base.utc_now():
                 break
             ready_run = cron_time
 
+        # update the schedule if the next run time has passed
         if ready_run:
-            self.last_run = ready_run
+            self.last_run = ready_run.in_timezone(pendulum.UTC)
             self.total_runs += 1
             if self.limit and self.total_runs >= self.limit:
                 self.enabled = False
-
             self.job.execute(creator_id=self.creator_id)
 
-    @property
-    def next_run(self):
-        if not self.enabled:
-            return
+    def _cron_iterable(self, apply_timezone: bool = False, limit: Optional[int] = None) -> Iterator[pendulum.DateTime]:
+        """ Returns an iterator of the next run times. """
 
-        instance = croniter(self.cron, start_time=self.last_run or self.created, ret_type=pendulum.DateTime)
-        return pendulum.instance(next(instance))
+        timezone = pendulum.timezone(self.timezone if apply_timezone else pendulum.UTC)
+        start_time = pendulum.instance(self.last_run or self.created).naive()
+
+        for index, cron_time in enumerate(croniter(self.cron, start_time=start_time)):
+            if limit is not None and index >= limit:
+                break
+            yield pendulum.instance(cron_time, tz=timezone)
 
 
 def memoize(func):
