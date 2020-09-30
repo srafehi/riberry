@@ -93,7 +93,7 @@ def import_application(internal_name, attributes):
         if not app.document:
             app.document = model.misc.Document()
             model.conn.add(app.document)
-        app.document.content = attributes['document'].encode()
+        app.document.content = attributes['document']
     else:
         if app.document:
             app.document = None
@@ -153,7 +153,7 @@ def import_form(app, internal_name, attributes):
         if not form.document:
             form.document = model.misc.Document()
             model.conn.add(form.document)
-        form.document.content = attributes['document'].encode()
+        form.document.content = attributes['document']
     else:
         if form.document:
             form.document = None
