@@ -30,7 +30,7 @@ class Document(base.Base):
 
     id = base.id_builder.build()
     type: str = Column(String(24), nullable=False, default='markdown')
-    content: bytes = Column(LargeBinary, nullable=False)
+    content: str = Column(Text, nullable=False)
 
 
 class Event(base.Base):
