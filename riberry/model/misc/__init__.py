@@ -133,7 +133,12 @@ class ResourceData(base.Base):
     expiry: datetime = Column(DateTime(timezone=True), nullable=True)
     marked_for_refresh: bool = Column(Boolean(name='resource_data_marked_for_refresh'), nullable=False, default=False)
 
-    @hybrid_property
+    def __init__(self, value=None, **kwargs):
+        super().__init__(**kwargs)
+        if 'value_string' not in kwargs:
+            self.value = value
+
+    @property
     def value(self):
         return json.loads(self.value_string) if self.value_string else None
 

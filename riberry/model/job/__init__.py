@@ -495,7 +495,12 @@ class JobExecutionReport(base.Base):
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='reports')
 
-    @hybrid_property
+    def __init__(self, input_data=None, **kwargs):
+        super().__init__(**kwargs)
+        if 'raw_input_data' not in kwargs:
+            self.input_data = input_data
+
+    @property
     def input_data(self):
         return json.loads(self.raw_input_data.decode()) if self.raw_input_data else None
 
