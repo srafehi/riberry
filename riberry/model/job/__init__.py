@@ -91,12 +91,12 @@ class JobSchedule(base.Base):
     creator_id = Column(base.id_builder.type, ForeignKey('users.id'), nullable=False)
     enabled: bool = Column(Boolean(name='sched_job_enabled'), default=True, nullable=False, comment='Whether or not this schedule is active.')
     cron: str = Column(String(24), nullable=False, comment='The cron expression which defines our schedule.')
-    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False,
-                               comment='The time our schedule was created.')
-    last_run: datetime = Column(DateTime(timezone=True), default=None,
-                                comment='The last time a job execution was created from our schedule.')
+    created: datetime = Column(DateTime(timezone=True), default=base.utc_now, nullable=False, comment='The time our schedule was created.')
+    last_run: datetime = Column(DateTime(timezone=True), default=None, comment='The last time a job execution was created from our schedule.')
     limit: int = Column(Integer, default=0, comment='The amount of valid runs for this schedule.')
     total_runs: int = Column(Integer, default=0, comment='The total amount of runs for this schedule.')
+    timezone = Column(String(128), nullable=False, default='UTC', comment='The timezone of the schedule.')
+    run_when_online: bool = Column(Boolean(name='sched_job_run_when_online'), default=True, nullable=False, comment='Create execution only if form is online.')
 
     # associations
     job: 'Job' = relationship('Job', back_populates='schedules')
@@ -111,7 +111,7 @@ class JobSchedule(base.Base):
     creator: 'model.auth.User' = relationship('User')
 
     def run(self):
-        if not self.enabled or self.job.instance.status != 'online':
+        if not self.enabled or (self.run_when_online and self.job.instance.status != 'online'):
             return
 
         ready_run = None
