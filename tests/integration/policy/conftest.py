@@ -102,7 +102,7 @@ def create_form(create_application):
             instance=application_instance,
             input_definition=InputDefinition(
                 name='input_definition',
-                definition_string='{}',
+                definition={},
             ),
         )
         riberry.model.conn.add(instance)

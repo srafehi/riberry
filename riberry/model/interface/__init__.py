@@ -94,6 +94,11 @@ class InputDefinition(base.Base):
     # associations
     form: 'Form' = relationship('Form', back_populates='input_definition')
 
+    def __init__(self, definition=None, **kwargs):
+        super().__init__(**kwargs)
+        if 'definition_string' not in kwargs:
+            self.definition = definition
+
     @property
     def definition(self):
         return json.loads(self.definition_string) if self.definition_string else None
