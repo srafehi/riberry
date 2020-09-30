@@ -12,7 +12,6 @@ from sqlalchemy.orm.exc import NoResultFound
 from riberry import model, config
 from celery.utils.log import logger
 
-
 def email_notification(host, body, mime_type, subject, sender, recipients: List):
     if not recipients:
         logger.warn('Attempted to send email notification with no recipients provided.')
@@ -52,7 +51,10 @@ def handle_artifacts(events: List[model.misc.Event]):
                 data=[
                     model.job.JobExecutionArtifactData(
                         title=str(title),
-                        description=str(description)
+                        description=model.helpers.trim_attribute_value(
+                            attribute=model.job.JobExecutionArtifactData.description,
+                            value=str(description)
+                        ),
                     ) for title, description in event_data['data'].items() if title and description
                 ]
             )
