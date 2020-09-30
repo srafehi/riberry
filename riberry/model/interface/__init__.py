@@ -2,7 +2,7 @@ import json
 import mimetypes
 from typing import List
 
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, desc, asc, Text
+from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, LargeBinary, desc, asc, Text
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, deferred
 
@@ -151,7 +151,7 @@ class InputFileInstance(base.Base):
     internal_name: str = Column(String(256), nullable=False)
     filename: str = Column(String(512), nullable=False)
     size: int = Column(Integer, nullable=False)
-    binary: bytes = deferred(Column(Binary))
+    binary: bytes = deferred(Column(LargeBinary))
 
     # associations
     job: 'model.job.Job' = relationship('Job', back_populates='files')

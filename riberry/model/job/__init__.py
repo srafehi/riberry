@@ -7,7 +7,7 @@ from typing import List, Optional
 
 import pendulum
 from croniter import croniter
-from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, Binary, Index, Enum, desc, Float, asc, \
+from sqlalchemy import Column, String, ForeignKey, DateTime, Boolean, Integer, LargeBinary, Index, Enum, desc, Float, asc, \
     UniqueConstraint, select, func, sql
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -443,7 +443,7 @@ class JobExecutionArtifactBinary(base.Base):
 
     # columns
     id = base.id_builder.build()
-    binary: bytes = deferred(Column(Binary, nullable=True))
+    binary: bytes = deferred(Column(LargeBinary, nullable=True))
     artifact_id = Column(base.id_builder.type, ForeignKey('job_artifact.id'), nullable=False)
 
     # associations
@@ -468,8 +468,8 @@ class JobExecutionExternalTask(base.Base):
     name: str = Column(String(128), nullable=False)
     type: str = Column(String(24), nullable=False)
     status: str = Column(String(24), default='WAITING', comment='The current status of the manual task.')
-    input_data: Optional[bytes] = deferred(Column(Binary, nullable=True))
-    output_data: Optional[bytes] = deferred(Column(Binary, nullable=True))
+    input_data: Optional[bytes] = deferred(Column(LargeBinary, nullable=True))
+    output_data: Optional[bytes] = deferred(Column(LargeBinary, nullable=True))
 
     # associations
     job_execution: 'JobExecution' = relationship('JobExecution', back_populates='external_tasks')
@@ -488,8 +488,8 @@ class JobExecutionReport(base.Base):
     title: str = Column(String(128), nullable=True)
     category: str = Column(String(128), nullable=True)
     key: str = Column(String(128), nullable=True)
-    raw_input_data: Optional[bytes] = deferred(Column('input_data', Binary, nullable=True))
-    report: Optional[bytes] = deferred(Column(Binary, nullable=True))
+    raw_input_data: Optional[bytes] = deferred(Column('input_data', LargeBinary, nullable=True))
+    report: Optional[bytes] = deferred(Column(LargeBinary, nullable=True))
     marked_for_refresh: bool = Column(Boolean(name='job_report_marked_for_refresh'), nullable=False, default=False)
 
     # associations

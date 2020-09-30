@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import Binary, String, Column, Float, ForeignKey, Boolean, DateTime, Index, Text, Enum, UniqueConstraint, sql
+from sqlalchemy import LargeBinary, String, Column, Float, ForeignKey, Boolean, DateTime, Index, Text, Enum, UniqueConstraint, sql
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import relationship
 
@@ -30,7 +30,7 @@ class Document(base.Base):
 
     id = base.id_builder.build()
     type: str = Column(String(24), nullable=False, default='markdown')
-    content: bytes = Column(Binary, nullable=False)
+    content: bytes = Column(LargeBinary, nullable=False)
 
 
 class Event(base.Base):
@@ -44,7 +44,7 @@ class Event(base.Base):
     root_id: str = Column(String(36), nullable=False)
     task_id: str = Column(String(36), nullable=False)
     data: str = Column(String(1024))
-    binary: bytes = Column(Binary)
+    binary: bytes = Column(LargeBinary)
 
 
 class NotificationType(enum.Enum):
