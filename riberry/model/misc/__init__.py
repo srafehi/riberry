@@ -43,7 +43,7 @@ class Event(base.Base):
     time: float = Column(Float, nullable=False)
     root_id: str = Column(String(36), nullable=False)
     task_id: str = Column(String(36), nullable=False)
-    data: str = Column(String(1024))
+    data: str = Column(Text)
     binary: bytes = Column(LargeBinary)
 
 
