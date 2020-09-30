@@ -2,7 +2,7 @@ import json
 import mimetypes
 from typing import List
 
-from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, DateTime, desc, asc, Text
+from sqlalchemy import Column, String, Boolean, ForeignKey, Integer, Binary, desc, asc, Text
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship, deferred
 
@@ -114,18 +114,23 @@ class InputValueInstance(base.Base):
     job_id = Column(base.id_builder.type, ForeignKey('job.id'), nullable=False)
     name: str = Column(String(256), nullable=False)
     internal_name: str = Column(String(256), nullable=False)
-    raw_value: bytes = Column('value', Binary)
+    value_string: str = Column('value', Text)
 
     # associations
     job: 'model.job.Job' = relationship('Job', back_populates='values')
 
+    def __init__(self, value=None, **kwargs):
+        super().__init__(**kwargs)
+        if 'value_string' not in kwargs:
+            self.value = value
+
     @property
     def value(self):
-        return json.loads(self.raw_value.decode()) if self.raw_value else None
+        return json.loads(self.value_string) if self.value_string else None
 
     @value.setter
     def value(self, value):
-        self.raw_value = json.dumps(value).encode()
+        self.value_string = json.dumps(value).encode()
 
 
 class InputFileInstance(base.Base):

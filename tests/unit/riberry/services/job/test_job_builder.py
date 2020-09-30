@@ -89,7 +89,7 @@ class TestJobBuilder:
                             InputValueInstance(
                                 name='definition',
                                 internal_name=JobBuilder.input_value_instance_key,
-                                raw_value=b'"value"',
+                                value='value',
                             )
                         ],
                         []
@@ -105,10 +105,8 @@ class TestJobBuilder:
                             InputValueInstance(
                                 name='definition',
                                 internal_name=JobBuilder.input_value_instance_key,
-                                raw_value=(
-                                        '"riberry://model/InputFileInstance?'
-                                        f'internal_name={JobBuilder.input_value_instance_key}"'
-                                ).encode(),
+                                value=f"riberry://model/InputFileInstance?"
+                                      f"internal_name={JobBuilder.input_value_instance_key}",
                             )
                         ],
                         [
@@ -141,8 +139,8 @@ class TestJobBuilder:
                 {'p1': 'hello', 'p2': 123},
                 (
                         [
-                            InputValueInstance(name='p1', internal_name='p1', raw_value=b'"hello"'),
-                            InputValueInstance(name='p2', internal_name='p2', raw_value=b'123'),
+                            InputValueInstance(name='p1', internal_name='p1', value='hello'),
+                            InputValueInstance(name='p2', internal_name='p2', value=123),
                         ],
                         [
 
@@ -169,8 +167,8 @@ class TestJobBuilder:
                 (
                         [
                             InputValueInstance(name='p1', internal_name='p1',
-                                               raw_value=b'"riberry://model/InputFileInstance?internal_name=p1"'),
-                            InputValueInstance(name='p2', internal_name='p2', raw_value=b'123'),
+                                               value='riberry://model/InputFileInstance?internal_name=p1'),
+                            InputValueInstance(name='p2', internal_name='p2', value=123),
                         ],
                         [
                             InputFileInstance(
@@ -203,7 +201,7 @@ class TestJobBuilder:
                             InputValueInstance(
                                 name='definition',
                                 internal_name=JobBuilder.input_value_instance_key,
-                                raw_value=b'{"p1": "hello", "p2": 123}'
+                                value={"p1": "hello", "p2": 123},
                             ),
                         ],
                         [
@@ -231,7 +229,7 @@ class TestJobBuilder:
                             InputValueInstance(
                                 name='definition',
                                 internal_name=JobBuilder.input_value_instance_key,
-                                raw_value=b'{"p1": "riberry://model/InputFileInstance?internal_name=p1", "p2": 123}'
+                                value={"p1": "riberry://model/InputFileInstance?internal_name=p1", "p2": 123},
                             ),
                         ],
                         [
