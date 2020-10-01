@@ -157,7 +157,7 @@ class JobSchedule(base.Base):
         timezone = pendulum.timezone(self.timezone if apply_timezone else pendulum.UTC)
         start_time = pendulum.instance(self.last_run or self.created).naive()
 
-        for index, cron_time in enumerate(croniter(self.cron, start_time=start_time)):
+        for index, cron_time in enumerate(croniter(self.cron, start_time=start_time, ret_type=datetime)):
             if limit is not None and index >= limit:
                 break
             yield pendulum.instance(cron_time, tz=timezone)
