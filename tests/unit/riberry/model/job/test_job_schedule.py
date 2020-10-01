@@ -23,12 +23,20 @@ def test_active(enabled, run_when_online, instance_status, expected_value):
 
 
 @pytest.mark.parametrize(['timezone', 'current_datetime', 'expected_datetime'], [
+    # test schedules with UTC (default) timezone
+    ('UTC', '2020-04-03T02:00:00+0000', None),
     ('UTC', '2020-04-04T02:00:00+0000', '2020-04-03T15:00:00+0000'),
     ('UTC', '2020-04-04T15:00:00+0000', '2020-04-04T15:00:00+0000'),
     ('UTC', '2020-04-05T15:00:00+0000', '2020-04-05T15:00:00+0000'),
-    ('Australia/Melbourne', '2020-04-04T02:00:00+0000', '2020-04-03T15:00:00+1100'),
-    ('Australia/Melbourne', '2020-04-04T15:00:00+0000', '2020-04-04T15:00:00+1100'),
-    ('Australia/Melbourne', '2020-04-05T15:00:00+0000', '2020-04-05T15:00:00+1000'),
+
+    # test schedules with Melbourne timezone and ensure given cron is respected
+    # when transitioning to/from daylight savings
+    ('Australia/Melbourne', '2020-04-03T03:59:59+0000', None),
+    ('Australia/Melbourne', '2020-04-03T04:00:00+0000', '2020-04-03T15:00:00+1100'),
+    ('Australia/Melbourne', '2020-04-04T04:00:00+0000', '2020-04-04T15:00:00+1100'),
+    ('Australia/Melbourne', '2020-04-05T05:00:00+0000', '2020-04-05T15:00:00+1000'),
+    ('Australia/Melbourne', '2020-10-03T05:00:00+0000', '2020-10-03T15:00:00+1000'),
+    ('Australia/Melbourne', '2020-10-04T04:00:00+0000', '2020-10-04T15:00:00+1100'),
 ])
 def test_run_with_timezone(timezone, current_datetime, expected_datetime):
     job_schedule = JobSchedule(
@@ -43,6 +51,10 @@ def test_run_with_timezone(timezone, current_datetime, expected_datetime):
         dummy_job = mock.MagicMock()
         job_schedule.job = dummy_job
         job_schedule.run()
-        assert job_schedule.last_run == pendulum.parse(expected_datetime)
-        assert job_schedule.last_run.tzname() == 'UTC'
-        job_schedule.job.execute.assert_called_once()
+
+        if expected_datetime is None:
+            assert job_schedule.last_run is None
+        else:
+            assert job_schedule.last_run == pendulum.parse(expected_datetime)
+            assert job_schedule.last_run.tzinfo == pendulum.UTC
+            job_schedule.job.execute.assert_called_once()
