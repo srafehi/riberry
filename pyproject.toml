@@ -17,7 +17,7 @@ pyyaml = "^5.1"
 pyjwt = "^1.7"
 toml = "^0.10.0"
 click = "^7.0"
-redis = "^3.2"
+redis = ">=3.2,<5.0"
 celery = {version="^4.3", extras=["redis"]}
 appdirs = "^1.4"
 
